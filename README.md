@@ -225,10 +225,12 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every push:
 4. `npm run test`
 5. `npm run build`
 6. asserts `dist/sw.js` and `dist/manifest.webmanifest` exist
-7. on `main`, uploads `dist/` and deploys to GitHub Pages
+7. uploads `dist/` and deploys to GitHub Pages (from `main`, from the current
+   feature branch until it is merged, or from a manual **Run workflow**)
 
 **One-time repository setup:** *Settings → Pages → Build and deployment → Source: **GitHub Actions***.
-Nothing else is required — no secrets, no tokens, no environment variables.
+Nothing else is required — no secrets, no tokens, no environment variables. Once that setting is
+flipped, re-run the workflow (Actions → CI & Deploy → Run workflow) and the site publishes.
 
 ### Base path
 
@@ -316,7 +318,7 @@ opt-in cohort view of anonymised progression rates.
 
 ## Testing
 
-208 unit tests across 12 files, covering:
+208 unit tests across 12 files, plus a 33-check browser smoke test. Unit coverage:
 
 weight-unit conversion · load-increment rounding (including gym-native pound plates) ·
 protein-target calculation · double-progression decisions · pain override · plateau detection ·
@@ -329,6 +331,10 @@ against the real engines.
 ```bash
 npm run verify   # typecheck + lint + test + build
 ```
+
+The smoke test additionally verifies the full backup round trip — export a real file through the
+browser's download path, erase everything, then import that file back and confirm every session is
+restored.
 
 ---
 

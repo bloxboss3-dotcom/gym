@@ -1,5 +1,5 @@
 import { chromium } from 'playwright'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
 
 /**
  * End-to-end smoke test.
@@ -33,6 +33,7 @@ const browser = await chromium.launch({
   args: ['--no-sandbox'],
 })
 const context = await browser.newContext({
+  acceptDownloads: true,
   viewport: { width: 390, height: 844 }, // iPhone 14/15 logical size
   deviceScaleFactor: 3,
   isMobile: true,
@@ -239,6 +240,70 @@ if (unopened) {
     record('equipping an item lands on the character screen', page.url().includes('/forge/'))
   }
 }
+
+// ------------------------------------------------------------------ backup
+// Round-trip a real export through the real file input.
+await page.goto(`${BASE}#/profile/backup`, { waitUntil: 'networkidle' })
+await page.waitForSelector('text=Download backup')
+const download = await Promise.all([
+  page.waitForEvent('download'),
+  page.getByRole('button', { name: 'Download backup' }).click(),
+]).then(([d]) => d)
+const backupPath = `${SHOTS}/backup.json`
+await download.saveAs(backupPath)
+const backupText = readFileSync(backupPath, 'utf8')
+const parsed = JSON.parse(backupText)
+record(
+  'exports a valid backup file',
+  parsed.format === 'forged-backup' && parsed.data.sessions.length > 0,
+  `${parsed.data.sessions.length} sessions, ${(backupText.length / 1024).toFixed(0)} kB`,
+)
+
+// Wipe, then restore from the exported file.
+await page.goto(`${BASE}#/profile`, { waitUntil: 'networkidle' })
+await page.getByRole('button', { name: 'Erase everything' }).click()
+await page.getByRole('dialog').getByRole('button', { name: 'Erase everything' }).click()
+await page.waitForTimeout(900)
+const wiped = await page.getByText('Real training. Real progress.').isVisible().catch(() => false)
+record('erase everything returns to a clean install', wiped)
+
+await page.goto(`${BASE}#/onboarding`, { waitUntil: 'networkidle' })
+await page.evaluate(() => location.hash = '#/profile/backup')
+await page.waitForTimeout(500)
+// Onboarding gates the app, so import is reached by loading demo first — the
+// realistic recovery path is: install, skip through, import. Simulate by
+// re-onboarding via the demo shortcut then importing over the top.
+await page.goto(BASE, { waitUntil: 'networkidle' })
+await page.getByRole('button', { name: 'Explore demo data instead' }).click()
+await page.waitForTimeout(1200)
+await page.goto(`${BASE}#/profile/backup`, { waitUntil: 'networkidle' })
+await page.waitForSelector('text=Choose a backup file')
+await page.locator('input[type=file]').setInputFiles(backupPath)
+await page.waitForSelector('text=Replace all data with this backup?', { timeout: 8000 })
+await shot('20-import-confirm')
+await page.getByRole('dialog').getByRole('button', { name: 'Import and replace' }).click()
+await page.waitForTimeout(900)
+await page.goto(`${BASE}#/train`, { waitUntil: 'networkidle' })
+await page.waitForTimeout(600)
+const restoredSessions = await page.evaluate(
+  () =>
+    new Promise((resolve) => {
+      const req = indexedDB.open('forged')
+      req.onsuccess = () => {
+        const tx = req.result.transaction('records', 'readonly')
+        const get = tx.objectStore('records').get('app-data')
+        get.onsuccess = () => resolve(get.result?.sessions?.length ?? 0)
+        get.onerror = () => resolve(-1)
+      }
+      req.onerror = () => resolve(-1)
+    }),
+)
+record(
+  'imports the backup and restores the sessions',
+  restoredSessions === parsed.data.sessions.length,
+  `${restoredSessions} restored vs ${parsed.data.sessions.length} exported`,
+)
+await shot('21-after-import')
 
 // ----------------------------------------------------------------- a11y-ish
 await page.goto(`${BASE}#/`, { waitUntil: 'networkidle' })

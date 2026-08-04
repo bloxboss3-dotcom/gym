@@ -52,7 +52,11 @@ jobs:
         run: test -f dist/sw.js && test -f dist/manifest.webmanifest
 
       - name: Upload Pages artifact
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'push' &&
+           (github.ref == 'refs/heads/main' ||
+            github.ref == 'refs/heads/claude/forged-fitness-pwa-74y1yz'))
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -60,7 +64,14 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: verify
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Deploys from main, and — until this branch is merged — from the feature
+    # branch too, so the live app is available for testing on a phone without
+    # waiting for a merge. Drop the branch clause once this lands on main.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' &&
+       (github.ref == 'refs/heads/main' ||
+        github.ref == 'refs/heads/claude/forged-fitness-pwa-74y1yz'))
     runs-on: ubuntu-latest
     environment:
       name: github-pages
