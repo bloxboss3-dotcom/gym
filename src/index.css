@@ -120,9 +120,18 @@
 @utility safe-bottom {
   padding-bottom: var(--safe-bottom);
 }
+/**
+ * Horizontal safe-area padding.
+ *
+ * `max()` rather than a bare inset: a custom utility wins the cascade over
+ * `px-4`, so setting the inset directly would collapse the gutter to zero on
+ * every device that reports no inset (which is most of them, including every
+ * phone in portrait). This guarantees the gutter and grows it on notched
+ * hardware in landscape.
+ */
 @utility safe-x {
-  padding-left: var(--safe-left);
-  padding-right: var(--safe-right);
+  padding-left: max(1rem, var(--safe-left));
+  padding-right: max(1rem, var(--safe-right));
 }
 
 @layer utilities {
