@@ -232,6 +232,11 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every push:
 Nothing else is required — no secrets, no tokens, no environment variables. Once that setting is
 flipped, re-run the workflow (Actions → CI & Deploy → Run workflow) and the site publishes.
 
+Until Pages is enabled the deploy job detects the missing site, writes the setup instructions to the
+run summary, and skips rather than failing with a bare 404. Only a definitive `404` from the Pages
+API triggers that skip — any other response falls through to the real deploy step, so a permissions
+problem or an outage still fails loudly instead of quietly not publishing.
+
 ### Base path
 
 `vite.config.ts` sets `base` to `/gym/`, matching the repository name, and it is overridable:

@@ -77,6 +77,45 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # actions/deploy-pages fails with a bare 404 and a stack trace when the
+      # repository has no Pages site, which reads like a broken build rather
+      # than a one-time setting. Detect that specific case up front.
+      #
+      # Only a definitive 404 skips the deploy. Any other status — including a
+      # permissions error or an outage — falls through and lets the real deploy
+      # step fail loudly, so this can never quietly stop publishing.
+      - name: Check whether GitHub Pages is enabled
+        id: pages
+        run: |
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/pages" || echo "000")
+          echo "Pages API returned HTTP $code"
+          if [ "$code" = "404" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Explain how to enable GitHub Pages
+        if: steps.pages.outputs.enabled != 'true'
+        run: |
+          echo "::warning title=GitHub Pages is not enabled::Enable it at Settings → Pages → Build and deployment → Source: GitHub Actions, then re-run this workflow."
+          {
+            echo "## Deployment skipped — GitHub Pages is not enabled"
+            echo
+            echo "The build succeeded and the site artifact is ready, but this repository has no"
+            echo "Pages site to deploy into."
+            echo
+            echo "**Enable it once:** Settings → Pages → Build and deployment → Source: \`GitHub Actions\`"
+            echo
+            echo "Then re-run this workflow. The site will publish to"
+            echo "<https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/>."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Deploy
         id: deployment
+        if: steps.pages.outputs.enabled == 'true'
         uses: actions/deploy-pages@v4
