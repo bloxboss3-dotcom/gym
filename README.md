@@ -27,7 +27,7 @@ load it works with no network at all.
 | **Nutrition** | Protein baseline and practical range, remaining-today, meal distribution, weekly adherence, quick-add, saved foods, reusable meals, recent entries, budget picks. |
 | **Recovery** | Readiness check-ins, soreness, sleep, joint pain, six-signal deload detection, deload history. |
 | **Body** | Body-weight trend with a 7-day rolling average, measurements, optional on-device progress photos. |
-| **Game** | XP, levels, coins, quests, achievements, four pack tiers, 70+ original cosmetic items across 11 slots, duplicate compensation, a full pack-opening sequence and live character customisation. |
+| **Game** | XP, levels, coins, quests, achievements, four pack tiers, 80 original cosmetic items across 11 slots, duplicate compensation, a full pack-opening sequence and live character customisation. |
 | **Data** | Everything in IndexedDB on the device. Full JSON export/import with validation. Seeded six-week demo dataset. |
 
 ---
@@ -78,9 +78,9 @@ src/
 │   ├── rules.ts       progression, plateau, deload, volume, protein, running, consistency
 │   └── economy.ts     XP curve, payouts, daily caps, pack odds, duplicate refunds
 ├── data/            Static domain data
-│   ├── exercises.ts   50 movements + the exercise → muscle contribution map
+│   ├── exercises.ts   52 movements + the exercise → muscle contribution map
 │   ├── muscles.ts     muscle registry and grouping
-│   ├── items.ts       70+ original cosmetics across 11 slots
+│   ├── items.ts       80 original cosmetics across 11 slots
 │   ├── quests.ts      quests + achievements
 │   ├── foods.ts       small, fast protein list
 │   └── citations.ts   every evidence source, with takeaways and caveats
@@ -106,7 +106,7 @@ src/
 ├── state/store.tsx  React context: the only place that mutates AppData
 ├── character/       The modular SVG warrior renderer
 ├── components/      Accessible component kit + hand-rolled SVG charts
-├── screens/         19 screens
+├── screens/         21 screens
 └── seed/demo.ts     Deterministic six-week demonstration dataset
 ```
 
