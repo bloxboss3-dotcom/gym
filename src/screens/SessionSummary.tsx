@@ -56,7 +56,7 @@ export default function SessionSummary() {
     })
   }, [session, data.sessions, data.exercises, data.checkins, units])
 
-  const prs = useMemo(() => personalRecords(data.sessions), [data.sessions])
+  const prs = useMemo(() => personalRecords(data.sessions, data.exercises), [data.sessions, data.exercises])
 
   if (!session) {
     return (
@@ -84,7 +84,7 @@ export default function SessionSummary() {
           <h2 className="font-display text-2xl uppercase tracking-wide">{session.title}</h2>
           <div className="grid grid-cols-3 gap-2 mt-3">
             <Stat label="Working sets" value={workingSets.length} />
-            <Stat label="Volume load" value={formatWeight(sessionVolumeLoad(session), units, { decimals: 0 })} />
+            <Stat label="Volume load" value={formatWeight(sessionVolumeLoad(session, data.exercises), units, { decimals: 0 })} />
             <Stat label="Duration" value={formatDuration(duration)} />
           </div>
           {quality.averageRir !== null && (

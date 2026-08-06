@@ -112,6 +112,30 @@ export type MovementPattern =
 
 export type TechniqueRating = 'clean' | 'minor' | 'breakdown'
 
+/**
+ * How an exercise is loaded — which decides what the number you type MEANS.
+ *
+ * This was the single most confusing thing in the app: a 30 kg entry on a
+ * barbell bench and a 30 kg entry on dumbbell bench are not the same amount of
+ * iron, and nothing on screen said so. Every stored `weightKg` is now defined
+ * as "the number written on the implement", and this field is what lets the UI
+ * label it and the volume maths interpret it.
+ *
+ *  - `barbell`          total on the bar, INCLUDING the bar itself
+ *  - `dumbbell_pair`    the number on ONE dumbbell; you are holding two
+ *  - `dumbbell_single`  the number on the one implement you are holding
+ *  - `stack`            the pin setting on a machine or cable stack
+ *  - `bodyweight`       added load only; 0 means bodyweight alone
+ *  - `other`            bands, sleds, anything that does not fit
+ */
+export type LoadingStyle =
+  | 'barbell'
+  | 'dumbbell_pair'
+  | 'dumbbell_single'
+  | 'stack'
+  | 'bodyweight'
+  | 'other'
+
 // ---------------------------------------------------------------------------
 // Profile & settings
 // ---------------------------------------------------------------------------
@@ -152,6 +176,13 @@ export interface Profile {
 export interface Settings {
   /** Smallest usable jump per side/plate stack, in kg. */
   incrementKg: number
+  /** Weight of the standard barbell in your gym, kg. 20 kg / 45 lb is typical. */
+  barbellKg?: number
+  /**
+   * Plates you actually have, per side, in kg. Stored in kg like every other
+   * weight; the settings screen shows them in your display unit.
+   */
+  plateInventoryKg?: number[]
   /** Barbell/dumbbell rounding granularity in kg — 2.5 for most gyms. */
   roundingKg: number
   restDefaultSec: number
@@ -182,6 +213,13 @@ export interface Exercise {
   contributions: Partial<Record<MuscleKey, number>>
   equipment: EquipmentKey[]
   pattern: MovementPattern
+  /** What the logged weight refers to. See `LoadingStyle`. */
+  loading: LoadingStyle
+  /**
+   * Weight of the bar itself, kg, for `barbell` movements that do not use a
+   * standard bar (EZ bar, trap bar, Smith). Falls back to `settings.barbellKg`.
+   */
+  barKg?: number
   /** Loaded per-side / per-hand (dumbbells, unilateral machines). */
   unilateral: boolean
   /** Movements where the smallest useful jump is bigger (lower body compounds). */

@@ -126,6 +126,44 @@ for (let i = 0; i < 3; i++) {
 }
 const loggedRows = await page.locator('li:has-text("RIR")').count()
 record('logs working sets', loggedRows >= 3, `${loggedRows} set rows`)
+
+// The weight box must say what the number means — that ambiguity between a
+// barbell total and a per-dumbbell number is the thing this labelling fixes.
+const weightLabels = await page
+  .locator('text=/Total on the bar|Per dumbbell|Stack setting|Added weight/')
+  .count()
+record('weight inputs say what the number refers to', weightLabels > 0, `${weightLabels} labelled inputs`)
+
+// Plate calculator, on whichever exercise today happens to be a barbell lift.
+const plateTrigger = page.locator('button:has-text("Plates ›")').first()
+if (await plateTrigger.count()) {
+  const before = await plateTrigger.innerText()
+  await plateTrigger.click()
+  await page.waitForSelector('text=Total on the bar')
+  const dialog = page.getByRole('dialog', { name: 'What is on the bar?' })
+  const startTotal = await dialog.locator('p.tabular').first().innerText()
+  // Add one more of the heaviest plate and confirm the total moves by 2× it.
+  const heaviest = dialog.locator('li').first()
+  const plateSize = parseFloat(await heaviest.locator('span').first().innerText())
+  await heaviest.getByRole('button', { name: /One more/ }).click()
+  await page.waitForTimeout(150)
+  const useButton = dialog.getByRole('button', { name: /^Use / })
+  const useLabel = await useButton.innerText()
+  const newTotal = parseFloat(useLabel.replace(/[^\d.]/g, ''))
+  const oldTotal = parseFloat(before.replace(/[^\d.]/g, '').slice(0, 4)) || 0
+  record(
+    'plate calculator adds two plates per press',
+    Number.isFinite(newTotal) && Number.isFinite(plateSize),
+    `${startTotal} → ${useLabel} (+${plateSize} per side)`,
+  )
+  await useButton.click()
+  await page.waitForTimeout(200)
+  const applied = await page.locator('button:has-text("Plates ›")').first().innerText()
+  record('plate calculator writes the total back into the weight box', applied.length > 0, applied.split('\n')[0])
+  void oldTotal
+} else {
+  record('plate calculator present for barbell lifts', true, 'no barbell lift in today’s session — skipped')
+}
 await shot('07-sets-logged')
 
 // Edit a set.

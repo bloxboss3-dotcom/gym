@@ -20,7 +20,7 @@ load it works with no network at all.
 | Area | What is implemented |
 | --- | --- |
 | **Onboarding** | 11 short steps covering body stats, experience, schedule, equipment, goals, endurance priority, diet, limitations and archetype — then generates a conservative starter program. |
-| **Strength** | Full workout player: warm-up vs working sets, weight/reps/RIR, per-exercise pain and technique, substitutions, rest timer, previous-session recall, copy-last, set editing, notes, abandon and resume. |
+| **Strength** | Full workout player: warm-up vs working sets, weight/reps/RIR, per-exercise pain and technique, substitutions, rest timer, previous-session recall, copy-last, set editing, notes, abandon and resume. Every weight box states what the number refers to — total on the bar, per dumbbell, stack setting or added weight — and barbell lifts get a plate calculator that works in both directions. |
 | **Progression** | Double progression with pain overrides, plateau detection, back-offs and deload detection. Every recommendation carries an action, an exact next-session target, a plain-language reason, the rule that fired, a confidence level, the data it was missing, and a safety warning where relevant. |
 | **Volume** | Weekly hard sets per muscle from a transparent exercise → muscle contribution map, completed vs planned, volume load, and conservative volume progression that will not escalate you toward extreme volume. |
 | **Running** | Separate endurance engine: run types, pace, HR, session RPE, pain, surface; weekly load management that is *not* a blanket 10% rule; benchmark comparison; concurrent-training scheduling advice. |
@@ -46,7 +46,7 @@ Other scripts:
 ```bash
 npm run typecheck    # tsc --build, no emit
 npm run lint         # eslint
-npm run test         # vitest (241 unit tests)
+npm run test         # vitest (271 unit tests)
 npm run build        # tsc --build && vite build → dist/
 npm run preview      # serve dist/ at http://localhost:4173/gym/
 npm run verify       # typecheck + lint + test + build, the same gate CI runs
@@ -99,6 +99,7 @@ src/
 │   ├── schedule.ts    the adaptive "what should I do today" resolver
 │   ├── stats.ts       estimated 1RM, PRs, trends, rolling averages
 │   ├── units.ts       kg ↔ lb, increment rounding, pace, distance
+│   ├── plates.ts      plate maths, bar weight, loading styles
 │   └── backup.ts      export + defensive import validation
 ├── db/              Persistence, isolated behind one interface
 │   ├── idb.ts         ~120-line IndexedDB wrapper with an in-memory fallback
@@ -113,11 +114,13 @@ src/
 
 ### Two invariants worth knowing
 
-1. **Every stored weight is in kilograms.** Pounds exist only where a number is shown to or typed by
-   the user, so switching units never mutates data or changes a recommendation. Load *increments* are
-   snapped to what your gym actually stocks — a pound user gets 5 lb jumps, not 2.27 kg conversions.
+1. **Every stored weight is in kilograms**, and every stored weight means *the number written on the
+   implement*: the total on the bar including the bar, or the number on one dumbbell. Pounds exist
+   only where a number is shown to or typed by the user, so switching units never mutates data or
+   changes a recommendation. Gym hardware is unit-native rather than converted — a pound user gets a
+   45 lb bar, 45/35/25 lb plates and 5 lb jumps, not 44.1 lb and 55.12 lb.
 2. **The engine never touches React, storage or the network.** Every function in `src/engine/` takes
-   plain data and returns plain data, which is why 241 tests can cover the decision-making directly.
+   plain data and returns plain data, which is why 271 tests can cover the decision-making directly.
 
 ### Designed for Supabase without a rewrite
 
@@ -359,9 +362,10 @@ opt-in cohort view of anonymised progression rates.
 
 ## Testing
 
-241 unit tests across 13 files, plus a 36-check browser smoke test. Unit coverage:
+271 unit tests across 14 files, plus a 39-check browser smoke test. Unit coverage:
 
 weight-unit conversion · load-increment rounding (including gym-native pound plates) ·
+plate selection and its inverse · unit-native bar and plate defaults · paired-implement volume load ·
 protein-target calculation · resting and maintenance energy estimation · calorie deficit/surplus caps
 and the absolute intake floor · macro split and the dietary fat floor · daily and weekly nutrition
 totals · double-progression decisions · pain override · plateau detection ·

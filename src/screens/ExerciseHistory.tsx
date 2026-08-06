@@ -28,7 +28,7 @@ export default function ExerciseHistory() {
 
   const trend = useMemo(() => e1rmTrend(data.sessions, exerciseId ?? ''), [data.sessions, exerciseId])
   const slope = trendSlope(trend)
-  const records = personalRecords(data.sessions).find((p) => p.exerciseId === exerciseId)
+  const records = personalRecords(data.sessions, data.exercises).find((p) => p.exerciseId === exerciseId)
 
   const recommendation = useMemo(() => {
     if (!exercise) return null

@@ -10,6 +10,10 @@ export function defaultSettings(): Settings {
   return {
     incrementKg: 2.5,
     roundingKg: 2.5,
+    // Bar weight and plate inventory are deliberately NOT seeded here. Left
+    // undefined, `barKgFor`/`platesFor` return the ladder native to whichever
+    // unit the user picked — a lb gym gets a 45 lb bar and 45/35/25 lb plates,
+    // not 44.1 lb and 55.12 lb, which is what storing the kg numbers produces.
     restDefaultSec: 120,
     nutritionMode: 'full',
     mealsPerDay: 4,

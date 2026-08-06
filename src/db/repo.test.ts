@@ -107,4 +107,39 @@ describe('migration', () => {
     expect(whey.proteinG).toBe(27)
     expect(whey.kcal).toBe(130)
   })
+
+  it('upgrades stored exercises that predate loading styles', () => {
+    const base = createDefaultAppData()
+    const bench = base.exercises.find((e) => e.id === 'barbell-bench-press')!
+    // Strip the field the way a pre-update device would have stored it.
+    const { loading: _dropped, ...legacy } = bench
+    const stale: AppData = { ...base, exercises: [legacy as typeof bench] }
+
+    const upgraded = migrate(stale)
+    const restored = upgraded.exercises.find((e) => e.id === 'barbell-bench-press')!
+    expect(restored.loading).toBe('barbell')
+    // And movements that shipped later are added rather than lost.
+    expect(upgraded.exercises.length).toBe(base.exercises.length)
+    expect(upgraded.exercises.every((e) => e.loading)).toBe(true)
+  })
+
+  it('gives a legacy custom exercise a loading style without overwriting it', () => {
+    const base = createDefaultAppData()
+    const legacy = {
+      id: 'ex_mine',
+      name: 'My movement',
+      contributions: { chest: 1 },
+      equipment: ['bodyweight'],
+      pattern: 'isolation',
+      unilateral: false,
+      lowerBody: false,
+      incrementKg: 2.5,
+      cue: 'x',
+      custom: true,
+    }
+    const upgraded = migrate({ ...base, exercises: [legacy as never] })
+    const mine = upgraded.exercises.find((e) => e.id === 'ex_mine')!
+    expect(mine.loading).toBe('other')
+    expect(mine.name).toBe('My movement')
+  })
 })
