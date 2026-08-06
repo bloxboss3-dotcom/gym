@@ -54,31 +54,27 @@ jobs:
       - name: Upload Pages artifact
         if: >-
           github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' &&
-           (github.ref == 'refs/heads/main' ||
-            github.ref == 'refs/heads/claude/forged-fitness-pwa-74y1yz'))
+          (github.event_name == 'push' && github.ref == 'refs/heads/main')
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   # This lives in its own job on purpose.
   #
-  # A job carrying `environment: github-pages` fails before any step runs when
-  # the repository has no Pages site — the runner never even starts, so a guard
-  # step inside that job can never help. Doing the check in a plain job without
-  # an `environment:` block lets the deploy job be *skipped* rather than failing
-  # red, which is the honest signal: nothing is broken, a setting is unset.
+  # A job carrying `environment: github-pages` can fail before any step runs —
+  # the runner is never assigned, so a guard step inside that job cannot help,
+  # and the failure produces no log at all. Doing the check in a plain job with
+  # no `environment:` block lets the deploy job be *skipped* rather than failing
+  # red when publishing is not possible.
   pages-check:
     name: Check GitHub Pages setup
     needs: verify
-    # Publishes from main, and — until this branch is merged — from the feature
-    # branch too, so the live app is testable on a phone without waiting for a
-    # merge. Drop the branch clause once this lands on main.
+    # main only, and this is not a preference — see the note above the deploy
+    # job. Publishing from a feature branch is rejected by GitHub before the
+    # job starts, so attempting it can only ever produce a red X.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' &&
-       (github.ref == 'refs/heads/main' ||
-        github.ref == 'refs/heads/claude/forged-fitness-pwa-74y1yz'))
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     outputs:
       enabled: ${{ steps.pages.outputs.enabled }}
@@ -117,6 +113,15 @@ jobs:
             echo "<https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/>."
           } >> "$GITHUB_STEP_SUMMARY"
 
+  # Deploys from main ONLY.
+  #
+  # The `github-pages` environment is managed by GitHub and carries a deployment
+  # branch policy limited to the branch configured in Pages settings — the
+  # default branch. A deploy job on any other branch is rejected during job
+  # setup, before a runner is assigned: one second, zero steps, no log, red X.
+  # That is not something a workflow can detect or handle, so do not re-add a
+  # feature-branch clause here. To preview a branch, merge it or use a separate
+  # preview host.
   deploy:
     name: Deploy to GitHub Pages
     needs: pages-check
