@@ -18,6 +18,7 @@ const TOPICS = [
   { key: 'volume', label: 'Volume' },
   { key: 'effort', label: 'Effort' },
   { key: 'protein', label: 'Protein' },
+  { key: 'energy', label: 'Calories' },
   { key: 'concurrent', label: 'Concurrent' },
   { key: 'running', label: 'Running' },
   { key: 'recovery', label: 'Recovery' },
@@ -68,6 +69,12 @@ export default function Science() {
             <li>
               <strong className="text-parchment">Effort.</strong> Only as accurate as your RIR ratings, which are a
               learned skill — most people underestimate how far from failure they are early on.
+            </li>
+            <li>
+              <strong className="text-parchment">Calorie needs.</strong> Predicted from a formula using your weight,
+              height, age and sex, plus a coarse activity multiplier. Even the best predictive equation lands within
+              10% of measured resting expenditure for only about four people in five, and food labels carry their own
+              error. Your own weight trend over two or three weeks is a far better measurement than the prediction.
             </li>
           </ul>
         </Card>
@@ -151,6 +158,32 @@ export default function Science() {
             Above a BMI of {RULES.protein.useLeanEstimateBmi}, targets are scaled to an estimated lean mass instead of
             total body weight, because fat mass carries little protein demand. That is an estimate, and the app says
             so on the screen.
+          </p>
+        </Disclosure>
+
+        <Disclosure summary="How the calorie and macro targets are built">
+          <p className="mb-2">
+            Four steps, in this order. <strong className="text-parchment">One:</strong> resting energy expenditure
+            from the Mifflin-St Jeor equation. <strong className="text-parchment">Two:</strong> a multiplier for
+            your non-exercise daily activity — deliberately lower than the classic “activity factor” ladder,
+            because that ladder bakes exercise in and then double-counts it once you also tell FORGED your training
+            schedule. <strong className="text-parchment">Three:</strong> an estimate of your actual training cost,
+            added separately. <strong className="text-parchment">Four:</strong> a modest offset for your goal.
+          </p>
+          <p className="mb-2">
+            The offsets are capped on both sides. A surplus can never exceed{' '}
+            {RULES.energy.maxSurplusKcal} kcal a day, because eating further past that adds fat rather than muscle. A
+            deficit can never exceed the rate implied by{' '}
+            {(RULES.energy.maxWeeklyLossFraction * 100).toFixed(2)}% of body weight per week, and the target is never
+            allowed below {(RULES.energy.minFractionOfBmr * 100).toFixed(0)}% of your estimated resting expenditure
+            whatever the goal asks for. Faster weight loss costs lean mass and adherence.
+          </p>
+          <p>
+            Macros then follow: protein first from the protein target, a dietary fat floor of{' '}
+            {RULES.energy.minFatGPerKg} g/kg or {(RULES.energy.minFatPctOfKcal * 100).toFixed(0)}% of energy
+            (whichever is larger), and carbohydrate takes the remainder because that is the macro fuelling the
+            training. If counting calories is not healthy for you, protein-only mode in the nutrition settings hides
+            every energy number in the app permanently.
           </p>
         </Disclosure>
 

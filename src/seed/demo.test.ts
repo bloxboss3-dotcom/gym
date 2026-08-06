@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { RULES } from '@/config/rules'
 import { assessDeload } from '@/engine/deload'
 import { historyFor, detectPlateau, recommendNextSession } from '@/engine/progression'
+import { calculateMacroTargets, totalsForEntries } from '@/engine/nutrition'
 import { calculateProteinTarget, proteinAdherence } from '@/engine/protein'
 import { compareBenchmark } from '@/engine/running'
 import { weeklyMuscleVolume } from '@/engine/volume'
@@ -126,5 +127,35 @@ describe('seeded demo data', () => {
     expect(data.sessions.every((s) => s.date <= today)).toBe(true)
     expect(data.runs.every((r) => r.date <= today)).toBe(true)
     expect(data.checkins.every((c) => c.date <= today)).toBe(true)
+  })
+
+  it('shows a full nutrition day, not just protein', () => {
+    const today = toIsoDate()
+    // Pick the most recent day that actually has food logged — the demo
+    // deliberately misses one day a week, and "today" may be that day.
+    const dates = [...new Set(data.proteinEntries.map((e) => e.date))].sort()
+    const latest = dates[dates.length - 1]
+    expect(latest).toBeTruthy()
+    expect(latest <= today).toBe(true)
+
+    const day = data.proteinEntries.filter((e) => e.date === latest)
+    const totals = totalsForEntries(day)
+    expect(totals.hasUnknownEnergy).toBe(false)
+    expect(totals.kcal).toBeGreaterThan(1200)
+    expect(totals.carbsG).toBeGreaterThan(50)
+    expect(totals.fatG).toBeGreaterThan(20)
+
+    // Every entry lands in a real meal slot so the day view is not all snacks.
+    expect(day.every((e) => e.meal)).toBe(true)
+    const slots = new Set(data.proteinEntries.map((e) => e.meal))
+    expect(slots.size).toBeGreaterThanOrEqual(3)
+  })
+
+  it('carries the profile fields the calorie engine needs', () => {
+    expect(data.profile?.sex).toBeTruthy()
+    expect(data.profile?.dailyActivity).toBeTruthy()
+    const plan = calculateMacroTargets(data.profile!)
+    expect(plan.targets.kcal).toBeGreaterThan(2000)
+    expect(plan.targets.carbsG).toBeGreaterThan(0)
   })
 })

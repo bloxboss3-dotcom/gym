@@ -22,7 +22,17 @@ export interface Citation {
   takeaway: string
   /** Honest note about the limits of the evidence. */
   caveat?: string
-  topics: ('resistance' | 'protein' | 'concurrent' | 'volume' | 'effort' | 'recovery' | 'running' | 'safety')[]
+  topics: (
+    | 'resistance'
+    | 'protein'
+    | 'energy'
+    | 'concurrent'
+    | 'volume'
+    | 'effort'
+    | 'recovery'
+    | 'running'
+    | 'safety'
+  )[]
 }
 
 export const CITATIONS: Citation[] = [
@@ -97,6 +107,49 @@ export const CITATIONS: Citation[] = [
       'When training in an energy deficit and already lean, higher protein intakes help preserve lean mass. This is why FORGED nudges the recommended point toward the upper part of the 1.6–2.2 g/kg range for fat-loss and recomposition goals.',
     caveat: 'Derived from a lean, dieting athletic population; less relevant at a maintenance or surplus intake.',
     topics: ['protein'],
+  },
+  {
+    id: 'mifflin-1990-bmr',
+    short: 'Mifflin-St Jeor 1990 resting energy',
+    title: 'A new predictive equation for resting energy expenditure in healthy individuals',
+    authors: 'Mifflin MD, St Jeor ST, Hill LA, Scott BJ, Daugherty SA, Koh YO',
+    source: 'American Journal of Clinical Nutrition, 51(2):241–247',
+    year: 1990,
+    url: 'https://doi.org/10.1093/ajcn/51.2.241',
+    takeaway:
+      'The equation FORGED uses to estimate resting energy expenditure from weight, height, age and sex. Subsequent evidence analyses by the Academy of Nutrition and Dietetics found it the most reliable of the common predictive equations in both normal-weight and obese adults.',
+    caveat:
+      'Even the best predictive equation lands within 10% of measured resting expenditure for only about 80% of people, and it is blind to individual differences in non-exercise activity. Treat the calorie target as a starting point to adjust from your own weight trend, not as a measurement.',
+    topics: ['energy'],
+  },
+  {
+    id: 'hall-2012-energy-dynamics',
+    short: 'Hall 2012 energy balance dynamics',
+    title: 'Energy balance and its components: implications for body weight regulation',
+    authors: 'Hall KD, Heymsfield SB, Kemnitz JW, Klein S, Schoeller DA, Speakman JR',
+    source: 'American Journal of Clinical Nutrition, 95(4):989–994',
+    year: 2012,
+    url: 'https://doi.org/10.3945/ajcn.112.036350',
+    takeaway:
+      'Body weight responds to a sustained energy imbalance, but the response is dynamic: energy expenditure falls as weight is lost, so a fixed calorie deficit does not produce a fixed, linear rate of loss. This is why FORGED calls its weekly projection an estimate and expects you to re-check it against real weight data.',
+    caveat:
+      'A review of energy-balance physiology rather than a trial of any particular diet. It does not endorse a specific calorie target for anyone.',
+    topics: ['energy'],
+  },
+  {
+    id: 'garthe-2011-loss-rate',
+    short: 'Garthe 2011 rate of weight loss',
+    title:
+      'Effect of two different weight-loss rates on body composition and strength and power-related performance in elite athletes',
+    authors: 'Garthe I, Raastad T, Refsnes PE, Koivisto A, Sundgot-Borgen J',
+    source: 'International Journal of Sport Nutrition and Exercise Metabolism, 21(2):97–104',
+    year: 2011,
+    url: 'https://doi.org/10.1123/ijsnem.21.2.97',
+    takeaway:
+      'Losing weight at roughly 0.7% of body weight per week preserved lean mass and improved strength outcomes relative to a faster ~1.4%/week loss in trained athletes eating adequate protein and continuing to lift. This is the basis for the deficit cap in the FORGED rules file.',
+    caveat:
+      'Small sample of elite athletes. It supports a slower loss rate as the safer default; it does not mean a faster rate is harmful for everyone.',
+    topics: ['energy', 'protein'],
   },
   {
     id: 'schoenfeld-2017-volume',

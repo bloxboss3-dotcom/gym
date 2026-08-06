@@ -24,7 +24,7 @@ load it works with no network at all.
 | **Progression** | Double progression with pain overrides, plateau detection, back-offs and deload detection. Every recommendation carries an action, an exact next-session target, a plain-language reason, the rule that fired, a confidence level, the data it was missing, and a safety warning where relevant. |
 | **Volume** | Weekly hard sets per muscle from a transparent exercise → muscle contribution map, completed vs planned, volume load, and conservative volume progression that will not escalate you toward extreme volume. |
 | **Running** | Separate endurance engine: run types, pace, HR, session RPE, pain, surface; weekly load management that is *not* a blanket 10% rule; benchmark comparison; concurrent-training scheduling advice. |
-| **Nutrition** | Protein baseline and practical range, remaining-today, meal distribution, weekly adherence, quick-add, saved foods, reusable meals, recent entries, budget picks. |
+| **Nutrition** | Calorie and full macro tracking on a meal-by-meal day view: search a ~90-item curated food list, pick a portion, log in three taps. Recents, favourites, custom foods, reusable meals and a quick-add path for when you already know the number. Targets come from Mifflin-St Jeor plus a documented activity model and a capped goal offset, with the protein engine untouched underneath. A protein-only mode hides every calorie number in the app for anyone who should not be counting them. |
 | **Recovery** | Readiness check-ins, soreness, sleep, joint pain, six-signal deload detection, deload history. |
 | **Body** | Body-weight trend with a 7-day rolling average, measurements, optional on-device progress photos. |
 | **Game** | XP, levels, coins, quests, achievements, four pack tiers, 80 original cosmetic items across 11 slots, duplicate compensation, a full pack-opening sequence and live character customisation. |
@@ -46,7 +46,7 @@ Other scripts:
 ```bash
 npm run typecheck    # tsc --build, no emit
 npm run lint         # eslint
-npm run test         # vitest (208 unit tests)
+npm run test         # vitest (241 unit tests)
 npm run build        # tsc --build && vite build → dist/
 npm run preview      # serve dist/ at http://localhost:4173/gym/
 npm run verify       # typecheck + lint + test + build, the same gate CI runs
@@ -57,8 +57,8 @@ npm run smoke        # end-to-end browser smoke test (see below)
 ### End-to-end smoke test
 
 `npm run smoke` drives a real Chromium at an iPhone viewport through onboarding → workout →
-recommendation → protein → run → dashboards → reload → offline → demo mode → pack opening, and fails
-on any console error, horizontal overflow, undersized touch target or unlabelled control.
+recommendation → food logging → run → dashboards → reload → offline → demo mode → pack opening, and
+fails on any console error, horizontal overflow, undersized touch target or unlabelled control.
 
 ```bash
 npx playwright install chromium   # one-time
@@ -75,14 +75,14 @@ It is deliberately **not** part of CI, so CI never has to download a browser.
 ```
 src/
 ├── config/          Every tunable number, in two documented files
-│   ├── rules.ts       progression, plateau, deload, volume, protein, running, consistency
+│   ├── rules.ts       progression, plateau, deload, volume, protein, energy, running, consistency
 │   └── economy.ts     XP curve, payouts, daily caps, pack odds, duplicate refunds
 ├── data/            Static domain data
 │   ├── exercises.ts   52 movements + the exercise → muscle contribution map
 │   ├── muscles.ts     muscle registry and grouping
 │   ├── items.ts       80 original cosmetics across 11 slots
 │   ├── quests.ts      quests + achievements
-│   ├── foods.ts       small, fast protein list
+│   ├── foods.ts       ~90 curated foods with full macros — a fast list, not a database
 │   └── citations.ts   every evidence source, with takeaways and caveats
 ├── engine/          Pure, deterministic, unit-tested TypeScript — no React, no I/O
 │   ├── progression.ts double progression, pain override, plateau, confidence
@@ -90,6 +90,7 @@ src/
 │   ├── volume.ts      weekly hard sets per muscle, planned vs completed
 │   ├── running.ts     endurance load management + session planning
 │   ├── protein.ts     targets, ranges, distribution, adherence
+│   ├── nutrition.ts   resting/maintenance energy, capped goal offsets, macro split
 │   ├── consistency.ts consistency score, streak shields, rescheduling
 │   ├── rewards.ts     reward calculation and anti-exploitation limits
 │   ├── packs.ts       pack rolls, duplicate compensation
@@ -106,7 +107,7 @@ src/
 ├── state/store.tsx  React context: the only place that mutates AppData
 ├── character/       The modular SVG warrior renderer
 ├── components/      Accessible component kit + hand-rolled SVG charts
-├── screens/         21 screens
+├── screens/         21 screens (bottom nav: Today · Food · Train · Progress · Forge · Profile)
 └── seed/demo.ts     Deterministic six-week demonstration dataset
 ```
 
@@ -116,7 +117,7 @@ src/
    the user, so switching units never mutates data or changes a recommendation. Load *increments* are
    snapped to what your gym actually stocks — a pound user gets 5 lb jumps, not 2.27 kg conversions.
 2. **The engine never touches React, storage or the network.** Every function in `src/engine/` takes
-   plain data and returns plain data, which is why 208 tests can cover the decision-making directly.
+   plain data and returns plain data, which is why 241 tests can cover the decision-making directly.
 
 ### Designed for Supabase without a rewrite
 
@@ -174,6 +175,29 @@ its citations · a confidence level · what data was missing or uncertain · a s
 appropriate. The *Why this?* screen shows the full audit trail, including every session the engine
 looked at.
 
+### The nutrition engine follows the same contract
+
+`src/engine/nutrition.ts` is the same shape of code — plain data in, plain data out, no model call.
+Four steps, in order:
+
+1. **Resting energy** from Mifflin-St Jeor.
+2. **Non-exercise activity** as a multiplier on that. It is deliberately lower than the classic
+   "activity factor" ladder, because that ladder bakes exercise in — and then double-counts it once
+   you have also told the app your training schedule. This is the commonest way calorie calculators
+   over-shoot for people who lift.
+3. **Training cost** added separately, from your actual session length, frequency and weekly running.
+4. **A modest goal offset**, capped on both sides: a surplus can never exceed 400 kcal/day, a deficit
+   can never exceed the rate implied by 0.75% of body weight per week (Garthe 2011), and the target
+   is never allowed below 110% of estimated resting expenditure — or the absolute floor — whatever
+   the goal asks for.
+
+Macros then follow: protein from the unchanged protein engine, a dietary fat floor of 0.8 g/kg or 20%
+of energy (whichever is larger, with the default sitting at 27%), and carbohydrate takes the
+remainder. The result carries the same seven-part contract as a training recommendation — reason,
+named rule, confidence, missing data, citations and a warning where relevant — and confidence is
+never reported as "high", because a predicted target you have not yet checked against a real weight
+trend does not deserve that word.
+
 ### All thresholds live in one file
 
 `src/config/rules.ts` holds every number the engine uses, documented inline. The tests assert
@@ -197,6 +221,11 @@ Core sources include:
 - **Morton et al. (2018), BJSM** — protein supplementation adds small but real gains in fat-free mass
   and strength; the meta-regression breakpoint sits near **1.6 g/kg/day** with a CI reaching ~2.2.
   This is exactly why FORGED presents a *range*, not a mandate.
+- **Mifflin-St Jeor (1990), AJCN** — the resting-energy equation behind every calorie target, chosen
+  because later evidence analyses found it the most reliable of the common predictive equations.
+  It still misses an individual by ~10% either way, which the app states on screen.
+- **Garthe et al. (2011), IJSNEM** — losing weight at ~0.7%/week preserved lean mass and strength in
+  trained athletes relative to a faster rate. This is the basis for the deficit cap.
 - **Schumann et al. (2022), Sports Medicine** — the updated concurrent-training meta-analysis: muscle
   size is not compromised and maximal strength is largely preserved; explosive strength is the clearest
   casualty. Paired with **Wilson et al. (2012)** for the older, more pessimistic read.
@@ -281,8 +310,15 @@ cache-first; icons are best-effort so a missing one can never fail the install.
 - **Single device.** No cloud sync and no multi-device merge. Backup/restore is the migration path.
 - **Manual entry only.** No HealthKit, Health Connect, GPS tracking or wearable import. Heart rate and
   run duration are typed in.
-- **Protein only.** No calories, carbs, fats or micronutrients, and only a small starter food list —
-  the design goal was five-second logging, not a food database.
+- **No barcode scanner and no product database.** The food list is ~90 curated staples plus whatever
+  you save yourself. Branded packaged products are a custom food, entered once. This is deliberate:
+  a food database needs a server, and logging has to work in a supermarket basement with no signal.
+- **Calorie targets are predictions, not measurements.** Mifflin-St Jeor lands within 10% of measured
+  resting expenditure for roughly four people in five, food labels carry their own error, and neither
+  is a metabolic cart. The app says this on the screen and expects you to adjust from your own weight
+  trend.
+- **No micronutrient tracking.** Calories and the three macros only. Fibre, sodium, vitamins and
+  minerals are out of scope for this version.
 - **Estimated 1RM is an estimate.** Epley with an RIR adjustment, clamped above 15 effective reps.
   Treat it as a trend line, not a number.
 - **Deload detection is a prompt, not a diagnosis.** There is no validated consumer test for
@@ -323,10 +359,12 @@ opt-in cohort view of anonymised progression rates.
 
 ## Testing
 
-208 unit tests across 12 files, plus a 33-check browser smoke test. Unit coverage:
+241 unit tests across 13 files, plus a 36-check browser smoke test. Unit coverage:
 
 weight-unit conversion · load-increment rounding (including gym-native pound plates) ·
-protein-target calculation · double-progression decisions · pain override · plateau detection ·
+protein-target calculation · resting and maintenance energy estimation · calorie deficit/surplus caps
+and the absolute intake floor · macro split and the dietary fat floor · daily and weekly nutrition
+totals · double-progression decisions · pain override · plateau detection ·
 deload detection · weekly muscle-volume calculation · running-load adjustment · benchmark comparison ·
 consistency and streak protection · session rescheduling · reward calculation · duplicate-item
 compensation · anti-exploitation reward limits · pack rolls and rarity floors · backup import
@@ -347,7 +385,8 @@ restored.
 
 *Profile → Load demo data* seeds six weeks of deterministic, realistic training so every screen can be
 inspected with real data: completed sessions, genuine strength progression, one deliberately stalled
-lift, fatigue signals that trip the deload detector, imperfect protein adherence, a 5K benchmark that
+lift, fatigue signals that trip the deload detector, six weeks of logged meals with full macros and
+imperfect adherence, a 5K benchmark that
 improved from 25:12 to 24:09, earned equipment, two unopened packs and a customised warrior. *Erase
 everything* returns to a clean install.
 

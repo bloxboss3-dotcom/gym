@@ -9,6 +9,7 @@ import type {
   Checkin,
   DeloadRecord,
   LoggedSet,
+  MealSlot,
   Profile,
   ProteinEntry,
   RewardLedgerEntry,
@@ -104,6 +105,8 @@ const DEMO_PROFILE: Profile = {
   heightCm: 180,
   bodyWeightKg: 84,
   units: 'lb',
+  sex: 'male',
+  dailyActivity: 'light',
   experience: 'intermediate',
   daysPerWeek: 4,
   sessionMinutes: 65,
@@ -125,6 +128,7 @@ const DEMO_PROFILE: Profile = {
   weeklyRunKm: 18,
   diet: 'omnivore',
   proteinOverrideG: null,
+  calorieOverrideKcal: null,
   limitations: ['shoulder'],
   archetype: 'emberblade',
   createdAt: Date.now() - 45 * 86_400_000,
@@ -186,17 +190,26 @@ export function buildDemoData(): AppData {
         })
       }
 
-      // ---- Protein ---------------------------------------------------------
-      // Hits target on most days; misses a couple, which shows up honestly in
-      // the weekly adherence bar.
+      // ---- Food ------------------------------------------------------------
+      // A realistic day: four logged meals with full macros, hitting the target
+      // on most days and missing a couple, which shows up honestly in the weekly
+      // adherence bars rather than being airbrushed out.
       const missProtein = week > 0 && dayOffset === 6
       const targetish = 155
       if (!missProtein) {
-        const meals = [
-          { label: 'Greek yoghurt & oats', grams: 42 },
-          { label: 'Chicken and rice', grams: 48 },
-          { label: 'Whey protein', grams: 24 },
-          { label: 'Salmon and potatoes', grams: 45 },
+        const meals: {
+          label: string
+          grams: number
+          kcal: number
+          carbsG: number
+          fatG: number
+          meal: MealSlot
+          foodId: string | null
+        }[] = [
+          { label: 'Greek yoghurt & oats', grams: 42, kcal: 520, carbsG: 66, fatG: 9, meal: 'breakfast', foodId: null },
+          { label: 'Chicken, rice and veg', grams: 48, kcal: 560, carbsG: 60, fatG: 9, meal: 'lunch', foodId: 'food-chicken-rice-veg' },
+          { label: 'Whey protein', grams: 24, kcal: 120, carbsG: 3, fatG: 1.5, meal: 'snack', foodId: 'food-whey' },
+          { label: 'Salmon and potatoes', grams: 45, kcal: 560, carbsG: 44, fatG: 22, meal: 'dinner', foodId: 'food-salmon-potato' },
         ]
         let running = 0
         for (const meal of meals) {
@@ -207,7 +220,11 @@ export function buildDemoData(): AppData {
             date,
             label: meal.label,
             grams,
-            foodId: null,
+            kcal: Math.round(meal.kcal + jitter(30)),
+            carbsG: meal.carbsG,
+            fatG: meal.fatG,
+            meal: meal.meal,
+            foodId: meal.foodId,
             createdAt: Date.now(),
           })
         }
@@ -217,7 +234,11 @@ export function buildDemoData(): AppData {
             date,
             label: 'Cottage cheese',
             grams: 25,
-            foodId: null,
+            kcal: 196,
+            carbsG: 7,
+            fatG: 8,
+            meal: 'snack',
+            foodId: 'food-cottage-cheese',
             createdAt: Date.now(),
           })
         }
@@ -227,6 +248,10 @@ export function buildDemoData(): AppData {
           date,
           label: 'Eggs on toast',
           grams: 26,
+          kcal: 394,
+          carbsG: 30,
+          fatG: 18,
+          meal: 'breakfast',
           foodId: null,
           createdAt: Date.now(),
         })

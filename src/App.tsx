@@ -18,7 +18,7 @@ const ProgramEditor = lazy(() => import('@/screens/ProgramEditor'))
 const ExerciseHistory = lazy(() => import('@/screens/ExerciseHistory'))
 const RunLogger = lazy(() => import('@/screens/RunLogger'))
 const VolumeDashboard = lazy(() => import('@/screens/VolumeDashboard'))
-const Protein = lazy(() => import('@/screens/Protein'))
+const Nutrition = lazy(() => import('@/screens/Nutrition'))
 const Checkin = lazy(() => import('@/screens/Checkin'))
 const RecommendationDetail = lazy(() => import('@/screens/RecommendationDetail'))
 const Forge = lazy(() => import('@/screens/Forge'))
@@ -89,7 +89,10 @@ export default function App() {
 
                 <Route path="/progress" element={<Progress />} />
                 <Route path="/progress/volume" element={<VolumeDashboard />} />
-                <Route path="/progress/protein" element={<Protein />} />
+                <Route path="/nutrition" element={<Nutrition />} />
+                {/* The nutrition screen used to live under Progress. Anything
+                    bookmarked or linked there still lands in the right place. */}
+                <Route path="/progress/protein" element={<Navigate to="/nutrition" replace />} />
                 <Route path="/progress/checkin" element={<Checkin />} />
                 <Route path="/progress/recommendation/:exerciseId" element={<RecommendationDetail />} />
 

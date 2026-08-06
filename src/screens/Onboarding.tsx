@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ARCHETYPES } from '@/data/items'
 import { LIMITATION_RULES } from '@/engine/program'
+import { calculateMacroTargets } from '@/engine/nutrition'
 import { calculateProteinTarget } from '@/engine/protein'
 import { generateProgram } from '@/engine/program'
 import { feetInchesToCm, fromDisplay, toDisplay } from '@/engine/units'
@@ -21,6 +22,7 @@ import {
   cx,
 } from '@/components/ui'
 import type {
+  ActivityLevel,
   Archetype,
   Diet,
   EnduranceGoal,
@@ -29,6 +31,7 @@ import type {
   Goal,
   Priority,
   Profile,
+  Sex,
   Units,
 } from '@/types'
 
@@ -77,6 +80,8 @@ export default function Onboarding() {
     heightCm: 178,
     bodyWeightKg: 80,
     units: 'lb',
+    sex: 'unspecified',
+    dailyActivity: 'desk',
     experience: 'beginner',
     daysPerWeek: 3,
     sessionMinutes: 60,
@@ -87,6 +92,7 @@ export default function Onboarding() {
     weeklyRunKm: 0,
     diet: 'omnivore',
     proteinOverrideG: null,
+    calorieOverrideKcal: null,
     limitations: [],
     archetype: 'ironclad',
   })
@@ -103,6 +109,11 @@ export default function Onboarding() {
         proteinOverrideG: proteinOverride,
       }),
     [draft.bodyWeightKg, draft.heightCm, draft.goal, proteinOverride],
+  )
+
+  const nutritionPreview = useMemo(
+    () => calculateMacroTargets({ ...draft, proteinOverrideG: proteinOverride }),
+    [draft, proteinOverride],
   )
 
   const programPreview = useMemo(
@@ -278,6 +289,37 @@ export default function Onboarding() {
                 onChange={(v) => set('bodyWeightKg', fromDisplay(v, draft.units))}
               />
             </Field>
+            <Field
+              label="Biological sex"
+              hint="Used for one thing: the constant in the calorie equation. Skip it and FORGED uses the midpoint and widens the margin it quotes."
+            >
+              <SegmentedControl<Sex>
+                label="Biological sex"
+                value={draft.sex ?? 'unspecified'}
+                onChange={(v) => set('sex', v)}
+                options={[
+                  { value: 'female', label: 'Female' },
+                  { value: 'male', label: 'Male' },
+                  { value: 'unspecified', label: 'Rather not' },
+                ]}
+              />
+            </Field>
+            <Field
+              label="Your day, outside training"
+              hint="Workouts are counted separately, so answer for the other 23 hours."
+            >
+              <ChoiceList<ActivityLevel>
+                label="Daily activity"
+                value={draft.dailyActivity ?? 'desk'}
+                onChange={(v) => set('dailyActivity', v)}
+                options={[
+                  { value: 'desk', label: 'Mostly seated', hint: 'Desk job, driving, studying' },
+                  { value: 'light', label: 'On my feet a bit', hint: 'Some walking, light chores' },
+                  { value: 'active', label: 'On my feet most of the day', hint: 'Retail, teaching, nursing' },
+                  { value: 'physical', label: 'Physical job', hint: 'Trades, warehouse, farming' },
+                ]}
+              />
+            </Field>
           </StepCard>
         )}
 
@@ -421,7 +463,10 @@ export default function Onboarding() {
         )}
 
         {step === 7 && (
-          <StepCard title="Eating pattern" blurb="FORGED only tracks protein. It does not prescribe calorie deficits or treat medical conditions.">
+          <StepCard
+            title="Eating pattern"
+            blurb="FORGED gives you a calorie and macro target you can log against, and explains where every number came from. You can switch to protein-only tracking at any time."
+          >
             <Field label="Dietary preference">
               <SegmentedControl<Diet>
                 label="Diet"
@@ -440,9 +485,29 @@ export default function Onboarding() {
               />
             </Field>
             <Card>
-              <p className="text-sm text-parchment font-medium">Your protein target</p>
-              <p className="font-display text-4xl text-ember-400 mt-1 tabular">{proteinPreview.targetG} g<span className="text-base text-ash"> / day</span></p>
+              <p className="text-sm text-parchment font-medium">Your daily targets</p>
+              <p className="font-display text-4xl text-ember-400 mt-1 tabular">
+                {nutritionPreview.targets.kcal}
+                <span className="text-base text-ash"> kcal / day</span>
+              </p>
+              <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+                {[
+                  { label: 'Protein', value: `${nutritionPreview.targets.proteinG} g` },
+                  { label: 'Carbs', value: `${nutritionPreview.targets.carbsG} g` },
+                  { label: 'Fat', value: `${nutritionPreview.targets.fatG} g` },
+                ].map((macro) => (
+                  <div key={macro.label} className="rounded-xl border border-slate bg-coal px-2 py-2">
+                    <p className="text-[10px] uppercase tracking-wider text-smoke">{macro.label}</p>
+                    <p className="font-display text-lg text-parchment tabular leading-tight">{macro.value}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-ash mt-2.5 leading-relaxed">{nutritionPreview.energy.reason}</p>
               <p className="text-xs text-ash mt-1.5 leading-relaxed">{proteinPreview.rationale}</p>
+              <p className="text-[11px] text-smoke mt-2 leading-relaxed">
+                Calorie targets are estimates from a prediction equation, not measurements of your metabolism.
+                Treat this as a starting point and adjust it from your own weight trend after a few weeks.
+              </p>
             </Card>
             <Field
               label="Override the target (optional)"

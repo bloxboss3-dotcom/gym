@@ -17,6 +17,7 @@ import { ECONOMY, levelFromXp } from '@/config/economy'
 import { ITEM_BY_ID } from '@/data/items'
 import { computeConsistency } from '@/engine/consistency'
 import { assessDeload } from '@/engine/deload'
+import { calculateMacroTargets, remainingKcal, totalsForDate } from '@/engine/nutrition'
 import { calculateProteinTarget, proteinForDate, proteinRemaining } from '@/engine/protein'
 import { evaluateQuests } from '@/engine/quests'
 import { recommendRunning } from '@/engine/running'
@@ -81,6 +82,12 @@ export default function Today() {
 
   const proteinTarget = useMemo(() => calculateProteinTarget(profile), [profile])
   const proteinToday = proteinForDate(data.proteinEntries, today)
+  const fullNutrition = data.settings.nutritionMode !== 'protein'
+  const macroPlan = useMemo(() => calculateMacroTargets(profile), [profile])
+  const nutritionToday = useMemo(
+    () => totalsForDate(data.proteinEntries, today),
+    [data.proteinEntries, today],
+  )
   const quests = useMemo(() => evaluateQuests(data, today), [data, today])
   const activeQuest = quests.find((q) => q.complete && !q.claimed) ?? quests.find((q) => !q.complete) ?? quests[0]
   const checkinToday = data.checkins.find((c) => c.date === today)
@@ -228,15 +235,44 @@ export default function Today() {
             </Card>
           </Link>
 
-          <Link to="/progress/protein" className="block">
+          <Link to="/nutrition" className="block">
             <Card className="h-full">
-              <p className="text-[11px] uppercase tracking-wider text-smoke">Protein</p>
-              <p className="font-display text-3xl text-ember-400 mt-0.5 tabular">
-                {Math.round(proteinToday)}
-                <span className="text-base text-ash">/{proteinTarget.targetG}g</span>
+              <p className="text-[11px] uppercase tracking-wider text-smoke">
+                {fullNutrition ? 'Calories left' : 'Protein'}
               </p>
-              <ProgressBar value={proteinToday} max={proteinTarget.targetG} className="mt-2" />
-              <p className="text-xs text-ash mt-1">{proteinRemaining(proteinTarget.targetG, proteinToday)} g to go</p>
+              {fullNutrition ? (
+                <>
+                  <p className="font-display text-3xl text-ember-400 mt-0.5 tabular">
+                    {Math.max(0, remainingKcal(macroPlan.targets.kcal, nutritionToday.kcal))}
+                    <span className="text-base text-ash">kcal</span>
+                  </p>
+                  <ProgressBar
+                    value={nutritionToday.kcal}
+                    max={macroPlan.targets.kcal}
+                    ariaLabel="Calories eaten today"
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-ash mt-1 tabular">
+                    {Math.round(nutritionToday.proteinG)}/{macroPlan.targets.proteinG} g protein
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-display text-3xl text-ember-400 mt-0.5 tabular">
+                    {Math.round(proteinToday)}
+                    <span className="text-base text-ash">/{proteinTarget.targetG}g</span>
+                  </p>
+                  <ProgressBar
+                    value={proteinToday}
+                    max={proteinTarget.targetG}
+                    ariaLabel="Protein eaten today"
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-ash mt-1">
+                    {proteinRemaining(proteinTarget.targetG, proteinToday)} g to go
+                  </p>
+                </>
+              )}
             </Card>
           </Link>
         </div>

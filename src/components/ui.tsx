@@ -259,13 +259,17 @@ export function ProgressBar({
   max = 1,
   tone = 'ember',
   label,
+  ariaLabel,
   className,
   showValue,
 }: {
   value: number
   max?: number
   tone?: 'ember' | 'gold' | 'good' | 'cool' | 'caution'
+  /** Rendered above the bar AND used as the accessible name. */
   label?: string
+  /** Accessible name only — for bars that already have a visible heading. */
+  ariaLabel?: string
   className?: string
   showValue?: boolean
 }) {
@@ -295,7 +299,7 @@ export function ProgressBar({
         aria-valuenow={Math.round(pct * 100)}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={label ?? 'Progress'}
+        aria-label={ariaLabel ?? label ?? 'Progress'}
       >
         <div
           className={cx('h-full rounded-full bg-gradient-to-r transition-[width] duration-500', tones[tone])}

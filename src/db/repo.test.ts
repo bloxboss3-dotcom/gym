@@ -72,4 +72,39 @@ describe('migration', () => {
     expect(Array.isArray(migrated.game.owned)).toBe(true)
     expect(Array.isArray(migrated.game.ledger)).toBe(true)
   })
+
+  it('upgrades stored starter foods that predate calorie tracking', () => {
+    const base = createDefaultAppData()
+    const stale: AppData = {
+      ...base,
+      foods: [
+        // What a device that installed the protein-only build is holding.
+        { id: 'food-chicken-breast', name: 'Chicken breast', proteinG: 46, serving: '150 g cooked', tags: ['omnivore'], budgetFriendly: true },
+        { id: 'food-my-thing', name: 'My thing', proteinG: 30, serving: '1 bowl', tags: ['omnivore'], budgetFriendly: false, custom: true },
+      ],
+    }
+    const upgraded = migrate(stale)
+
+    const chicken = upgraded.foods.find((f) => f.id === 'food-chicken-breast')!
+    expect(chicken.kcal).toBeGreaterThan(0)
+    expect(chicken.carbsG).toBeDefined()
+
+    // Custom foods are never rewritten, and foods that shipped later appear.
+    const mine = upgraded.foods.find((f) => f.id === 'food-my-thing')!
+    expect(mine.name).toBe('My thing')
+    expect(mine.kcal).toBeUndefined()
+    expect(upgraded.foods.length).toBeGreaterThan(50)
+  })
+
+  it('keeps a user edit to a built-in food while still adding the new fields', () => {
+    const base = createDefaultAppData()
+    const edited: AppData = {
+      ...base,
+      foods: [{ ...base.foods.find((f) => f.id === 'food-whey')!, proteinG: 27, kcal: 130 }],
+    }
+    const upgraded = migrate(edited)
+    const whey = upgraded.foods.find((f) => f.id === 'food-whey')!
+    expect(whey.proteinG).toBe(27)
+    expect(whey.kcal).toBe(130)
+  })
 })

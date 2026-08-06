@@ -141,16 +141,44 @@ record('summary produces a next-session recommendation', hasRecommendation)
 const rewarded = await page.getByText(/Rewards earned|Session saved/).first().isVisible().catch(() => false)
 record('summary shows reward outcome', rewarded)
 
-// ------------------------------------------------------------------ protein
+// ---------------------------------------------------------------- nutrition
+// The old /progress/protein path must still land somewhere sensible.
 await page.goto(`${BASE}#/progress/protein`, { waitUntil: 'networkidle' })
-await page.waitForSelector('text=Remaining today')
-const before = await page.locator('text=/Remaining today/').first().isVisible()
-await page.getByRole('button', { name: '+40' }).click()
+await page.waitForTimeout(300)
+record('legacy protein link redirects to the nutrition screen', page.url().includes('#/nutrition'), page.url())
+await page.waitForSelector('text=Calories left')
+
+// Log a real food end to end: search → pick → portion → add.
+await page.getByRole('button', { name: 'Log food' }).click()
+await page.waitForSelector('input[aria-label="Search foods"]')
+await page.getByLabel('Search foods').fill('chicken breast')
+await page.waitForTimeout(200)
+await page.getByRole('button', { name: /Chicken breast/ }).first().click()
+await page.waitForSelector('text=Servings')
+const addButton = page.getByRole('button', { name: /^Add \d+ kcal to/ })
+const addLabel = await addButton.innerText()
+await addButton.click()
+await page.waitForTimeout(300)
+const foodLogged = await page.getByText('Chicken breast').first().isVisible()
+record('logs a food with full macros in three taps', foodLogged, addLabel)
+
+const kcalCounted = await page
+  .locator('text=/\\d+ eaten/')
+  .first()
+  .innerText()
+  .catch(() => '')
+record('calorie counter moves after logging', /[1-9]\d* eaten/.test(kcalCounted), kcalCounted)
+
+// Quick add still exists for when you already know the number.
+await page.getByRole('button', { name: 'Add food to Snacks' }).click()
+await page.waitForSelector('text=Recent')
+await page.getByRole('radio', { name: 'Quick' }).click()
+await page.getByRole('button', { name: '+40g' }).click()
 await page.waitForTimeout(250)
-const logged = await page.getByText('40 g protein').first().isVisible()
-record('logs protein quickly', before && logged)
-await shot('09-protein')
-await noOverflow('protein')
+const quickLogged = await page.getByText(/40 g protein/).first().isVisible()
+record('quick-adds protein without searching', quickLogged)
+await shot('09-nutrition')
+await noOverflow('nutrition')
 
 // ---------------------------------------------------------------------- run
 await page.goto(`${BASE}#/train/run`, { waitUntil: 'networkidle' })

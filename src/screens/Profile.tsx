@@ -21,7 +21,16 @@ import { LIMITATION_RULES } from '@/engine/program'
 import { calculateProteinTarget } from '@/engine/protein'
 import { formatHeight, fromDisplay, toDisplay } from '@/engine/units'
 import { useStore } from '@/state/store'
-import type { Diet, EnduranceGoal, Experience, Goal, Priority, Units } from '@/types'
+import type {
+  ActivityLevel,
+  Diet,
+  EnduranceGoal,
+  Experience,
+  Goal,
+  Priority,
+  Sex,
+  Units,
+} from '@/types'
 
 /** Profile and settings. Everything is editable; nothing is collected silently. */
 export default function Profile() {
@@ -314,6 +323,8 @@ function EditProfileForm({ onDone }: { onDone: () => void }) {
   const [enduranceGoal, setEnduranceGoal] = useState<EnduranceGoal>(profile.enduranceGoal)
   const [priority, setPriority] = useState<Priority>(profile.priority)
   const [diet, setDiet] = useState<Diet>(profile.diet)
+  const [sex, setSex] = useState<Sex>(profile.sex ?? 'unspecified')
+  const [dailyActivity, setDailyActivity] = useState<ActivityLevel>(profile.dailyActivity ?? 'desk')
 
   return (
     <div className="space-y-4">
@@ -401,6 +412,35 @@ function EditProfileForm({ onDone }: { onDone: () => void }) {
           ]}
         />
       </Field>
+      <Field
+        label="Biological sex"
+        hint="Only used as the constant in the calorie equation."
+      >
+        <SegmentedControl<Sex>
+          label="Biological sex"
+          value={sex}
+          onChange={setSex}
+          options={[
+            { value: 'female', label: 'Female' },
+            { value: 'male', label: 'Male' },
+            { value: 'unspecified', label: 'Rather not' },
+          ]}
+        />
+      </Field>
+      <Field label="Daily activity" hint="Outside training — workouts are counted separately.">
+        <SegmentedControl<ActivityLevel>
+          label="Daily activity"
+          columns={2}
+          value={dailyActivity}
+          onChange={setDailyActivity}
+          options={[
+            { value: 'desk', label: 'Mostly seated' },
+            { value: 'light', label: 'On my feet a bit' },
+            { value: 'active', label: 'On my feet a lot' },
+            { value: 'physical', label: 'Physical job' },
+          ]}
+        />
+      </Field>
       <Field label="Diet">
         <SegmentedControl<Diet>
           label="Diet"
@@ -434,6 +474,8 @@ function EditProfileForm({ onDone }: { onDone: () => void }) {
             enduranceGoal,
             priority,
             diet,
+            sex,
+            dailyActivity,
           })
           onDone()
         }}

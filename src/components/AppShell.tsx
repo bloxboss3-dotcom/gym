@@ -36,6 +36,13 @@ function NavIcon({ name, active }: { name: string; active: boolean }) {
           <path d="M4 9v6M20 9v6M7 7v10M17 7v10M7 12h10" {...common} strokeWidth="2.2" />
         </svg>
       )
+    case 'food':
+      return (
+        <svg viewBox="0 0 24 24" className="size-6" aria-hidden>
+          <path d="M6 3v7a2.5 2.5 0 0 0 5 0V3M8.5 10v11" {...common} />
+          <path d="M17.5 3c-1.7 1.2-2.5 3-2.5 5.5s.8 3.5 2.5 3.5V3ZM17.5 12v9" {...common} />
+        </svg>
+      )
     case 'forge':
       return (
         <svg viewBox="0 0 24 24" className="size-6" aria-hidden>
@@ -53,10 +60,17 @@ function NavIcon({ name, active }: { name: string; active: boolean }) {
   }
 }
 
+/**
+ * Six tabs, and Food is one of them on purpose: nutrition is half of what this
+ * app is for, and burying it two taps deep inside Progress made it feel like an
+ * afterthought. Train stays the raised centre-ish button — the single most
+ * important action in the app should never be more than one thumb away.
+ */
 const TABS = [
   { to: '/', label: 'Today', icon: 'today', end: true },
-  { to: '/progress', label: 'Progress', icon: 'progress', end: false },
+  { to: '/nutrition', label: 'Food', icon: 'food', end: false },
   { to: '__center__', label: 'Train', icon: 'train', end: false },
+  { to: '/progress', label: 'Progress', icon: 'progress', end: false },
   { to: '/forge', label: 'Forge', icon: 'forge', end: false },
   { to: '/profile', label: 'Profile', icon: 'profile', end: false },
 ]
@@ -83,7 +97,7 @@ export function BottomNav() {
       className="fixed bottom-0 inset-x-0 z-40 bg-coal/95 backdrop-blur border-t border-slate safe-x"
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
-      <ul className="grid grid-cols-5 max-w-lg mx-auto">
+      <ul className="grid grid-cols-6 max-w-lg mx-auto">
         {TABS.map((tab) => {
           if (tab.to === '__center__') {
             return (

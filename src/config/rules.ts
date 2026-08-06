@@ -143,6 +143,59 @@ export const RULES = {
   },
 
   /** ------------------------------------------------------------------
+   * Energy and macros.
+   *
+   * Every number here is an ESTIMATE. Predictive BMR equations carry roughly
+   * ±10% error for an individual even when they are unbiased across a group,
+   * and the activity multipliers are coarser still. FORGED says so in the UI,
+   * and it never prescribes an aggressive deficit.
+   * ------------------------------------------------------------------ */
+  energy: {
+    /** Mifflin-St Jeor sex constant. `unspecified` uses the midpoint. */
+    mifflinConstant: { male: 5, female: -161, unspecified: -78 },
+    /**
+     * Non-exercise activity multiplier on BMR. Training is added separately, so
+     * these are deliberately lower than the classic "activity factor" ladder,
+     * which bakes exercise in and double-counts it for people who lift.
+     */
+    activityMultiplier: { desk: 1.25, light: 1.4, active: 1.55, physical: 1.7 },
+    /** Rough net cost of resistance training, per minute of session time. */
+    kcalPerLiftingMinute: 5,
+    /** Net cost of running, per kg of body weight per km. */
+    kcalPerKgPerKm: 0.95,
+    /**
+     * Daily energy offset by goal, as a fraction of maintenance. Deficits are
+     * deliberately modest: faster loss costs lean mass and adherence.
+     */
+    goalOffsetPct: { hypertrophy: 0.1, strength: 0.06, recomp: -0.08, fatloss: -0.18, general: 0 },
+    /** Hard caps so no goal can produce a silly number. */
+    maxSurplusKcal: 400,
+    /** Ceiling on the deficit as a fraction of body weight lost per week. */
+    maxWeeklyLossFraction: 0.0075,
+    /** Energy in a kg of mostly-fat tissue, used only to cap the deficit. */
+    kcalPerKgTissue: 7700,
+    /** A target is never allowed below BMR × this, nor below the floor. */
+    minFractionOfBmr: 1.1,
+    absoluteFloorKcal: { male: 1500, female: 1200, unspecified: 1200 },
+    /**
+     * Dietary fat floor: the larger of these two wins. Below roughly this
+     * intake, fat-soluble vitamin and essential-fatty-acid intake gets hard to
+     * meet and adherence tends to suffer.
+     */
+    minFatGPerKg: 0.8,
+    minFatPctOfKcal: 0.2,
+    /**
+     * Where fat actually lands by default — comfortably above the floor. Sitting
+     * a target exactly on its own floor is not a recommendation, it is an
+     * artefact, and it pushes the carbohydrate number absurdly high.
+     */
+    targetFatPctOfKcal: 0.27,
+    /** Calorie adherence counts a day as "on target" within this fraction. */
+    kcalAdherenceTolerance: 0.1,
+    kcalPerG: { protein: 4, carbs: 4, fat: 9 },
+  },
+
+  /** ------------------------------------------------------------------
    * Running / endurance. Deliberately NOT a blind 10% rule.
    * ------------------------------------------------------------------ */
   running: {

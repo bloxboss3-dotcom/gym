@@ -37,6 +37,32 @@ export type Diet =
 
 export type Archetype = 'ironclad' | 'emberblade' | 'stormrunner' | 'ashwarden' | 'duskstalker'
 
+/**
+ * Only ever used as the sex constant in the Mifflin-St Jeor equation. It is
+ * optional, and `unspecified` uses the midpoint of the two constants — the
+ * calorie estimate simply carries a wider stated uncertainty.
+ */
+export type Sex = 'male' | 'female' | 'unspecified'
+
+/** Non-exercise activity. Training is added on top, so this is daily life only. */
+export type ActivityLevel = 'desk' | 'light' | 'active' | 'physical'
+
+export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+
+export type FoodCategory =
+  | 'meat'
+  | 'fish'
+  | 'dairy'
+  | 'eggs'
+  | 'plant_protein'
+  | 'carbs'
+  | 'fruit_veg'
+  | 'fats'
+  | 'drinks'
+  | 'meals'
+  | 'treats'
+  | 'supplements'
+
 export type EquipmentKey =
   | 'barbell'
   | 'dumbbell'
@@ -105,8 +131,17 @@ export interface Profile {
   priority: Priority
   weeklyRunKm: number
   diet: Diet
+  /**
+   * Used for one thing only: the sex constant in the Mifflin-St Jeor BMR
+   * equation. Optional — `unspecified` widens the stated uncertainty instead.
+   */
+  sex?: Sex
+  /** Non-exercise daily activity. Training is added separately. */
+  dailyActivity?: ActivityLevel
   /** Grams per day. Overrides the calculated baseline when set. */
   proteinOverrideG?: number | null
+  /** kcal per day. Overrides the calculated energy target when set. */
+  calorieOverrideKcal?: number | null
   /** Free-text limitations the user typed, plus any picked chips. */
   limitations: string[]
   archetype: Archetype
@@ -120,6 +155,12 @@ export interface Settings {
   /** Barbell/dumbbell rounding granularity in kg — 2.5 for most gyms. */
   roundingKg: number
   restDefaultSec: number
+  /**
+   * `full` counts calories and all three macros. `protein` hides energy and
+   * carb/fat entirely and tracks protein only — the right setting for anyone
+   * who should not be counting calories.
+   */
+  nutritionMode?: 'full' | 'protein'
   mealsPerDay: number
   finalMealTime: string
   avoidFoods: string[]
@@ -298,30 +339,62 @@ export interface ProgressPhoto {
   note?: string
 }
 
+/**
+ * A food, stated per serving.
+ *
+ * Energy and carb/fat are optional so that backups written before FORGED
+ * tracked calories still load; anything missing reads as unknown rather than
+ * as zero in the UI.
+ */
 export interface FoodItem {
   id: string
   name: string
   proteinG: number
+  kcal?: number
+  carbsG?: number
+  fatG?: number
   /** Per-serving label, e.g. "150 g cooked". */
   serving: string
+  /** Weight of one serving in grams, when the serving is a weight. */
+  servingGrams?: number
+  category?: FoodCategory
   tags: Diet[]
   budgetFriendly: boolean
   custom?: boolean
 }
 
+/**
+ * One logged food. Named for protein because that is what FORGED started with
+ * and what every backup on disk calls it; it now carries full macros.
+ */
 export interface ProteinEntry {
   id: string
   date: IsoDate
   label: string
   grams: number
+  kcal?: number
+  carbsG?: number
+  fatG?: number
+  /** Serving multiplier applied when logging, kept so an entry can be edited. */
+  servings?: number
+  meal?: MealSlot
   foodId?: string | null
   createdAt: Millis
+}
+
+export interface MealItem {
+  label: string
+  grams: number
+  kcal?: number
+  carbsG?: number
+  fatG?: number
+  foodId?: string | null
 }
 
 export interface Meal {
   id: string
   name: string
-  items: { label: string; grams: number }[]
+  items: MealItem[]
   custom?: boolean
 }
 

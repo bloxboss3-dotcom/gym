@@ -11,6 +11,7 @@ export function defaultSettings(): Settings {
     incrementKg: 2.5,
     roundingKg: 2.5,
     restDefaultSec: 120,
+    nutritionMode: 'full',
     mealsPerDay: 4,
     finalMealTime: '21:00',
     avoidFoods: [],
