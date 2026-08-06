@@ -61,29 +61,31 @@ jobs:
         with:
           path: dist
 
-  deploy:
-    name: Deploy to GitHub Pages
+  # This lives in its own job on purpose.
+  #
+  # A job carrying `environment: github-pages` fails before any step runs when
+  # the repository has no Pages site — the runner never even starts, so a guard
+  # step inside that job can never help. Doing the check in a plain job without
+  # an `environment:` block lets the deploy job be *skipped* rather than failing
+  # red, which is the honest signal: nothing is broken, a setting is unset.
+  pages-check:
+    name: Check GitHub Pages setup
     needs: verify
-    # Deploys from main, and — until this branch is merged — from the feature
-    # branch too, so the live app is available for testing on a phone without
-    # waiting for a merge. Drop the branch clause once this lands on main.
+    # Publishes from main, and — until this branch is merged — from the feature
+    # branch too, so the live app is testable on a phone without waiting for a
+    # merge. Drop the branch clause once this lands on main.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' &&
        (github.ref == 'refs/heads/main' ||
         github.ref == 'refs/heads/claude/forged-fitness-pwa-74y1yz'))
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      enabled: ${{ steps.pages.outputs.enabled }}
     steps:
-      # actions/deploy-pages fails with a bare 404 and a stack trace when the
-      # repository has no Pages site, which reads like a broken build rather
-      # than a one-time setting. Detect that specific case up front.
-      #
       # Only a definitive 404 skips the deploy. Any other status — including a
       # permissions error or an outage — falls through and lets the real deploy
-      # step fail loudly, so this can never quietly stop publishing.
+      # job run and fail loudly, so this can never quietly stop publishing.
       - name: Check whether GitHub Pages is enabled
         id: pages
         run: |
@@ -115,7 +117,15 @@ jobs:
             echo "<https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/>."
           } >> "$GITHUB_STEP_SUMMARY"
 
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: pages-check
+    if: needs.pages-check.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy
         id: deployment
-        if: steps.pages.outputs.enabled == 'true'
         uses: actions/deploy-pages@v4
