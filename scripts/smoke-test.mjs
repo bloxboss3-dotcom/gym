@@ -28,8 +28,15 @@ function record(name, ok, detail = '') {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ' — ' + detail : ''}`)
 }
 
+// Honour an outbound HTTP proxy when one is configured, so the same script can
+// be pointed at a real deployed URL from a sandboxed or corporate network.
+// Chromium ignores the *_PROXY environment variables that curl and node respect.
+const proxyServer = process.env.SMOKE_PROXY ?? process.env.HTTPS_PROXY ?? process.env.https_proxy
 const browser = await chromium.launch({
   ...(process.env.SMOKE_CHROMIUM ? { executablePath: process.env.SMOKE_CHROMIUM } : {}),
+  ...(proxyServer && !BASE.includes('localhost') && !BASE.includes('127.0.0.1')
+    ? { proxy: { server: proxyServer } }
+    : {}),
   args: ['--no-sandbox'],
 })
 const context = await browser.newContext({
