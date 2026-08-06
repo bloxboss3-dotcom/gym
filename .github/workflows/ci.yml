@@ -1,0 +1,136 @@
+name: CI & Deploy
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+# Allow the deploy job to publish to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; queued runs supersede rather than cancel a live one.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # The smoke test is opt-in and not part of CI, so CI never needs a browser.
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+jobs:
+  verify:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Verify the service worker was generated
+        run: test -f dist/sw.js && test -f dist/manifest.webmanifest
+
+      - name: Upload Pages artifact
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  # This lives in its own job on purpose.
+  #
+  # A job carrying `environment: github-pages` can fail before any step runs —
+  # the runner is never assigned, so a guard step inside that job cannot help,
+  # and the failure produces no log at all. Doing the check in a plain job with
+  # no `environment:` block lets the deploy job be *skipped* rather than failing
+  # red when publishing is not possible.
+  pages-check:
+    name: Check GitHub Pages setup
+    needs: verify
+    # main only, and this is not a preference — see the note above the deploy
+    # job. Publishing from a feature branch is rejected by GitHub before the
+    # job starts, so attempting it can only ever produce a red X.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.pages.outputs.enabled }}
+    steps:
+      # Only a definitive 404 skips the deploy. Any other status — including a
+      # permissions error or an outage — falls through and lets the real deploy
+      # job run and fail loudly, so this can never quietly stop publishing.
+      - name: Check whether GitHub Pages is enabled
+        id: pages
+        run: |
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/pages" || echo "000")
+          echo "Pages API returned HTTP $code"
+          if [ "$code" = "404" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Explain how to enable GitHub Pages
+        if: steps.pages.outputs.enabled != 'true'
+        run: |
+          echo "::warning title=GitHub Pages is not enabled::Enable it at Settings → Pages → Build and deployment → Source: GitHub Actions, then re-run this workflow."
+          {
+            echo "## Deployment skipped — GitHub Pages is not enabled"
+            echo
+            echo "The build succeeded and the site artifact is ready, but this repository has no"
+            echo "Pages site to deploy into."
+            echo
+            echo "**Enable it once:** Settings → Pages → Build and deployment → Source: \`GitHub Actions\`"
+            echo
+            echo "Then re-run this workflow. The site will publish to"
+            echo "<https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/>."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Deploys from main ONLY.
+  #
+  # The `github-pages` environment is managed by GitHub and carries a deployment
+  # branch policy limited to the branch configured in Pages settings — the
+  # default branch. A deploy job on any other branch is rejected during job
+  # setup, before a runner is assigned: one second, zero steps, no log, red X.
+  # That is not something a workflow can detect or handle, so do not re-add a
+  # feature-branch clause here. To preview a branch, merge it or use a separate
+  # preview host.
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: pages-check
+    if: needs.pages-check.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
