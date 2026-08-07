@@ -224,25 +224,31 @@ export default function RunLogger() {
                 />
               </Field>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Field label={`Distance (${metric ? 'km' : 'mi'})`}>
-                  <NumberStepper
-                    label="Distance"
-                    value={distance}
-                    min={0}
-                    max={200}
-                    step={metric ? 0.5 : 0.25}
-                    decimals={2}
-                    onChange={setDistance}
-                  />
-                </Field>
-                <Field label="Duration">
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <NumberStepper label="Minutes" value={minutes} min={0} max={600} onChange={setMinutes} suffix="m" />
-                    <NumberStepper label="Seconds" value={seconds} min={0} max={59} step={5} onChange={setSeconds} suffix="s" />
-                  </div>
-                </Field>
-              </div>
+              {/*
+                Distance and Duration each get a full-width row.
+                Duration already splits into minutes and seconds, and nesting
+                that inside a half-width column left each stepper ~84px — less
+                than its two 48px buttons — which silently collapsed the number
+                input to zero width. You could still tap + and −, but there was
+                nothing left to type into.
+              */}
+              <Field label={`Distance (${metric ? 'km' : 'mi'})`}>
+                <NumberStepper
+                  label="Distance"
+                  value={distance}
+                  min={0}
+                  max={200}
+                  step={metric ? 0.5 : 0.25}
+                  decimals={2}
+                  onChange={setDistance}
+                />
+              </Field>
+              <Field label="Duration">
+                <div className="grid grid-cols-2 gap-2">
+                  <NumberStepper label="Minutes" value={minutes} min={0} max={600} onChange={setMinutes} suffix="m" />
+                  <NumberStepper label="Seconds" value={seconds} min={0} max={59} step={5} onChange={setSeconds} suffix="s" />
+                </div>
+              </Field>
 
               <div className="rounded-lg bg-coal/70 border border-slate px-3 py-2 flex items-center justify-between">
                 <span className="text-xs text-smoke">Pace</span>

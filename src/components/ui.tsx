@@ -428,12 +428,13 @@ export function NumberStepper({
         type="button"
         aria-label={`Decrease ${label}`}
         onClick={() => onChange(clamp(value - step))}
-        className="touch-target w-12 rounded-l-xl bg-steel border border-slate border-r-0 text-xl text-ash active:bg-slate disabled:opacity-40"
+        className="touch-target w-12 shrink-0 rounded-l-xl bg-steel border border-slate border-r-0 text-xl text-ash active:bg-slate disabled:opacity-40"
         disabled={value <= min}
       >
         −
       </button>
-      <div className="relative flex-1">
+      {/* min-w keeps a tappable, typeable field even in a cramped column. */}
+      <div className="relative flex-1 min-w-[2.5rem]">
         <input
           id={id}
           type="number"
@@ -459,7 +460,7 @@ export function NumberStepper({
         type="button"
         aria-label={`Increase ${label}`}
         onClick={() => onChange(clamp(value + step))}
-        className="touch-target w-12 rounded-r-xl bg-steel border border-slate border-l-0 text-xl text-ash active:bg-slate disabled:opacity-40"
+        className="touch-target w-12 shrink-0 rounded-r-xl bg-steel border border-slate border-l-0 text-xl text-ash active:bg-slate disabled:opacity-40"
         disabled={value >= max}
       >
         +
