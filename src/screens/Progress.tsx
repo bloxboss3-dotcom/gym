@@ -90,7 +90,7 @@ export default function Progress() {
   const bodyAverage = useMemo(() => rollingAverage(bodySeries, 7), [bodySeries])
   const sevenDay = sevenDayAverageWeight(data.bodyWeights, today)
 
-  const prs = useMemo(() => personalRecords(data.sessions), [data.sessions])
+  const prs = useMemo(() => personalRecords(data.sessions, data.exercises), [data.sessions, data.exercises])
   const topLifts = useMemo(
     () =>
       prs

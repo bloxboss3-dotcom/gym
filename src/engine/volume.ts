@@ -1,5 +1,6 @@
 import { RULES } from '@/config/rules'
 import { MUSCLES, PRIMARY_MUSCLES } from '@/data/muscles'
+import { implementCount } from '@/engine/plates'
 import type { Exercise, Experience, IsoDate, MuscleKey, Program, Session } from '@/types'
 
 /**
@@ -71,7 +72,10 @@ export function weeklyMuscleVolume(
       const hard = working.filter((s) => s.rir === null || s.rir <= RULES.volume.hardSetRirCutoff)
       if (!hard.length) continue
       const unrated = hard.filter((s) => s.rir === null).length
-      const load = hard.reduce((sum, s) => sum + s.weightKg * s.reps, 0)
+      // A pair of dumbbells moves twice the logged number. Without this a
+      // dumbbell day looks like half the tonnage it really was.
+      const moving = implementCount(exercise.loading)
+      const load = hard.reduce((sum, s) => sum + s.weightKg * moving * s.reps, 0)
 
       for (const [muscle, contribution] of Object.entries(exercise.contributions) as [
         MuscleKey,

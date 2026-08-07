@@ -6,6 +6,7 @@ import {
   Alert,
   Button,
   Card,
+  ChoiceList,
   ConfirmDialog,
   Field,
   IconButton,
@@ -23,7 +24,7 @@ import { toDisplay, fromDisplay } from '@/engine/units'
 import { newId } from '@/lib/id'
 import { weekdayName } from '@/lib/date'
 import { useStore } from '@/state/store'
-import type { Exercise, MuscleKey, Program, ProgramDay, ProgramSlot } from '@/types'
+import type { Exercise, LoadingStyle, MuscleKey, Program, ProgramDay, ProgramSlot } from '@/types'
 
 /**
  * Program editor.
@@ -420,6 +421,7 @@ function CustomExerciseForm({ onSave }: { onSave: (exercise: Exercise) => void }
   const [contributions, setContributions] = useState<Partial<Record<MuscleKey, number>>>({})
   const [increment, setIncrement] = useState(2.5)
   const [lowerBody, setLowerBody] = useState(false)
+  const [loading, setLoading] = useState<LoadingStyle>('dumbbell_pair')
 
   const toggle = (muscle: MuscleKey, value: number) =>
     setContributions((prev) => {
@@ -464,6 +466,24 @@ function CustomExerciseForm({ onSave }: { onSave: (exercise: Exercise) => void }
           ))}
         </ul>
       </Field>
+      <Field
+        label="How is it loaded?"
+        hint="Decides what the weight box means when you log it."
+      >
+        <ChoiceList<LoadingStyle>
+          label="Loading style"
+          value={loading}
+          onChange={setLoading}
+          options={[
+            { value: 'barbell', label: 'Barbell', hint: 'You log the total on the bar, bar included' },
+            { value: 'dumbbell_pair', label: 'Two dumbbells', hint: 'You log the number on one of them' },
+            { value: 'dumbbell_single', label: 'One dumbbell or kettlebell', hint: 'You log the implement' },
+            { value: 'stack', label: 'Machine or cable', hint: 'You log the pin setting' },
+            { value: 'bodyweight', label: 'Body weight', hint: 'You log any ADDED weight, 0 for none' },
+            { value: 'other', label: 'Something else', hint: 'Bands, sled, odd objects' },
+          ]}
+        />
+      </Field>
       <Field label="Smallest load increment (kg)">
         <NumberStepper
           label="Increment"
@@ -501,7 +521,8 @@ function CustomExerciseForm({ onSave }: { onSave: (exercise: Exercise) => void }
             contributions,
             equipment: ['bodyweight'],
             pattern: 'isolation',
-            unilateral: false,
+            loading,
+            unilateral: loading === 'dumbbell_pair',
             lowerBody,
             incrementKg: increment,
             cue: 'Your movement, your cue.',

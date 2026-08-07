@@ -1,7 +1,8 @@
 import { SCHEMA_VERSION, createDefaultAppData } from '@/db/defaults'
 import { STORE_RECORDS, idbClear, idbGet, idbPut, isUsingFallback } from '@/db/idb'
+import { EXERCISE_LIBRARY } from '@/data/exercises'
 import { STARTER_FOODS } from '@/data/foods'
-import type { AppData, FoodItem } from '@/types'
+import type { AppData, Exercise, FoodItem } from '@/types'
 
 /**
  * Persistence repository.
@@ -37,7 +38,38 @@ export function migrate(data: AppData): AppData {
   next.scheduleOverrides ??= []
   next.game = { ...createDefaultAppData().game, ...next.game }
   next.foods = reconcileStarterFoods(next.foods)
+  next.exercises = reconcileExercises(next.exercises)
   return next
+}
+
+/**
+ * Keep the built-in exercise list in sync with the shipped library.
+ *
+ * Same reasoning as the foods below: the library is copied into stored data so
+ * it can be edited, which means a device that saved data before a field existed
+ * is holding rows without it. A stored exercise with no `loading` predates the
+ * plate calculator, so take the shipped definition.
+ */
+function reconcileExercises(stored: Exercise[] | undefined): Exercise[] {
+  const existing = Array.isArray(stored) ? stored : []
+  const canonical = new Map(EXERCISE_LIBRARY.map((e) => [e.id, e]))
+  const known = new Set(existing.map((e) => e.id))
+
+  const merged = existing.map((exercise) => {
+    if (exercise.custom) {
+      // A custom movement saved before loading styles existed defaults to the
+      // commonest case rather than crashing the weight label.
+      return exercise.loading ? exercise : { ...exercise, loading: 'other' as const }
+    }
+    const fresh = canonical.get(exercise.id)
+    if (!fresh) return exercise
+    return exercise.loading == null ? { ...fresh } : { ...fresh, ...exercise }
+  })
+
+  for (const exercise of EXERCISE_LIBRARY) {
+    if (!known.has(exercise.id)) merged.push({ ...exercise })
+  }
+  return merged
 }
 
 /**

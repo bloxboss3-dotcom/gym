@@ -16,10 +16,12 @@ import {
   Sheet,
   TextInput,
   Toggle,
+  cx,
 } from '@/components/ui'
 import { LIMITATION_RULES } from '@/engine/program'
 import { calculateProteinTarget } from '@/engine/protein'
 import { formatHeight, fromDisplay, toDisplay } from '@/engine/units'
+import { PLATE_LADDER, barKgFor, platesFor } from '@/engine/plates'
 import { useStore } from '@/state/store'
 import type {
   ActivityLevel,
@@ -145,6 +147,55 @@ export default function Profile() {
                   suffix={units}
                   onChange={(v) => store.updateSettings({ incrementKg: fromDisplay(v, units) })}
                 />
+              </Field>
+              <Field
+                label={`Barbell weight (${units})`}
+                hint="Used by the plate calculator. A standard Olympic bar is 20 kg / 45 lb."
+              >
+                <NumberStepper
+                  label="Barbell weight"
+                  value={Number(toDisplay(barKgFor(null, data.settings, units), units).toFixed(1))}
+                  min={5}
+                  max={60}
+                  step={units === 'kg' ? 0.5 : 1}
+                  decimals={1}
+                  suffix={units}
+                  onChange={(v) => store.updateSettings({ barbellKg: fromDisplay(v, units) })}
+                />
+              </Field>
+              <Field
+                label="Plates your gym has"
+                hint="Per side. The calculator only suggests plates you can actually reach."
+              >
+                <div className="flex flex-wrap gap-1.5">
+                  {PLATE_LADDER[units].map((plate) => {
+                    const owned = platesFor(data.settings, units)
+                    const on = owned.some((p) => Math.abs(p - plate) < 0.05)
+                    return (
+                      <button
+                        key={plate}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => {
+                          const next = on
+                            ? owned.filter((p) => Math.abs(p - plate) >= 0.05)
+                            : [...owned, plate]
+                          store.updateSettings({
+                            plateInventoryKg: next.map((p) => fromDisplay(p, units)),
+                          })
+                        }}
+                        className={cx(
+                          'touch-target rounded-xl border px-3 text-sm tabular transition-colors',
+                          on
+                            ? 'border-ember-500 bg-ember-500/15 text-ember-200 font-semibold'
+                            : 'border-slate bg-coal text-smoke',
+                        )}
+                      >
+                        {plate}
+                      </button>
+                    )
+                  })}
+                </div>
               </Field>
               <Field label="Default rest between sets">
                 <NumberStepper

@@ -117,7 +117,7 @@ export function evaluateAchievements(data: AppData, today: IsoDate = toIsoDate()
   const proteinDays = weekDates.filter(
     (d) => proteinTarget > 0 && proteinForDate(data.proteinEntries, d) >= proteinTarget * 0.9,
   ).length
-  const prs = personalRecords(data.sessions)
+  const prs = personalRecords(data.sessions, data.exercises)
   const deloadsDone = data.deloads.filter((d) => d.status === 'completed').length
   const benchmark = compareBenchmark(data.runs)
   const consistency = data.profile

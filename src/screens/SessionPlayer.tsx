@@ -19,9 +19,19 @@ import { EXERCISE_BY_ID } from '@/data/exercises'
 import { RULES } from '@/config/rules'
 import { historyFor, recommendNextSession } from '@/engine/progression'
 import { fromDisplay, formatWeight, roundToIncrement, toDisplay } from '@/engine/units'
+import {
+  barKgFor,
+  describePlan,
+  planPlates,
+  platesFor,
+  totalFromPlates,
+  weightHint,
+  weightLabel,
+  type PlateGroup,
+} from '@/engine/plates'
 import { formatClock, formatDateLabel, toIsoDate } from '@/lib/date'
 import { useStore } from '@/state/store'
-import type { LoggedSet, SessionEntry, TechniqueRating } from '@/types'
+import type { LoadingStyle, LoggedSet, SessionEntry, TechniqueRating, Units } from '@/types'
 
 /**
  * The workout player.
@@ -321,6 +331,21 @@ function ExerciseBlock({
   const [draftRir, setDraftRir] = useState<number | null>(entry.targetRIR)
   const [warmup, setWarmup] = useState(false)
   const [editing, setEditing] = useState<LoggedSet | null>(null)
+  const [plateOpen, setPlateOpen] = useState(false)
+
+  // What the number in the weight box refers to. Without this, a 30 on a
+  // barbell and a 30 on dumbbells look identical and mean different things.
+  const loading = exercise?.loading ?? 'other'
+  const barDisplay = Number(toDisplay(barKgFor(exercise ?? null, data.settings, units), units).toFixed(1))
+  const plates = useMemo(() => platesFor(data.settings, units), [data.settings, units])
+  const platePlan = useMemo(
+    () =>
+      loading === 'barbell'
+        ? planPlates({ totalDisplay: draftWeight, barDisplay, plates, units })
+        : null,
+    [loading, draftWeight, barDisplay, plates, units],
+  )
+  const hint = weightHint(loading, draftWeight, units)
 
   const workingSets = entry.sets.filter((s) => !s.warmup)
   const done = workingSets.length >= entry.plannedSets
@@ -447,9 +472,11 @@ function ExerciseBlock({
         <div className="mt-3 space-y-2.5">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[11px] uppercase tracking-wider text-smoke mb-1">Weight ({units})</label>
+              <label className="block text-[11px] uppercase tracking-wider text-smoke mb-1">
+                {weightLabel(loading, units)}
+              </label>
               <NumberStepper
-                label="Weight"
+                label={weightLabel(loading, units)}
                 value={draftWeight}
                 min={0}
                 max={2000}
@@ -463,6 +490,27 @@ function ExerciseBlock({
               <NumberStepper label="Reps" value={draftReps} min={1} max={100} onChange={setDraftReps} />
             </div>
           </div>
+
+          {/* What that number actually means, and how to load it -------------- */}
+          {loading === 'barbell' && platePlan ? (
+            <button
+              type="button"
+              onClick={() => setPlateOpen(true)}
+              className="w-full touch-target flex items-center gap-2 rounded-lg border border-slate bg-coal px-3 py-2 text-left"
+            >
+              <span className="flex-1 min-w-0">
+                <span className="block text-xs text-parchment truncate">{describePlan(platePlan, units)}</span>
+                {!platePlan.exact && !platePlan.belowBar && (
+                  <span className="block text-[11px] text-caution truncate">
+                    Not loadable — nearest is {platePlan.total} {units}
+                  </span>
+                )}
+              </span>
+              <span className="text-[11px] text-ember-400 shrink-0">Plates ›</span>
+            </button>
+          ) : (
+            hint && <p className="text-[11px] text-smoke -mt-1">{hint}</p>
+          )}
 
           <div>
             <div className="flex items-center justify-between mb-1">
@@ -591,6 +639,7 @@ function ExerciseBlock({
             set={editing}
             units={units}
             increment={entry.incrementKg}
+            loading={loading}
             onSave={(patch) => {
               store.updateSet(sessionId, entry.id, editing.id, patch)
               setEditing(null)
@@ -598,7 +647,110 @@ function ExerciseBlock({
           />
         )}
       </Sheet>
+
+      <Sheet open={plateOpen} onClose={() => setPlateOpen(false)} title="What is on the bar?">
+        <PlateCalculator
+          barDisplay={barDisplay}
+          plates={plates}
+          units={units}
+          initial={platePlan?.perSide ?? []}
+          onUse={(total) => {
+            setDraftWeight(total)
+            setPlateOpen(false)
+          }}
+        />
+      </Sheet>
     </Card>
+  )
+}
+
+/**
+ * Tap plates, get a total.
+ *
+ * The whole point is that nobody should be adding 45 + 45 + 25 + 10 in their
+ * head mid-set. Opens pre-filled with whatever the current target needs, so the
+ * common case is "yes, that" and one tap.
+ */
+function PlateCalculator({
+  barDisplay,
+  plates,
+  units,
+  initial,
+  onUse,
+}: {
+  barDisplay: number
+  plates: number[]
+  units: Units
+  initial: PlateGroup[]
+  onUse: (total: number) => void
+}) {
+  const [counts, setCounts] = useState<Record<number, number>>(() =>
+    Object.fromEntries(initial.map((g) => [g.plate, g.count])),
+  )
+  const perSide: PlateGroup[] = plates
+    .map((plate) => ({ plate, count: counts[plate] ?? 0 }))
+    .filter((g) => g.count > 0)
+  const total = totalFromPlates(perSide, barDisplay)
+  const perSideWeight = Number(((total - barDisplay) / 2).toFixed(2))
+
+  const bump = (plate: number, delta: number) =>
+    setCounts((prev) => ({ ...prev, [plate]: Math.max(0, Math.min(10, (prev[plate] ?? 0) + delta)) }))
+
+  return (
+    <div className="space-y-4">
+      <div className="forge-panel-raised px-4 py-3 text-center">
+        <p className="text-[11px] uppercase tracking-wider text-smoke">Total on the bar</p>
+        <p className="font-display text-5xl text-ember-400 tabular leading-none mt-1">
+          {total}
+          <span className="text-xl text-ash"> {units}</span>
+        </p>
+        <p className="text-xs text-ash mt-1.5 tabular">
+          {barDisplay} {units} bar + {perSideWeight} {units} per side
+        </p>
+      </div>
+
+      <div>
+        <p className="text-[11px] uppercase tracking-wider text-smoke mb-2">Plates per side</p>
+        <ul className="space-y-2">
+          {plates.map((plate) => {
+            const count = counts[plate] ?? 0
+            return (
+              <li key={plate} className="flex items-center gap-2">
+                <span
+                  className={cx(
+                    'flex-1 min-w-0 text-sm tabular',
+                    count > 0 ? 'text-parchment font-semibold' : 'text-smoke',
+                  )}
+                >
+                  {plate} {units}
+                </span>
+                <IconButton label={`One less ${plate} ${units} plate`} onClick={() => bump(plate, -1)} disabled={count === 0}>
+                  <span aria-hidden className="text-xl">−</span>
+                </IconButton>
+                <span className="w-8 text-center font-display text-lg tabular" aria-live="polite">
+                  {count}
+                </span>
+                <IconButton label={`One more ${plate} ${units} plate`} onClick={() => bump(plate, 1)}>
+                  <span aria-hidden className="text-xl">+</span>
+                </IconButton>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+
+      <div className="flex gap-2">
+        <Button className="flex-1" onClick={() => setCounts({})}>
+          Clear
+        </Button>
+        <Button variant="primary" className="flex-[2]" onClick={() => onUse(total)}>
+          Use {total} {units}
+        </Button>
+      </div>
+      <p className="text-[11px] text-smoke leading-relaxed">
+        Bar weight and the plates your gym stocks are both editable in Profile → Settings.
+      </p>
+    </div>
   )
 }
 
@@ -606,11 +758,13 @@ function EditSetForm({
   set,
   units,
   increment,
+  loading,
   onSave,
 }: {
   set: LoggedSet
-  units: 'kg' | 'lb'
+  units: Units
   increment: number
+  loading: LoadingStyle
   onSave: (patch: Partial<LoggedSet>) => void
 }) {
   const [weight, setWeight] = useState(Number(toDisplay(set.weightKg, units).toFixed(1)))
@@ -622,9 +776,11 @@ function EditSetForm({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-[11px] uppercase tracking-wider text-smoke mb-1">Weight ({units})</label>
+          <label className="block text-[11px] uppercase tracking-wider text-smoke mb-1">
+            {weightLabel(loading, units)}
+          </label>
           <NumberStepper
-            label="Weight"
+            label={weightLabel(loading, units)}
             value={weight}
             min={0}
             max={2000}

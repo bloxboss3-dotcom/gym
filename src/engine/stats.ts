@@ -1,5 +1,6 @@
-import type { BodyWeightEntry, IsoDate, LoggedSet, Session, SessionEntry } from '@/types'
+import type { BodyWeightEntry, Exercise, IsoDate, LoggedSet, Session, SessionEntry } from '@/types'
 import { daysBetween, toIsoDate } from '@/lib/date'
+import { implementCount } from '@/engine/plates'
 
 /**
  * Derived training statistics.
@@ -38,15 +39,27 @@ export function entryBestE1RM(entry: SessionEntry): number {
   return best ? estimateOneRepMax(best.weightKg, best.reps, best.rir) : 0
 }
 
-/** Sum of weight × reps across working sets — the classic volume-load proxy. */
-export function volumeLoad(sets: LoggedSet[]): number {
+/**
+ * Sum of weight × reps across working sets — the classic volume-load proxy.
+ *
+ * `implements` is how many of the thing are moving: 2 for a pair of dumbbells,
+ * 1 for everything else. Without it a set of 30 kg dumbbell presses counts the
+ * same tonnage as 30 kg on a barbell, which is half the iron that actually
+ * moved. Callers that know the exercise should pass it; the default of 1 keeps
+ * the old behaviour for callers that genuinely have no exercise context.
+ */
+export function volumeLoad(sets: LoggedSet[], implementsMoving = 1): number {
   return sets
     .filter((s) => !s.warmup)
-    .reduce((sum, s) => sum + s.weightKg * s.reps, 0)
+    .reduce((sum, s) => sum + s.weightKg * implementsMoving * s.reps, 0)
 }
 
-export function sessionVolumeLoad(session: Session): number {
-  return session.entries.reduce((sum, e) => sum + volumeLoad(e.sets), 0)
+export function sessionVolumeLoad(session: Session, exercises?: Exercise[]): number {
+  const byId = exercises ? new Map(exercises.map((e) => [e.id, e])) : null
+  return session.entries.reduce((sum, e) => {
+    const exercise = byId?.get(e.exerciseId) ?? null
+    return sum + volumeLoad(e.sets, exercise ? implementCount(exercise.loading) : 1)
+  }, 0)
 }
 
 export function workingSetsOf(session: Session): LoggedSet[] {
@@ -65,7 +78,12 @@ export interface PersonalRecord {
   date: IsoDate
 }
 
-export function personalRecords(sessions: Session[]): PersonalRecord[] {
+export function personalRecords(sessions: Session[], exercises?: Exercise[]): PersonalRecord[] {
+  const byId = exercises ? new Map(exercises.map((e) => [e.id, e])) : null
+  const implementsFor = (exerciseId: string) => {
+    const exercise = byId?.get(exerciseId)
+    return exercise ? implementCount(exercise.loading) : 1
+  }
   const byExercise = new Map<string, PersonalRecord>()
   for (const session of sessions) {
     if (session.status !== 'completed') continue
@@ -74,7 +92,7 @@ export function personalRecords(sessions: Session[]): PersonalRecord[] {
       if (!working.length) continue
       const heaviest = working.reduce((a, b) => (b.weightKg > a.weightKg ? b : a))
       const e1rm = entryBestE1RM(entry)
-      const vol = volumeLoad(entry.sets)
+      const vol = volumeLoad(entry.sets, implementsFor(entry.exerciseId))
       const current = byExercise.get(entry.exerciseId)
       if (!current) {
         byExercise.set(entry.exerciseId, {
