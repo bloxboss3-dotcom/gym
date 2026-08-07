@@ -376,6 +376,31 @@ const deloadSuggested = await page.getByText(/Deload worth taking/).first().isVi
 record('demo data trips the deload suggestion', deloadSuggested)
 await shot('15-demo-progress')
 
+// Habit detection needs real history, so it only has anything to say once the
+// demo dataset is loaded. A fresh account correctly shows nothing.
+await page.goto(`${BASE}#/train`, { waitUntil: 'networkidle' })
+await page.waitForTimeout(600)
+const usualHeading = await page.getByText('Your usual sessions').isVisible().catch(() => false)
+const usualCards = await page.locator('button:has-text("Start this session")').count()
+record('detects the sessions you actually repeat', usualHeading && usualCards > 0, `${usualCards} patterns`)
+
+if (usualCards > 0) {
+  const cardText = await page.locator('li').filter({ hasText: 'Start this session' }).first().innerText()
+  record(
+    'each pattern shows its evidence rather than asserting itself',
+    /done \d+×/.test(cardText) && /trained this combination \d+ times/.test(cardText),
+    cardText.split('\n')[1] ?? '',
+  )
+  await page.locator('button:has-text("Start this session")').first().click()
+  await page.waitForTimeout(900)
+  const inSession = page.url().includes('#/train/session/')
+  const movements = await page.locator('h2').count()
+  record('starting a usual session builds a real workout', inSession && movements > 0, `${movements} movements`)
+  await page.getByRole('button', { name: 'Abandon session' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: /Abandon/ }).click()
+  await page.waitForTimeout(500)
+}
+
 await page.goto(`${BASE}#/forge`, { waitUntil: 'networkidle' })
 await page.waitForTimeout(500)
 await shot('16-demo-forge')

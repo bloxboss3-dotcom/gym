@@ -13,6 +13,7 @@ import {
   cx,
 } from '@/components/ui'
 import { activeDeload } from '@/engine/deload'
+import { findUsualSessions, mostOverdue, toProgramDay, type UsualSession } from '@/engine/habits'
 import { estimateSessionMinutes } from '@/engine/program'
 import { resolveToday } from '@/engine/schedule'
 import { formatDateLabel, toIsoDate, weekdayName } from '@/lib/date'
@@ -110,6 +111,8 @@ export default function Train() {
                 </div>
               </Card>
             )}
+
+            <UsualSessions />
 
             <div>
               <SectionHeading
@@ -284,5 +287,96 @@ export default function Train() {
         }}
       />
     </Screen>
+  )
+}
+
+/**
+ * The sessions you actually keep doing.
+ *
+ * Read back out of your own history rather than prescribed, because after a
+ * few weeks most people have drifted from the generated program — swapping a
+ * movement, adding the machine their gym has — and re-picking exercises by
+ * hand every session is pure friction.
+ *
+ * Shown with its evidence (how many times, how long ago) rather than as an
+ * oracle, and it never touches load selection: what to lift next is still the
+ * progression engine's call, per exercise, once you are in the session.
+ */
+function UsualSessions() {
+  const { data, startSession } = useStore()
+  const navigate = useNavigate()
+  const today = toIsoDate()
+
+  const usuals = useMemo(
+    () => findUsualSessions({ sessions: data.sessions, exercises: data.exercises, today }),
+    [data.sessions, data.exercises, today],
+  )
+  const overdue = useMemo(() => mostOverdue(usuals), [usuals])
+
+  if (!usuals.length) return null
+
+  const begin = (usual: UsualSession) => {
+    const day = toProgramDay(usual, data.exercises, {
+      restSec: data.settings.restDefaultSec,
+      targetRIR: 2,
+    })
+    const id = startSession(day, { title: usual.name })
+    navigate(`/train/session/${id}`)
+  }
+
+  return (
+    <div>
+      <SectionHeading
+        title="Your usual sessions"
+        hint="Learned from what you actually log — not from the plan"
+      />
+      <ul className="space-y-2">
+        {usuals.slice(0, 4).map((usual) => (
+          <li key={usual.id}>
+            <Card className={cx(overdue?.id === usual.id && 'border-ember-500/45')}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-display text-xl uppercase tracking-wide leading-tight truncate">
+                    {usual.name}
+                  </p>
+                  <p className="text-xs text-ash mt-0.5 tabular">
+                    {usual.exercises.length} movements · done {usual.timesDone}×
+                    {' · '}
+                    {usual.daysSince === 0
+                      ? 'today'
+                      : usual.daysSince === 1
+                        ? 'yesterday'
+                        : `${usual.daysSince} days ago`}
+                  </p>
+                </div>
+                {overdue?.id === usual.id && <Chip tone="ember">Longest since</Chip>}
+              </div>
+
+              <ul className="mt-2.5 flex flex-wrap gap-1.5">
+                {usual.exercises.map((item) => {
+                  const exercise = data.exercises.find((e) => e.id === item.exerciseId)
+                  return (
+                    <li
+                      key={item.exerciseId}
+                      className="rounded-full border border-slate bg-coal px-2.5 py-1 text-[11px] text-ash"
+                    >
+                      {exercise?.name ?? item.exerciseId}
+                      <span className="text-smoke tabular"> {item.typicalSets}×{item.typicalReps}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+
+              <Button variant="primary" full className="mt-3" onClick={() => begin(usual)}>
+                Start this session
+              </Button>
+              <p className="text-[11px] text-smoke mt-2 leading-relaxed">
+                {usual.reason} Loads come from your progression history for each movement, not from this pattern.
+              </p>
+            </Card>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

@@ -20,7 +20,7 @@ load it works with no network at all.
 | Area | What is implemented |
 | --- | --- |
 | **Onboarding** | 11 short steps covering body stats, experience, schedule, equipment, goals, endurance priority, diet, limitations and archetype — then generates a conservative starter program. |
-| **Strength** | Full workout player: warm-up vs working sets, weight/reps/RIR, per-exercise pain and technique, substitutions, rest timer, previous-session recall, copy-last, set editing, notes, abandon and resume. Every weight box states what the number refers to — total on the bar, per dumbbell, stack setting or added weight — and barbell lifts get a plate calculator that works in both directions. |
+| **Strength** | Learns the sessions you actually repeat from your own log and offers them, so you stop re-picking exercises every time. Full workout player: warm-up vs working sets, weight/reps/RIR, per-exercise pain and technique, substitutions, rest timer, previous-session recall, copy-last, set editing, notes, abandon and resume. Every weight box states what the number refers to — total on the bar, per dumbbell, stack setting or added weight — and barbell lifts get a plate calculator that works in both directions. |
 | **Progression** | Double progression with pain overrides, plateau detection, back-offs and deload detection. Every recommendation carries an action, an exact next-session target, a plain-language reason, the rule that fired, a confidence level, the data it was missing, and a safety warning where relevant. |
 | **Volume** | Weekly hard sets per muscle from a transparent exercise → muscle contribution map, completed vs planned, volume load, and conservative volume progression that will not escalate you toward extreme volume. |
 | **Running** | Separate endurance engine: run types, pace, HR, session RPE, pain, surface; weekly load management that is *not* a blanket 10% rule; benchmark comparison; concurrent-training scheduling advice. |
@@ -46,7 +46,7 @@ Other scripts:
 ```bash
 npm run typecheck    # tsc --build, no emit
 npm run lint         # eslint
-npm run test         # vitest (276 unit tests)
+npm run test         # vitest (293 unit tests)
 npm run build        # tsc --build && vite build → dist/
 npm run preview      # serve dist/ at http://localhost:4173/gym/
 npm run verify       # typecheck + lint + test + build, the same gate CI runs
@@ -91,6 +91,7 @@ src/
 │   ├── running.ts     endurance load management + session planning
 │   ├── protein.ts     targets, ranges, distribution, adherence
 │   ├── nutrition.ts   resting/maintenance energy, capped goal offsets, macro split
+│   ├── habits.ts      finds the sessions you actually repeat, from your own log
 │   ├── consistency.ts consistency score, streak shields, rescheduling
 │   ├── rewards.ts     reward calculation and anti-exploitation limits
 │   ├── packs.ts       pack rolls, duplicate compensation
@@ -120,7 +121,7 @@ src/
    changes a recommendation. Gym hardware is unit-native rather than converted — a pound user gets a
    45 lb bar, 45/35/25 lb plates and 5 lb jumps, not 44.1 lb and 55.12 lb.
 2. **The engine never touches React, storage or the network.** Every function in `src/engine/` takes
-   plain data and returns plain data, which is why 276 tests can cover the decision-making directly.
+   plain data and returns plain data, which is why 293 tests can cover the decision-making directly.
 
 ### Designed for Supabase without a rewrite
 
@@ -362,7 +363,7 @@ opt-in cohort view of anonymised progression rates.
 
 ## Testing
 
-276 unit tests across 14 files, plus a 43-check browser smoke test. Unit coverage:
+293 unit tests across 15 files, plus a 51-check browser smoke test. Unit coverage:
 
 weight-unit conversion · load-increment rounding (including gym-native pound plates) ·
 plate selection and its inverse · unit-native bar and plate defaults · paired-implement volume load ·
@@ -370,7 +371,8 @@ protein-target calculation · resting and maintenance energy estimation · calor
 and the absolute intake floor · macro split and the dietary fat floor · daily and weekly nutrition
 totals · double-progression decisions · pain override · plateau detection ·
 deload detection · weekly muscle-volume calculation · running-load adjustment · benchmark comparison ·
-consistency and streak protection · session rescheduling · reward calculation · duplicate-item
+consistency and streak protection · session rescheduling · habit detection and its refusal to
+invent a pattern from one session · reward calculation · duplicate-item
 compensation · anti-exploitation reward limits · pack rolls and rarity floors · backup import
 validation · IndexedDB persistence and migration · and the seeded demo dataset itself, asserted
 against the real engines.
