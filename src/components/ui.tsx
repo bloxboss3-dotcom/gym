@@ -689,22 +689,40 @@ export function Sheet({
   const ref = useRef<HTMLDivElement>(null)
   const headingId = useId()
 
+  /**
+   * The close handler is held in a ref so the effect below can depend on `open`
+   * ALONE.
+   *
+   * Every caller passes an inline arrow, so `onClose` has a new identity on
+   * every parent render. With it in the dependency array, typing one character
+   * into a field inside a sheet re-ran this whole effect — which pulled focus
+   * out of that field ~30 ms later. On iOS that closes the keyboard mid-word,
+   * making every search box inside a sheet impossible to type in.
+   */
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
     }
     document.addEventListener('keydown', onKey)
     const previous = document.activeElement as HTMLElement | null
-    // Move focus into the sheet so keyboard and screen-reader users land inside.
-    window.setTimeout(() => ref.current?.focus(), 30)
+    // Move focus into the sheet so keyboard and screen-reader users land inside,
+    // but never steal it back from a field the user has since tapped into.
+    const timer = window.setTimeout(() => {
+      const node = ref.current
+      if (node && !node.contains(document.activeElement)) node.focus()
+    }, 30)
     document.body.style.overflow = 'hidden'
     return () => {
+      window.clearTimeout(timer)
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = ''
       previous?.focus?.()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 

@@ -362,7 +362,7 @@ opt-in cohort view of anonymised progression rates.
 
 ## Testing
 
-271 unit tests across 14 files, plus a 39-check browser smoke test. Unit coverage:
+271 unit tests across 14 files, plus a 41-check browser smoke test. Unit coverage:
 
 weight-unit conversion · load-increment rounding (including gym-native pound plates) ·
 plate selection and its inverse · unit-native bar and plate defaults · paired-implement volume load ·

@@ -127,6 +127,38 @@ for (let i = 0; i < 3; i++) {
 const loggedRows = await page.locator('li:has-text("RIR")').count()
 record('logs working sets', loggedRows >= 3, `${loggedRows} set rows`)
 
+// Typing inside a sheet, one key at a time, ACROSS a re-render of the parent.
+//
+// Two things here are load-bearing and neither is obvious:
+//
+//   1. Not page.fill(). fill() sets the value in one shot and never needs focus
+//      to survive between keystrokes, so it cannot detect focus theft at all.
+//
+//   2. The pause in the middle. The workout player runs a 1 Hz clock for the
+//      elapsed timer, so the screen re-renders every second. The bug this
+//      guards against only fires on one of those re-renders — typing a short
+//      word quickly finishes inside a single tick and looks perfectly fine.
+//      The wait forces at least one tick to land mid-word.
+await page.getByRole('button', { name: 'Add exercise' }).click()
+await page.waitForSelector('input[aria-label="Search exercises"]')
+const exSearch = page.getByLabel('Search exercises')
+await exSearch.click()
+await exSearch.pressSequentially('pre', { delay: 60 })
+await page.waitForTimeout(1600) // cross at least one clock tick
+const focusHeld = await exSearch.evaluate((el) => el === document.activeElement)
+await exSearch.pressSequentially('ss', { delay: 60 })
+await page.waitForTimeout(250)
+const typed = await exSearch.inputValue()
+record(
+  'search field keeps focus across a background re-render',
+  typed === 'press' && focusHeld,
+  `value="${typed}" focus-held-through-tick=${focusHeld}`,
+)
+const filtered = await page.getByRole('dialog').getByRole('button', { name: /press/i }).count()
+record('search filters the exercise list as you type', filtered > 0, `${filtered} matches`)
+await page.keyboard.press('Escape')
+await page.waitForTimeout(200)
+
 // The weight box must say what the number means — that ambiguity between a
 // barbell total and a per-dumbbell number is the thing this labelling fixes.
 const weightLabels = await page
