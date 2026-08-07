@@ -60,6 +60,36 @@ async function shot(name) {
   await page.screenshot({ path: `${SHOTS}/${name}.png` })
 }
 
+/**
+ * Every visible control must actually be usable.
+ *
+ * The overflow and touch-target checks both missed a number input that
+ * flexbox had squeezed to ZERO width inside a nested two-column grid: a
+ * 0px-wide element does not overflow, and the touch-target sweep only looked
+ * at Today. You could tap + and − but there was nothing left to type into.
+ *
+ * This asserts the positive property instead — if a control is on screen, it
+ * has real width and real height.
+ */
+async function controlsUsable(label) {
+  const bad = await page.evaluate(() => {
+    const out = []
+    for (const el of document.querySelectorAll('input, select, textarea, button, [role="radio"], [role="checkbox"]')) {
+      const style = getComputedStyle(el)
+      if (style.display === 'none' || style.visibility === 'hidden' || el.closest('[hidden]')) continue
+      if (el.classList.contains('sr-only')) continue
+      const r = el.getBoundingClientRect()
+      // Height 0 usually means genuinely not laid out (collapsed section).
+      // Height with no width is the pathological case.
+      if (r.height > 0 && r.width < 24) {
+        out.push(`${el.tagName.toLowerCase()}[${el.getAttribute('aria-label') ?? el.type ?? ''}] ${Math.round(r.width)}x${Math.round(r.height)}`)
+      }
+    }
+    return out
+  })
+  record(`no collapsed controls: ${label}`, bad.length === 0, bad.slice(0, 3).join(' | '))
+}
+
 async function noOverflow(label) {
   const overflow = await page.evaluate(() => {
     const doc = document.documentElement
@@ -109,6 +139,7 @@ const todayLabel = await page.locator('text=/Today’s session|Today’s run|Pre
 record('onboarding completes into Today', true, todayLabel)
 await shot('05-today')
 await noOverflow('today')
+await controlsUsable('today')
 
 // ------------------------------------------------------------------ workout
 // Whatever today resolves to, Train always offers a session to start.
@@ -118,6 +149,7 @@ await page.locator('button:has-text("Full Body"), button:has-text("Upper"), butt
 await page.waitForSelector('text=Log set', { timeout: 10000 })
 await shot('06-session-player')
 await noOverflow('session player')
+await controlsUsable('session player')
 
 // Log 3 sets on the first exercise at the top of the range.
 for (let i = 0; i < 3; i++) {
@@ -278,6 +310,7 @@ const quickLogged = await page.getByText(/40 g protein/).first().isVisible()
 record('quick-adds protein without searching', quickLogged)
 await shot('09-nutrition')
 await noOverflow('nutrition')
+await controlsUsable('nutrition')
 
 // ---------------------------------------------------------------------- run
 await page.goto(`${BASE}#/train/run`, { waitUntil: 'networkidle' })
@@ -288,12 +321,14 @@ const runLogged = await page.getByText(/Run history/).isVisible()
 record('logs a run', runLogged)
 await shot('10-run')
 await noOverflow('run')
+await controlsUsable('run')
 
 // ----------------------------------------------------------------- progress
 await page.goto(`${BASE}#/progress`, { waitUntil: 'networkidle' })
 await page.waitForSelector('text=Fatigue check')
 await shot('11-progress')
 await noOverflow('progress')
+await controlsUsable('progress')
 const consistency = await page.getByText('Consistency').first().isVisible()
 record('progress dashboard renders from saved data', consistency)
 const consistencyMsg = await page.locator('text=/planned day/').first().innerText().catch(() => '')
@@ -340,6 +375,31 @@ await page.waitForTimeout(600)
 const deloadSuggested = await page.getByText(/Deload worth taking/).first().isVisible().catch(() => false)
 record('demo data trips the deload suggestion', deloadSuggested)
 await shot('15-demo-progress')
+
+// Habit detection needs real history, so it only has anything to say once the
+// demo dataset is loaded. A fresh account correctly shows nothing.
+await page.goto(`${BASE}#/train`, { waitUntil: 'networkidle' })
+await page.waitForTimeout(600)
+const usualHeading = await page.getByText('Your usual sessions').isVisible().catch(() => false)
+const usualCards = await page.locator('button:has-text("Start this session")').count()
+record('detects the sessions you actually repeat', usualHeading && usualCards > 0, `${usualCards} patterns`)
+
+if (usualCards > 0) {
+  const cardText = await page.locator('li').filter({ hasText: 'Start this session' }).first().innerText()
+  record(
+    'each pattern shows its evidence rather than asserting itself',
+    /done \d+×/.test(cardText) && /trained this combination \d+ times/.test(cardText),
+    cardText.split('\n')[1] ?? '',
+  )
+  await page.locator('button:has-text("Start this session")').first().click()
+  await page.waitForTimeout(900)
+  const inSession = page.url().includes('#/train/session/')
+  const movements = await page.locator('h2').count()
+  record('starting a usual session builds a real workout', inSession && movements > 0, `${movements} movements`)
+  await page.getByRole('button', { name: 'Abandon session' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: /Abandon/ }).click()
+  await page.waitForTimeout(500)
+}
 
 await page.goto(`${BASE}#/forge`, { waitUntil: 'networkidle' })
 await page.waitForTimeout(500)
