@@ -156,8 +156,30 @@ record(
 )
 const filtered = await page.getByRole('dialog').getByRole('button', { name: /press/i }).count()
 record('search filters the exercise list as you type', filtered > 0, `${filtered} matches`)
-await page.keyboard.press('Escape')
+
+// Adding a movement mid-session must produce gym-native numbers, not a kg
+// constant converted literally into something like 44.1 lb.
+await exSearch.fill('lateral raise')
 await page.waitForTimeout(200)
+const lateralNames = await page.getByRole('dialog').locator('button').allInnerTexts()
+const variants = lateralNames.filter((n) => /lateral raise/i.test(n)).map((n) => n.split('\n')[0])
+record(
+  'library covers dumbbell, cable and machine lateral raises',
+  ['Lateral Raise', 'Cable Lateral Raise', 'Machine Lateral Raise'].every((n) => variants.includes(n)),
+  variants.join(', '),
+)
+await page.getByRole('dialog').getByRole('button', { name: /^Machine Lateral Raise/ }).first().click()
+await page.waitForTimeout(600)
+// The machine lateral raise is a stack movement and was just appended, so its
+// weight box is the last one carrying that label.
+const stackInput = page.locator('input[aria-label="Stack setting (lb)"]').last()
+const stackValue = Number(await stackInput.inputValue())
+// A 5 lb stack increment is the smallest thing a real pin-loaded machine has;
+// 44.1 is what a kilogram constant looks like after a literal conversion.
+const loadable = Number.isInteger(stackValue) && stackValue % 5 === 0
+record('a newly added movement opens on a loadable weight', loadable, `${stackValue} lb`)
+await page.evaluate(() => window.scrollTo(0, 0))
+await page.waitForTimeout(150)
 
 // The weight box must say what the number means — that ambiguity between a
 // barbell total and a per-dumbbell number is the thing this labelling fixes.

@@ -18,6 +18,7 @@ import { computeConsistency } from '@/engine/consistency'
 import { calculateProteinTarget, proteinForDate } from '@/engine/protein'
 import { newlyUnlockedAchievements } from '@/engine/quests'
 import { generateProgram } from '@/engine/program'
+import { nativeIncrementKg } from '@/engine/units'
 import { isoDateOf, toIsoDate } from '@/lib/date'
 import { newId } from '@/lib/id'
 import type {
@@ -312,16 +313,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const store = useMemo<ForgedStore>(() => {
     const mutate = (fn: (current: AppData) => AppData) => setData(fn)
 
-    const mutateSession = (sessionId: string, fn: (session: Session) => Session) =>
+    const mutateSession = (
+      sessionId: string,
+      fn: (session: Session, current: AppData) => Session,
+    ) =>
       mutate((current) => ({
         ...current,
-        sessions: current.sessions.map((s) => (s.id === sessionId ? fn(s) : s)),
+        sessions: current.sessions.map((s) => (s.id === sessionId ? fn(s, current) : s)),
       }))
 
-    const mutateEntry = (sessionId: string, entryId: string, fn: (entry: SessionEntry) => SessionEntry) =>
-      mutateSession(sessionId, (session) => ({
+    const mutateEntry = (
+      sessionId: string,
+      entryId: string,
+      fn: (entry: SessionEntry, current: AppData) => SessionEntry,
+    ) =>
+      mutateSession(sessionId, (session, current) => ({
         ...session,
-        entries: session.entries.map((e) => (e.id === entryId ? fn(e) : e)),
+        entries: session.entries.map((e) => (e.id === entryId ? fn(e, current) : e)),
       }))
 
     return {
@@ -432,7 +440,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               repMax: slot.repMax,
               targetRIR: opts?.deload ? Math.max(4, slot.targetRIR + 2) : slot.targetRIR,
               restSec: slot.restSec,
-              incrementKg: slot.incrementKg ?? exercise?.incrementKg ?? current.settings.incrementKg,
+              incrementKg: nativeIncrementKg(
+                slot.incrementKg ?? exercise?.incrementKg ?? current.settings.incrementKg,
+                current.profile?.units ?? 'kg',
+              ),
               sets: [],
               pain: 0,
               technique: 'clean',
@@ -484,18 +495,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
 
       substituteExercise(sessionId, entryId, newExerciseId) {
-        mutateEntry(sessionId, entryId, (entry) => ({
+        mutateEntry(sessionId, entryId, (entry, current) => ({
           ...entry,
           substitutedFromId: entry.substitutedFromId ?? entry.exerciseId,
           exerciseId: newExerciseId,
-          incrementKg: EXERCISE_BY_ID[newExerciseId]?.incrementKg ?? entry.incrementKg,
+          incrementKg: nativeIncrementKg(
+            EXERCISE_BY_ID[newExerciseId]?.incrementKg ?? entry.incrementKg,
+            current.profile?.units ?? 'kg',
+          ),
           sets: [],
         }))
       },
 
       addEntryToSession(sessionId, exerciseId) {
-        mutateSession(sessionId, (session) => {
-          const exercise = EXERCISE_BY_ID[exerciseId]
+        mutateSession(sessionId, (session, current) => {
+          const exercise = current.exercises.find((e) => e.id === exerciseId) ?? EXERCISE_BY_ID[exerciseId]
           return {
             ...session,
             entries: [
@@ -508,7 +522,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                 repMax: 12,
                 targetRIR: 2,
                 restSec: 120,
-                incrementKg: exercise?.incrementKg ?? 2.5,
+                incrementKg: nativeIncrementKg(
+                  exercise?.incrementKg ?? 2.5,
+                  current.profile?.units ?? 'kg',
+                ),
                 sets: [],
                 pain: 0,
                 technique: 'clean',

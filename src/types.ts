@@ -220,7 +220,14 @@ export interface Exercise {
    * standard bar (EZ bar, trap bar, Smith). Falls back to `settings.barbellKg`.
    */
   barKg?: number
-  /** Loaded per-side / per-hand (dumbbells, unilateral machines). */
+  /**
+   * Trained ONE SIDE AT A TIME, so each side is its own set — a single-arm
+   * cable lateral raise, a one-arm row, a Bulgarian split squat.
+   *
+   * Not the same as being loaded per hand: a dumbbell bench press holds two
+   * dumbbells but presses both at once, so it is `dumbbell_pair` and NOT
+   * unilateral. `loading` describes the implement; this describes the set.
+   */
   unilateral: boolean
   /** Movements where the smallest useful jump is bigger (lower body compounds). */
   lowerBody: boolean
