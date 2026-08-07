@@ -46,7 +46,7 @@ Other scripts:
 ```bash
 npm run typecheck    # tsc --build, no emit
 npm run lint         # eslint
-npm run test         # vitest (271 unit tests)
+npm run test         # vitest (276 unit tests)
 npm run build        # tsc --build && vite build → dist/
 npm run preview      # serve dist/ at http://localhost:4173/gym/
 npm run verify       # typecheck + lint + test + build, the same gate CI runs
@@ -78,7 +78,7 @@ src/
 │   ├── rules.ts       progression, plateau, deload, volume, protein, energy, running, consistency
 │   └── economy.ts     XP curve, payouts, daily caps, pack odds, duplicate refunds
 ├── data/            Static domain data
-│   ├── exercises.ts   52 movements + the exercise → muscle contribution map
+│   ├── exercises.ts   53 movements + the exercise → muscle contribution map
 │   ├── muscles.ts     muscle registry and grouping
 │   ├── items.ts       80 original cosmetics across 11 slots
 │   ├── quests.ts      quests + achievements
@@ -120,7 +120,7 @@ src/
    changes a recommendation. Gym hardware is unit-native rather than converted — a pound user gets a
    45 lb bar, 45/35/25 lb plates and 5 lb jumps, not 44.1 lb and 55.12 lb.
 2. **The engine never touches React, storage or the network.** Every function in `src/engine/` takes
-   plain data and returns plain data, which is why 271 tests can cover the decision-making directly.
+   plain data and returns plain data, which is why 276 tests can cover the decision-making directly.
 
 ### Designed for Supabase without a rewrite
 
@@ -362,7 +362,7 @@ opt-in cohort view of anonymised progression rates.
 
 ## Testing
 
-271 unit tests across 14 files, plus a 39-check browser smoke test. Unit coverage:
+276 unit tests across 14 files, plus a 43-check browser smoke test. Unit coverage:
 
 weight-unit conversion · load-increment rounding (including gym-native pound plates) ·
 plate selection and its inverse · unit-native bar and plate defaults · paired-implement volume load ·

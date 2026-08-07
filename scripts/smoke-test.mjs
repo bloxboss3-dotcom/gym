@@ -127,6 +127,60 @@ for (let i = 0; i < 3; i++) {
 const loggedRows = await page.locator('li:has-text("RIR")').count()
 record('logs working sets', loggedRows >= 3, `${loggedRows} set rows`)
 
+// Typing inside a sheet, one key at a time, ACROSS a re-render of the parent.
+//
+// Two things here are load-bearing and neither is obvious:
+//
+//   1. Not page.fill(). fill() sets the value in one shot and never needs focus
+//      to survive between keystrokes, so it cannot detect focus theft at all.
+//
+//   2. The pause in the middle. The workout player runs a 1 Hz clock for the
+//      elapsed timer, so the screen re-renders every second. The bug this
+//      guards against only fires on one of those re-renders — typing a short
+//      word quickly finishes inside a single tick and looks perfectly fine.
+//      The wait forces at least one tick to land mid-word.
+await page.getByRole('button', { name: 'Add exercise' }).click()
+await page.waitForSelector('input[aria-label="Search exercises"]')
+const exSearch = page.getByLabel('Search exercises')
+await exSearch.click()
+await exSearch.pressSequentially('pre', { delay: 60 })
+await page.waitForTimeout(1600) // cross at least one clock tick
+const focusHeld = await exSearch.evaluate((el) => el === document.activeElement)
+await exSearch.pressSequentially('ss', { delay: 60 })
+await page.waitForTimeout(250)
+const typed = await exSearch.inputValue()
+record(
+  'search field keeps focus across a background re-render',
+  typed === 'press' && focusHeld,
+  `value="${typed}" focus-held-through-tick=${focusHeld}`,
+)
+const filtered = await page.getByRole('dialog').getByRole('button', { name: /press/i }).count()
+record('search filters the exercise list as you type', filtered > 0, `${filtered} matches`)
+
+// Adding a movement mid-session must produce gym-native numbers, not a kg
+// constant converted literally into something like 44.1 lb.
+await exSearch.fill('lateral raise')
+await page.waitForTimeout(200)
+const lateralNames = await page.getByRole('dialog').locator('button').allInnerTexts()
+const variants = lateralNames.filter((n) => /lateral raise/i.test(n)).map((n) => n.split('\n')[0])
+record(
+  'library covers dumbbell, cable and machine lateral raises',
+  ['Lateral Raise', 'Cable Lateral Raise', 'Machine Lateral Raise'].every((n) => variants.includes(n)),
+  variants.join(', '),
+)
+await page.getByRole('dialog').getByRole('button', { name: /^Machine Lateral Raise/ }).first().click()
+await page.waitForTimeout(600)
+// The machine lateral raise is a stack movement and was just appended, so its
+// weight box is the last one carrying that label.
+const stackInput = page.locator('input[aria-label="Stack setting (lb)"]').last()
+const stackValue = Number(await stackInput.inputValue())
+// A 5 lb stack increment is the smallest thing a real pin-loaded machine has;
+// 44.1 is what a kilogram constant looks like after a literal conversion.
+const loadable = Number.isInteger(stackValue) && stackValue % 5 === 0
+record('a newly added movement opens on a loadable weight', loadable, `${stackValue} lb`)
+await page.evaluate(() => window.scrollTo(0, 0))
+await page.waitForTimeout(150)
+
 // The weight box must say what the number means — that ambiguity between a
 // barbell total and a per-dumbbell number is the thing this labelling fixes.
 const weightLabels = await page

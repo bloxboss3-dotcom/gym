@@ -14,6 +14,7 @@ import {
 import { volumeLoad } from '@/engine/stats'
 import { toDisplay } from '@/engine/units'
 import { defaultSettings } from '@/db/defaults'
+import { EXERCISE_LIBRARY } from '@/data/exercises'
 import type { LoggedSet } from '@/types'
 
 /**
@@ -186,6 +187,17 @@ describe('weight labelling', () => {
     expect(weightLabel('bodyweight', 'kg')).toBe('Added weight (kg)')
   })
 
+  it('says when a movement is trained one side at a time', () => {
+    // A single-arm cable lateral raise: the pin is the pin, but the SET is
+    // per side, which is a different question and needs saying.
+    expect(weightHint('stack', 12, 'kg', true)).toMatch(/One side at a time/)
+    expect(weightHint('dumbbell_single', 30, 'lb', true)).toMatch(/One side at a time/)
+    // A machine lateral raise moves both arms on one stack — nothing to add.
+    expect(weightHint('stack', 12, 'kg', false)).toBeNull()
+    // Loading style still wins where it has something more specific to say.
+    expect(weightHint('barbell', 100, 'kg', true)).toBe('Bar included')
+  })
+
   it('spells out the pair total so nobody has to wonder', () => {
     expect(weightHint('dumbbell_pair', 30, 'lb')).toBe('Two dumbbells — 60 lb total')
     expect(weightHint('dumbbell_pair', 0, 'lb')).toMatch(/number on one dumbbell/)
@@ -258,5 +270,54 @@ describe('unit-native gym hardware', () => {
     expect(barKgFor(trapBar, bare, 'kg')).toBe(25)
     // The override wins over the user's default bar, not the other way round.
     expect(barKgFor(trapBar, { ...bare, barbellKg: 20 }, 'kg')).toBe(25)
+  })
+})
+
+describe('exercise library integrity', () => {
+  it('gives every movement a loading style', () => {
+    for (const exercise of EXERCISE_LIBRARY) {
+      expect(exercise.loading, exercise.id).toBeTruthy()
+    }
+  })
+
+  it('keeps loading style and set style independent', () => {
+    // `loading` describes the implement; `unilateral` describes the set. They
+    // are orthogonal, and the library has to prove it in both directions —
+    // this pairing was previously conflated, which left `unilateral` meaning
+    // "loaded per hand" and therefore useless.
+    const byId = new Map(EXERCISE_LIBRARY.map((e) => [e.id, e]))
+
+    // Two dumbbells, both moving at once → not one side at a time.
+    for (const id of ['dumbbell-bench-press', 'incline-dumbbell-press', 'dumbbell-shoulder-press', 'lateral-raise']) {
+      const exercise = byId.get(id)!
+      expect(exercise.loading, id).toBe('dumbbell_pair')
+      expect(exercise.unilateral, id).toBe(false)
+    }
+
+    // Two dumbbells, one LEG at a time → both flags true, legitimately.
+    const bulgarian = byId.get('bulgarian-split-squat')!
+    expect(bulgarian.loading).toBe('dumbbell_pair')
+    expect(bulgarian.unilateral).toBe(true)
+
+    // A stack can be either: one arm on a cable, both arms on a machine.
+    expect(byId.get('cable-lateral-raise')!.unilateral).toBe(true)
+    expect(byId.get('machine-lateral-raise')!.unilateral).toBe(false)
+  })
+
+  it('offers a dumbbell, cable and machine route to the side delts', () => {
+    const lateral = EXERCISE_LIBRARY.filter((e) => e.contributions.side_delts === 1)
+    const styles = new Set(lateral.flatMap((e) => e.equipment))
+    expect(styles.has('dumbbell')).toBe(true)
+    expect(styles.has('cable')).toBe(true)
+    expect(styles.has('machine')).toBe(true)
+  })
+
+  it('keeps alternative ids pointing at movements that exist', () => {
+    const ids = new Set(EXERCISE_LIBRARY.map((e) => e.id))
+    for (const exercise of EXERCISE_LIBRARY) {
+      for (const alt of exercise.alternatives ?? []) {
+        expect(ids.has(alt), `${exercise.id} → ${alt}`).toBe(true)
+      }
+    }
   })
 })

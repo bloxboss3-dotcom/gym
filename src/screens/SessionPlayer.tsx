@@ -321,8 +321,13 @@ function ExerciseBlock({
   )
 
   // Open on a load the user can actually put on the bar, in their own unit.
+  //
+  // The last-resort fallback is picked in DISPLAY units. A bare kilogram
+  // constant here meant a pound user with no history for a movement opened on
+  // "44.1 lb" — a number that exists on no stack and no dumbbell rack.
+  const fallbackKg = fromDisplay(units === 'kg' ? 20 : 45, units)
   const suggestedLoad = roundToIncrement(
-    recommendation.target.loadKg ?? previous?.sets[0]?.weightKg ?? 20,
+    recommendation.target.loadKg ?? previous?.sets[0]?.weightKg ?? fallbackKg,
     entry.incrementKg,
     units,
   )
@@ -345,7 +350,7 @@ function ExerciseBlock({
         : null,
     [loading, draftWeight, barDisplay, plates, units],
   )
-  const hint = weightHint(loading, draftWeight, units)
+  const hint = weightHint(loading, draftWeight, units, exercise?.unilateral ?? false)
 
   const workingSets = entry.sets.filter((s) => !s.warmup)
   const done = workingSets.length >= entry.plannedSets
@@ -472,9 +477,9 @@ function ExerciseBlock({
         <div className="mt-3 space-y-2.5">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[11px] uppercase tracking-wider text-smoke mb-1">
+              <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1">
                 {weightLabel(loading, units)}
-              </label>
+              </p>
               <NumberStepper
                 label={weightLabel(loading, units)}
                 value={draftWeight}
@@ -486,7 +491,7 @@ function ExerciseBlock({
               />
             </div>
             <div>
-              <label className="block text-[11px] uppercase tracking-wider text-smoke mb-1">Reps</label>
+              <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1">Reps</p>
               <NumberStepper label="Reps" value={draftReps} min={1} max={100} onChange={setDraftReps} />
             </div>
           </div>
@@ -511,12 +516,15 @@ function ExerciseBlock({
           ) : (
             hint && <p className="text-[11px] text-smoke -mt-1">{hint}</p>
           )}
+          {loading === 'barbell' && exercise?.unilateral && (
+            <p className="text-[11px] text-smoke -mt-1">One side at a time — log each side as its own set</p>
+          )}
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-[11px] uppercase tracking-wider text-smoke">
+              <p className="block text-[11px] uppercase tracking-wider text-smoke">
                 Reps in reserve {draftRir === null && '(not reported)'}
-              </label>
+              </p>
               <button
                 type="button"
                 onClick={() => setDraftRir((v) => (v === null ? entry.targetRIR : null))}
@@ -776,9 +784,9 @@ function EditSetForm({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-[11px] uppercase tracking-wider text-smoke mb-1">
+          <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1">
             {weightLabel(loading, units)}
-          </label>
+          </p>
           <NumberStepper
             label={weightLabel(loading, units)}
             value={weight}
@@ -790,12 +798,12 @@ function EditSetForm({
           />
         </div>
         <div>
-          <label className="block text-[11px] uppercase tracking-wider text-smoke mb-1">Reps</label>
+          <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1">Reps</p>
           <NumberStepper label="Reps" value={reps} min={0} max={100} onChange={setReps} />
         </div>
       </div>
       <div>
-        <label className="block text-[11px] uppercase tracking-wider text-smoke mb-1.5">Reps in reserve</label>
+        <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1.5">Reps in reserve</p>
         <div className="grid grid-cols-7 gap-1">
           {[null, 0, 1, 2, 3, 4, 5].map((value, i) => (
             <button

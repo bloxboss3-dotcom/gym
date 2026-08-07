@@ -185,8 +185,20 @@ export function weightLabel(loading: LoadingStyle, units: Units): string {
   }
 }
 
-/** Short clarifier shown under the box. Null when nothing needs saying. */
-export function weightHint(loading: LoadingStyle, displayWeight: number, units: Units): string | null {
+/**
+ * Short clarifier shown under the box. Null when nothing needs saying.
+ *
+ * `unilateral` means the movement is trained one side at a time — a single-arm
+ * cable lateral raise, a one-arm row. That changes what a "set" is, which is a
+ * different question from what the weight refers to, so it gets said out loud.
+ */
+export function weightHint(
+  loading: LoadingStyle,
+  displayWeight: number,
+  units: Units,
+  unilateral = false,
+): string | null {
+  const perSide = unilateral ? 'One side at a time — log each side as its own set' : null
   switch (loading) {
     case 'barbell':
       return 'Bar included'
@@ -195,8 +207,8 @@ export function weightHint(loading: LoadingStyle, displayWeight: number, units: 
         ? `Two dumbbells — ${clean(displayWeight * 2)} ${units} total`
         : 'Enter the number on one dumbbell'
     case 'bodyweight':
-      return displayWeight > 0 ? 'On top of your body weight' : 'Body weight only'
+      return perSide ?? (displayWeight > 0 ? 'On top of your body weight' : 'Body weight only')
     default:
-      return null
+      return perSide
   }
 }
