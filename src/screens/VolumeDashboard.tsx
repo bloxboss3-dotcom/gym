@@ -7,6 +7,7 @@ import { CitationList } from '@/components/RecommendationCard'
 import { RULES } from '@/config/rules'
 import { MUSCLES, MUSCLE_LABEL } from '@/data/muscles'
 import { assessAllMuscles, weeklyCompletion, suggestVolumeProgression } from '@/engine/volume'
+import { LOAD_RANGE_NOTE, auditHypertrophy, collectAuditInput } from '@/engine/intensity'
 import { addDays, startOfWeek, toIsoDate } from '@/lib/date'
 import { useStore } from '@/state/store'
 import type { MuscleKey } from '@/types'
@@ -52,6 +53,14 @@ export default function VolumeDashboard() {
   const suggestions = useMemo(
     () => suggestVolumeProgression(assessments, completion.fraction, profile.experience),
     [assessments, completion.fraction, profile.experience],
+  )
+
+  const levers = useMemo(
+    () =>
+      auditHypertrophy(
+        collectAuditInput(data.sessions, data.exercises, weekDates, assessments),
+      ),
+    [data.sessions, data.exercises, weekDates, assessments],
   )
 
   const totalHardSets = assessments.reduce((sum, a) => sum + a.hardSets, 0)
@@ -103,6 +112,36 @@ export default function VolumeDashboard() {
             ariaLabel="Total weekly hard sets over the last six weeks"
             bars={history.map((h) => ({ label: h.label, value: h.value, tone: 'ember' }))}
           />
+        </Card>
+
+        {/* The four levers that actually move hypertrophy, graded against what
+            the app can measure. Anything it cannot measure says so rather than
+            inventing a grade — a made-up green tick is worse than a blank. */}
+        <Card>
+          <SectionHeading
+            title="Hypertrophy check"
+            hint="Volume, effort, frequency and rest — in that order of importance."
+          />
+          <ul className="space-y-2.5 mt-1">
+            {levers.map((lever) => (
+              <li key={lever.key} className="rounded-lg border border-slate/70 bg-coal/60 px-3 py-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium text-parchment">{lever.label}</p>
+                  <Chip
+                    tone={lever.status === 'good' ? 'good' : lever.status === 'attention' ? 'caution' : 'neutral'}
+                  >
+                    {lever.status === 'good' ? 'On track' : lever.status === 'attention' ? 'Worth a look' : 'No data yet'}
+                  </Chip>
+                </div>
+                {lever.finding && <p className="text-xs text-ash mt-1 leading-relaxed">{lever.finding}</p>}
+                <p className="text-xs text-smoke mt-1 leading-relaxed">{lever.advice}</p>
+                <div className="mt-1.5">
+                  <CitationList ids={lever.citationIds} />
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-smoke mt-3 leading-relaxed">{LOAD_RANGE_NOTE}</p>
         </Card>
 
         {suggestions.length > 0 && (

@@ -265,6 +265,46 @@ const stackValue = Number(await stackInput.inputValue())
 // 44.1 is what a kilogram constant looks like after a literal conversion.
 const loadable = Number.isInteger(stackValue) && stackValue % 5 === 0
 record('a newly added movement opens on a loadable weight', loadable, `${stackValue} lb`)
+
+// Intensity finisher.
+//
+// The machine lateral raise is a pin-loaded stack on a fresh account whose
+// week is nearly empty, which is exactly the case the rules are written for.
+// Asserted on the drop target appearing with a real number in it, because a
+// suggestion that says "do a drop set" without saying to what is useless.
+const lateralLogButton = page.getByRole('button', { name: 'Log set' }).last()
+for (let i = 0; i < 3; i += 1) {
+  await lateralLogButton.click()
+  await page.waitForTimeout(150)
+}
+const finisherText = await page
+  .locator('text=/Drop to .* and go again/')
+  .first()
+  .innerText()
+  .catch(() => '')
+// The number has to be a weight the machine can actually be set to. A 2.5 kg
+// increment converted literally lands on 33.1 lb, which exists on no stack —
+// the fifth time a kilogram constant has reached the UI in this app.
+const dropLb = Number(finisherText.match(/Drop to ([\d.]+) lb/)?.[1])
+record(
+  'offers a drop set once the sets are done and the week is short',
+  Number.isFinite(dropLb),
+  finisherText || 'no finisher shown',
+)
+record(
+  'drops to a weight the stack actually has',
+  Number.isInteger(dropLb) && dropLb % 5 === 0,
+  `${dropLb} lb`,
+)
+if (finisherText) {
+  await page.locator('button[aria-expanded]:has-text("Drop to")').first().click()
+  await page.waitForTimeout(250)
+  const honest = await page.locator('text=/not a bigger stimulus per set/').count()
+  record('says plainly that a drop set is not extra growth', honest > 0)
+  const cited = await page.locator('a:has-text("Fink 2018"), a:has-text("Krzysztofik 2019")').count()
+  record('cites the drop-set evidence inline', cited > 0, `${cited} links`)
+  await noOverflow('finisher')
+}
 await page.evaluate(() => window.scrollTo(0, 0))
 await page.waitForTimeout(150)
 
@@ -393,6 +433,18 @@ await page.goto(`${BASE}#/progress/volume`, { waitUntil: 'networkidle' })
 await page.waitForSelector('text=Weekly hard sets, text=Hard sets', { timeout: 10000 }).catch(() => {})
 await shot('12-volume')
 await noOverflow('volume')
+
+// The hypertrophy check grades the four levers that actually move growth. Each
+// one must carry a verdict AND advice — a grade with nothing to do about it is
+// a scoreboard, not coaching.
+const leverLabels = ['Weekly volume', 'Proximity to failure', 'Frequency', 'Rest between sets', 'Range of motion']
+const leversFound = []
+for (const label of leverLabels) {
+  if (await page.locator(`text="${label}"`).count()) leversFound.push(label)
+}
+record('grades every hypertrophy lever', leversFound.length === leverLabels.length, leversFound.join(', '))
+const verdicts = await page.locator('text=/On track|Worth a look|No data yet/').count()
+record('each lever carries a verdict', verdicts >= leverLabels.length, `${verdicts} verdicts`)
 
 // -------------------------------------------------------------------- forge
 await page.goto(`${BASE}#/forge`, { waitUntil: 'networkidle' })

@@ -16,9 +16,12 @@ import {
   TextArea,
   cx,
 } from '@/components/ui'
+import { citationsFor } from '@/data/citations'
 import { EXERCISE_BY_ID, searchExercises } from '@/data/exercises'
 import { RULES } from '@/config/rules'
 import { historyFor, recommendNextSession } from '@/engine/progression'
+import { BLOCK_EXPLANATION, primaryMuscle, suggestFinisher } from '@/engine/intensity'
+import { startingVolumeRange, weeklyMuscleVolume } from '@/engine/volume'
 import { fromDisplay, formatWeight, roundToIncrement, toDisplay } from '@/engine/units'
 import {
   barKgFor,
@@ -30,7 +33,7 @@ import {
   weightLabel,
   type PlateGroup,
 } from '@/engine/plates'
-import { formatClock, formatDateLabel, toIsoDate } from '@/lib/date'
+import { addDays, formatClock, formatDateLabel, startOfWeek, toIsoDate } from '@/lib/date'
 import { useStore } from '@/state/store'
 import type { LoadingStyle, LoggedSet, SessionEntry, TechniqueRating, Units } from '@/types'
 
@@ -368,6 +371,28 @@ function ExerciseBlock({
   const workingSets = entry.sets.filter((s) => !s.warmup)
   const done = workingSets.length >= entry.plannedSets
 
+  // Should this movement earn a finisher? The answer depends on how short the
+  // week is for the muscle it trains, so the weekly tally has to be computed
+  // here rather than guessed.
+  const finisher = useMemo(() => {
+    if (!exercise || readOnly) return { technique: null, blockedBy: null }
+    const muscle = primaryMuscle(exercise)
+    if (!muscle) return { technique: null, blockedBy: null }
+    const start = startOfWeek(toIsoDate())
+    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(start, i))
+    const volume = weeklyMuscleVolume(data.sessions, data.exercises, weekDates)
+    return suggestFinisher({
+      goal: data.profile?.goal ?? 'general',
+      exercise,
+      entry,
+      weeklySets: volume[muscle]?.hardSets ?? 0,
+      weeklyRange: startingVolumeRange(data.profile?.experience ?? 'beginner'),
+      finishersUsedThisSession: 0,
+      deloadActive: data.deloads.some((d) => d.status === 'accepted' && d.endDate === null),
+      units,
+    })
+  }, [exercise, entry, data.sessions, data.exercises, data.profile, data.deloads, units, readOnly])
+
   // Total reps this session vs last, which is exactly what double progression
   // is comparing. Only sets at a comparable load count toward "to beat" —
   // beating last week's reps on a lighter bar is not progress.
@@ -499,6 +524,68 @@ function ExerciseBlock({
           detailHref={`/progress/recommendation/${entry.exerciseId}`}
         />
       </Disclosure>
+
+      {/* Finisher ----------------------------------------------------------
+          Only after the planned sets are done, and only when the week is
+          actually short on volume for this muscle. It is deliberately a
+          disclosure rather than a banner: the honest version of this feature
+          is an option you can take, not a target you have failed to hit. */}
+      {done && finisher.technique && (
+        <div className="mt-3 rounded-lg border border-ember-500/35 bg-ember-500/[0.07] px-3 py-2.5">
+          <Disclosure
+            summary={
+              <span className="flex items-center gap-2 flex-wrap">
+                <Chip tone="ember">Optional</Chip>
+                <span className="text-ember-300 font-medium text-sm">{finisher.technique.headline}</span>
+                <span className="text-xs text-smoke">— how &amp; why?</span>
+              </span>
+            }
+            tone="quiet"
+          >
+            <p className="text-[11px] uppercase tracking-wider text-smoke mt-2">
+              {finisher.technique.name}
+            </p>
+            <ol className="mt-1.5 space-y-1.5">
+              {finisher.technique.steps.map((step, i) => (
+                <li key={i} className="text-sm text-parchment flex gap-2">
+                  <span className="shrink-0 text-smoke tabular">{i + 1}.</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="text-xs text-ash mt-2.5 leading-relaxed">{finisher.technique.reason}</p>
+            {finisher.technique.missingData.map((gap) => (
+              <p key={gap} className="text-[11px] text-smoke mt-1.5 leading-relaxed">
+                Missing: {gap}
+              </p>
+            ))}
+            <p className="text-[11px] text-smoke mt-2">
+              Rule <span className="text-ash">{finisher.technique.rule}</span> · confidence{' '}
+              {finisher.technique.confidence} · counts as {finisher.technique.countsAsSets} of a hard set
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {citationsFor(finisher.technique.citationIds).map((c) => (
+                <a
+                  key={c.id}
+                  href={c.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] text-ember-300 underline underline-offset-2"
+                >
+                  {c.short}
+                </a>
+              ))}
+            </div>
+          </Disclosure>
+        </div>
+      )}
+      {done && !finisher.technique && finisher.blockedBy && finisher.blockedBy !== 'sets_incomplete' && (
+        // Saying why NOT is the same promise as saying why. A silent absence
+        // teaches people the feature is broken.
+        <p className="text-[11px] text-smoke mt-2.5 leading-relaxed">
+          No finisher today: {BLOCK_EXPLANATION[finisher.blockedBy]}
+        </p>
+      )}
 
       {/* Logged sets ------------------------------------------------------- */}
       {entry.sets.length > 0 && (
