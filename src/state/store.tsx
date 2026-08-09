@@ -109,6 +109,7 @@ export interface ForgedStore {
 
   // Deloads ------------------------------------------------------------------
   acceptDeload: (reason: string) => void
+  solvePuzzle: (puzzleId: string, theme: string) => void
   declineDeload: (reason: string) => void
   completeDeload: (id: string) => void
 
@@ -706,6 +707,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           tone: 'info',
           title: 'Deload started',
           body: 'Lighter loads, fewer sets. This still counts as training.',
+        })
+      },
+
+      /**
+       * A rest-timer puzzle was solved.
+       *
+       * Deliberately routed through the same reward ledger and the same daily
+       * caps as everything else, so chess can never out-earn training. The
+       * screen only offers puzzles while a rest timer is actually running,
+       * which means you have to be mid-session to earn anything at all.
+       */
+      solvePuzzle(puzzleId, theme) {
+        mutate((current) => {
+          const solved = current.game.solvedPuzzleIds ?? []
+          const next: AppData = {
+            ...current,
+            game: {
+              ...current.game,
+              solvedPuzzleIds: solved.includes(puzzleId) ? solved : [...solved, puzzleId],
+            },
+          }
+          return awardInto(
+            next,
+            [simpleGrant('puzzle_solved', `puzzle:${puzzleId}`, `${theme} solved between sets.`)],
+            pushToast,
+          )
         })
       },
 

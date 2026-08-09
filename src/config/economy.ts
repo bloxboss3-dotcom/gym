@@ -37,6 +37,12 @@ export const ECONOMY = {
     weekly_consistency: { xp: 150, coins: 75 },
     benchmark_improved: { xp: 100, coins: 50 },
     quest_completed: { xp: 80, coins: 40 },
+    /**
+     * Rest-timer chess. Kept small on purpose: it is only earnable DURING a
+     * real rest interval, and even at the daily cap it pays less than a single
+     * workout. The character has to stay a record of training, not of chess.
+     */
+    puzzle_solved: { xp: 8, coins: 3 },
     level_up: { xp: 0, coins: 0 },
     duplicate_refund: { xp: 0, coins: 0 },
   } satisfies Record<RewardReason, { xp: number; coins: number }>,
@@ -55,6 +61,7 @@ export const ECONOMY = {
       weekly_consistency: 1,
       benchmark_improved: 1,
       quest_completed: 3,
+      puzzle_solved: 5,
       level_up: 99,
       duplicate_refund: 99,
     } satisfies Record<RewardReason, number>,

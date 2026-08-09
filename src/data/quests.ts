@@ -267,6 +267,7 @@ export const REWARD_REASON_LABEL: Record<RewardReason, string> = {
   weekly_consistency: 'Weekly consistency',
   benchmark_improved: 'Benchmark improved',
   quest_completed: 'Quest completed',
+  puzzle_solved: 'Rest-timer puzzle solved',
   level_up: 'Level up',
   duplicate_refund: 'Duplicate converted',
 }

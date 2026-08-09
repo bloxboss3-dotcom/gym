@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { RecommendationCard } from '@/components/RecommendationCard'
+import { RestPuzzle } from '@/components/RestPuzzle'
 import {
   Alert,
   Button,
@@ -54,6 +55,7 @@ export default function SessionPlayer() {
   const [addOpen, setAddOpen] = useState(false)
   const [substituteFor, setSubstituteFor] = useState<string | null>(null)
   const [notesOpen, setNotesOpen] = useState(false)
+  const [puzzleOpen, setPuzzleOpen] = useState(false)
   const timerRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -118,6 +120,13 @@ export default function SessionPlayer() {
               <span className="font-display text-lg text-ember-300 tabular">{formatClock(restLeft)}</span>
               <button
                 type="button"
+                onClick={() => setPuzzleOpen((v) => !v)}
+                className="text-xs text-ember-200 underline underline-offset-2 touch-target px-2"
+              >
+                {puzzleOpen ? 'Hide puzzle' : 'Puzzle'}
+              </button>
+              <button
+                type="button"
                 onClick={() => setRestEndsAt(null)}
                 className="text-xs text-ember-200 underline underline-offset-2 touch-target px-2"
               >
@@ -132,6 +141,10 @@ export default function SessionPlayer() {
         className="flex-1 max-w-lg mx-auto w-full px-4 pt-4 safe-x space-y-4"
         style={{ paddingBottom: 'calc(6rem + var(--safe-bottom))' }}
       >
+        {restLeft > 0 && puzzleOpen && (
+          <RestPuzzle seed={totalSets + session.entries.length} onClose={() => setPuzzleOpen(false)} />
+        )}
+
         {readOnly && (
           <Alert tone="info" title="This session is closed">
             You are viewing a {session.status} session. Start a new one from Train to keep logging.

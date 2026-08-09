@@ -57,6 +57,7 @@ export function defaultGameState(): GameState {
     bestStreakDays: 0,
     streakShields: 2,
     lastActiveDate: null,
+    solvedPuzzleIds: [],
   }
 }
 
