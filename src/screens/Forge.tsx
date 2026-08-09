@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Screen } from '@/components/AppShell'
 import { Warrior } from '@/character/Warrior'
 import { Alert, Button, Card, Chip, ProgressBar, SectionHeading, Stat, cx } from '@/components/ui'
-import { ECONOMY, levelFromXp } from '@/config/economy'
+import { ECONOMY, levelFromXp, buildFromXp } from '@/config/economy'
 import { ITEM_BY_ID, RARITY_META } from '@/data/items'
 import { REWARD_REASON_LABEL } from '@/data/quests'
 import { collectionProgress, unopenedPacks } from '@/engine/packs'
@@ -45,7 +45,11 @@ export default function Forge() {
       <div className="space-y-4">
         <Card raised className="relative overflow-hidden">
           <div className="flex gap-4">
-            <Warrior equipped={data.game.equipped} className="w-28 h-auto shrink-0" />
+            <Warrior
+              equipped={data.game.equipped}
+              build={buildFromXp(data.game.xp)}
+              className="w-28 h-auto shrink-0"
+            />
             <div className="min-w-0 flex-1">
               <p className="font-display text-2xl uppercase tracking-wide leading-none">{data.profile?.name}</p>
               {title && <p className="text-sm text-gold-300 mt-0.5">{title.name}</p>}
@@ -76,6 +80,15 @@ export default function Forge() {
               <Button full>Inventory</Button>
             </Link>
           </div>
+          <Link to="/forge/sparring" className="contents">
+            <Button full className="mt-2">
+              Sparring ›
+            </Button>
+          </Link>
+          <p className="text-[11px] text-smoke mt-1.5 leading-relaxed">
+            Some gear carries health and damage. Those numbers move a bout against a bot and nothing else — no
+            training recommendation in this app has ever read what you are wearing.
+          </p>
         </Card>
 
         {packs.length > 0 && (

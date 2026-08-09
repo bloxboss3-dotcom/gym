@@ -112,6 +112,55 @@ export const RULES = {
   },
 
   /** ------------------------------------------------------------------
+   * Intensity techniques — drop sets, rest-pause, long-length partials.
+   *
+   * Read the numbers here alongside what the evidence actually says, because
+   * the marketing around these techniques is far ahead of the data. In
+   * controlled trials that equate volume, drop sets and rest-pause produce
+   * hypertrophy comparable to straight sets — in noticeably less time. They
+   * are a way to buy the last slice of weekly volume cheaply, not a way to
+   * grow faster per set. FORGED therefore offers one only when volume for the
+   * muscle is short, and never sells it as a shortcut.
+   *
+   * Long-length partials are the exception with a positive signal of its own:
+   * training at long muscle lengths beats matched work at short lengths.
+   * ------------------------------------------------------------------ */
+  intensity: {
+    /** Goals where a finisher is offered at all. */
+    goals: ['hypertrophy', 'recomp'] as const,
+    /** Fatigue budget. More than this per session is how people dig holes. */
+    maxPerSession: 2,
+    /** Never on the same movement twice in one session. */
+    maxPerExercise: 1,
+    /**
+     * Loading styles safe to take past failure without a spotter. A barbell
+     * across your back or over your throat is not on this list, and no amount
+     * of hypertrophy upside changes that.
+     */
+    safeLoading: ['stack', 'dumbbell_pair', 'dumbbell_single', 'bodyweight'] as const,
+    /** Patterns excluded regardless of loading — a loaded spine near failure. */
+    unsafePatterns: ['squat', 'hinge'] as const,
+    /** Only offered once weekly sets for the target muscle are short by this. */
+    setsShortOfRange: 1,
+    /** Blocked at or above this reported pain (0–10). */
+    painBlock: 3,
+    /** Drop set: cut this fraction of the load, then go to failure again. */
+    dropLoadPct: 0.25,
+    dropCount: 1,
+    /** Rest-pause: rest this long, then squeeze out another mini-set. */
+    restPauseSec: 20,
+    restPauseBursts: 2,
+    /** Partials: continue in the stretched half of the range only. */
+    partialsRangeFraction: 0.5,
+    /**
+     * How a finisher counts toward the weekly hard-set tally. A drop set is
+     * extra work but not two fresh sets, and counting it as two would inflate
+     * the volume dashboard into meaninglessness.
+     */
+    countsAsSets: { drop_set: 0.5, rest_pause: 0.5, long_length_partials: 0.5 },
+  },
+
+  /** ------------------------------------------------------------------
    * Protein. Baseline 1.6 g/kg/day; practical range 1.6–2.2 g/kg/day.
    * The top of the range is an option (dieting / very lean / extra margin),
    * never a mandate.

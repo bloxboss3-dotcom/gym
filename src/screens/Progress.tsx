@@ -23,6 +23,7 @@ import { computeConsistency } from '@/engine/consistency'
 import { assessDeload } from '@/engine/deload'
 import { proteinAdherence, calculateProteinTarget } from '@/engine/protein'
 import { assessAllMuscles, weeklyCompletion } from '@/engine/volume'
+import { LEVEL_LABEL, profileFromHistory } from '@/engine/percentile'
 import {
   bodyWeightSeries,
   e1rmTrend,
@@ -99,6 +100,11 @@ export default function Progress() {
         .sort((a, b) => b.trend.length - a.trend.length)
         .slice(0, 3),
     [prs, data.sessions],
+  )
+
+  const strength = useMemo(
+    () => profileFromHistory(data.sessions, data.bodyWeights, profile.sex ?? 'unspecified', profile.bodyWeightKg),
+    [data.sessions, data.bodyWeights, profile.sex, profile.bodyWeightKg],
   )
 
   const quality = useMemo(
@@ -253,6 +259,83 @@ export default function Progress() {
             </Link>
           </Card>
         </div>
+
+        {/* Where you stand --------------------------------------------------
+            A percentile is a comparison, and a comparison with no stated
+            reference group is a number people quietly read as "everyone". The
+            caveat is not fine print here — it is part of the answer. */}
+        <Card>
+          <SectionHeading
+            title="Where you stand"
+            hint="Your lifts against published strength standards, scaled to your body weight."
+          />
+          {strength.overall === null ? (
+            <p className="text-sm text-ash mt-1">
+              {strength.missingData[0] ??
+                'Log one of the benchmark barbell lifts and a body weight, and this fills in.'}
+            </p>
+          ) : (
+            <>
+              <div className="flex items-end gap-3 mt-1">
+                <p className="font-display text-5xl text-ember-400 tabular leading-none">
+                  {strength.overall}
+                  <span className="text-xl text-ash">th</span>
+                </p>
+                <p className="text-xs text-ash leading-snug pb-1">
+                  percentile among people who log lifts
+                  <br />
+                  <span className="text-smoke">confidence: {strength.confidence}</span>
+                </p>
+              </div>
+              <ul className="mt-3 space-y-1.5">
+                {strength.lifts.map((lift) => (
+                  <li
+                    key={lift.exerciseId}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-slate/70 bg-coal/60 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm text-parchment truncate">{lift.label}</p>
+                      <p className="text-[11px] text-smoke">
+                        {formatWeight(lift.oneRepMaxKg, units)} · {lift.ratio}× body weight ·{' '}
+                        {LEVEL_LABEL[lift.level]}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-display text-xl text-parchment tabular leading-none">
+                        {lift.percentile}
+                        <span className="text-[11px] text-smoke">th</span>
+                      </p>
+                      {lift.nextLoadKg !== null && (
+                        <p className="text-[10px] text-smoke mt-0.5">
+                          {formatWeight(lift.nextLoadKg, units)} → {LEVEL_LABEL[lift.nextLevel!]}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <Disclosure summary="What this number is, and what it is not" tone="quiet">
+            <p className="mb-2">{strength.caveat}</p>
+            {strength.missingData.map((gap) => (
+              <p key={gap} className="mb-2 text-smoke">
+                {gap}
+              </p>
+            ))}
+            <p className="mb-2">
+              Body weight is handled allometrically — strength scales with roughly the two-thirds power of body mass,
+              so a heavier lifter needs more weight on the bar but a smaller multiple of themselves for the same
+              standing. One exponent, applied identically to everyone.
+            </p>
+            <p className="mb-2">
+              XP is paid for <span className="text-parchment">crossing</span> a percentile band, never for the band you
+              are already in. Rewarding the standing would hand the biggest prizes to whoever walked in strongest;
+              rewarding the climb pays a beginner exactly what it pays anyone else, and beginners climb fastest.
+            </p>
+            <CitationList ids={strength.citationIds} />
+          </Disclosure>
+        </Card>
 
         {/* Strength trends -------------------------------------------------- */}
         <div>

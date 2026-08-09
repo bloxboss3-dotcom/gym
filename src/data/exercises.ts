@@ -26,6 +26,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 2.5,
     cue: 'Shoulder blades pinned, bar to lower chest, elbows ~45°.',
     alternatives: ['dumbbell-bench-press', 'machine-chest-press', 'push-up'],
+    aliases: ['flat bench', 'bb bench'],
   }),
   ex({
     id: 'dumbbell-bench-press',
@@ -132,6 +133,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 2.5,
     cue: 'Glutes tight, bar path past the chin, finish with biceps by ears.',
     alternatives: ['dumbbell-shoulder-press', 'machine-shoulder-press'],
+    aliases: ['barbell shoulder press', 'shoulder press', 'military press', 'ohp', 'strict press'],
   }),
   ex({
     id: 'dumbbell-shoulder-press',
@@ -145,6 +147,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 2,
     cue: 'Wrists stacked over elbows, no lower-back arch.',
     alternatives: ['overhead-press', 'machine-shoulder-press'],
+    aliases: ['db shoulder press', 'seated shoulder press'],
   }),
   ex({
     id: 'machine-shoulder-press',
@@ -171,6 +174,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 1,
     cue: 'Lead with the elbow, stop at shoulder height, no swinging.',
     alternatives: ['cable-lateral-raise', 'machine-lateral-raise'],
+    aliases: ['side raise', 'lat raise', 'dumbbell lateral raise'],
   }),
   ex({
     id: 'cable-lateral-raise',
@@ -184,6 +188,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 1.25,
     cue: 'Cable behind the body, constant tension through the bottom.',
     alternatives: ['machine-lateral-raise', 'lateral-raise'],
+    aliases: ['cable side raise'],
   }),
   ex({
     id: 'machine-lateral-raise',
@@ -197,6 +202,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 2.5,
     cue: 'Pads on the forearms, drive out and up, control the way down.',
     alternatives: ['cable-lateral-raise', 'lateral-raise'],
+    aliases: ['lateral delt machine', 'delt machine'],
   }),
 
   // --- Vertical pull -------------------------------------------------------
@@ -238,6 +244,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 2.5,
     cue: 'Bar to collarbone, ribs down, elbows into pockets.',
     alternatives: ['pull-up', 'assisted-pull-up'],
+    aliases: ['lat pull down', 'pull down'],
   }),
 
   // --- Horizontal pull -----------------------------------------------------
@@ -253,6 +260,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 2.5,
     cue: 'Torso ~45°, pull to the navel, spine stays neutral.',
     alternatives: ['dumbbell-row', 'chest-supported-row', 'seated-cable-row'],
+    aliases: ['bent over row', 'bor', 'pendlay row'],
   }),
   ex({
     id: 'dumbbell-row',
@@ -292,6 +300,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 2.5,
     cue: 'Let the shoulder blades travel, then pull to the belly.',
     alternatives: ['chest-supported-row', 'dumbbell-row'],
+    aliases: ['low row', 'machine row'],
   }),
   ex({
     id: 'face-pull',
@@ -346,6 +355,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 5,
     cue: 'Brace, sit between the hips, knees track over the toes.',
     alternatives: ['goblet-squat', 'leg-press', 'hack-squat'],
+    aliases: ['barbell squat', 'high bar squat'],
   }),
   ex({
     id: 'front-squat',
@@ -385,6 +395,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 5,
     cue: 'Lower until the pelvis is about to tuck, then drive.',
     alternatives: ['hack-squat', 'goblet-squat'],
+    aliases: ['machine leg press'],
   }),
   ex({
     id: 'hack-squat',
@@ -474,6 +485,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 2.5,
     cue: 'Push the hips back, bar close, stop where the hamstrings stop.',
     alternatives: ['seated-leg-curl', 'hip-thrust'],
+    aliases: ['rdl', 'stiff leg deadlift'],
   }),
   ex({
     id: 'hip-thrust',
@@ -487,6 +499,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 5,
     cue: 'Chin tucked, ribs down, pause at lockout.',
     alternatives: ['romanian-deadlift', 'back-extension'],
+    aliases: ['barbell hip thrust', 'glute bridge'],
   }),
   ex({
     id: 'back-extension',
@@ -552,6 +565,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 2.5,
     cue: 'Full stretch at the bottom, hard squeeze at the top.',
     alternatives: ['seated-calf-raise'],
+    aliases: ['calves', 'calf machine'],
   }),
   ex({
     id: 'seated-calf-raise',
@@ -633,6 +647,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 1.25,
     cue: 'Elbows glued to the ribs, full lockout.',
     alternatives: ['overhead-triceps-extension', 'close-grip-bench'],
+    aliases: ['tricep pushdown', 'rope pushdown', 'cable pushdown'],
   }),
   ex({
     id: 'overhead-triceps-extension',
@@ -659,6 +674,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 2.5,
     cue: 'Shoulder-width grip, elbows tucked, bar to lower sternum.',
     alternatives: ['dip', 'triceps-pushdown'],
+    aliases: ['cgbp', 'close grip bench press'],
   }),
 
   // --- Core ----------------------------------------------------------------
@@ -674,6 +690,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     incrementKg: 1,
     cue: 'Curl the pelvis up — this is not a hip-flexor swing.',
     alternatives: ['cable-crunch', 'plank'],
+    aliases: ['leg raise', 'hanging leg raise'],
   }),
   ex({
     id: 'cable-crunch',
@@ -736,3 +753,54 @@ export const EXERCISE_BY_ID: Record<string, Exercise> = EXERCISE_LIBRARY.reduce(
   },
   {} as Record<string, Exercise>,
 )
+
+/** A hit, plus the alias that produced it when the name itself did not match. */
+export type ExerciseMatch = { exercise: Exercise; matchedAlias?: string }
+
+/**
+ * Search names, then aliases, then loose word order.
+ *
+ * The alias pass is the point of this function. The overhead press is the
+ * "barbell shoulder press" to most of the world, and an empty result reads as
+ * "this app does not have my exercise" rather than "you called it something
+ * else". When the hit came from an alias the alias is returned too, so the
+ * list can show why a search for one name surfaced another.
+ *
+ * Ranked, not filtered: a prefix match beats a match mid-word, a name match
+ * beats an alias, and both beat the any-order fallback that lets "press
+ * shoulder" find the same movement as "shoulder press".
+ */
+export function searchExercises(exercises: Exercise[], query: string): ExerciseMatch[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return exercises.map((exercise) => ({ exercise }))
+
+  const words = q.split(/\s+/).filter(Boolean)
+  const ranked: { match: ExerciseMatch; rank: number }[] = []
+
+  for (const exercise of exercises) {
+    const name = exercise.name.toLowerCase()
+    const aliases = (exercise.aliases ?? []).map((a) => a.toLowerCase())
+
+    if (name.startsWith(q)) {
+      ranked.push({ match: { exercise }, rank: 0 })
+    } else if (name.includes(q)) {
+      ranked.push({ match: { exercise }, rank: 1 })
+    } else {
+      const aliasIndex = aliases.findIndex((a) => a.includes(q))
+      if (aliasIndex >= 0) {
+        ranked.push({ match: { exercise, matchedAlias: exercise.aliases![aliasIndex] }, rank: 2 })
+      } else if (
+        words.length > 1 &&
+        words.every((w) => name.includes(w) || aliases.some((a) => a.includes(w)))
+      ) {
+        ranked.push({ match: { exercise }, rank: 3 })
+      }
+    }
+  }
+
+  // Stable within a rank, so the library's own ordering survives.
+  return ranked
+    .map((r, i) => ({ ...r, i }))
+    .sort((a, b) => a.rank - b.rank || a.i - b.i)
+    .map((r) => r.match)
+}

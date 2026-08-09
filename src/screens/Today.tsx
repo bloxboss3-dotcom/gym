@@ -13,7 +13,7 @@ import {
   Stat,
   cx,
 } from '@/components/ui'
-import { ECONOMY, levelFromXp } from '@/config/economy'
+import { ECONOMY, levelFromXp, buildFromXp } from '@/config/economy'
 import { ITEM_BY_ID } from '@/data/items'
 import { computeConsistency } from '@/engine/consistency'
 import { assessDeload } from '@/engine/deload'
@@ -283,7 +283,7 @@ export default function Today() {
         <Card>
           <div className="flex gap-4">
             <Link to="/forge/character" className="shrink-0" aria-label="Customise your warrior">
-              <Warrior equipped={data.game.equipped} className="w-24 h-auto" />
+              <Warrior equipped={data.game.equipped} build={buildFromXp(data.game.xp)} className="w-24 h-auto" />
             </Link>
             <div className="min-w-0 flex-1">
               <p className="font-display text-xl uppercase tracking-wide leading-none">{profile.name}</p>

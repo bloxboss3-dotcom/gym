@@ -182,6 +182,111 @@ export const CITATIONS: Citation[] = [
     topics: ['effort', 'resistance'],
   },
   {
+    id: 'schoenfeld-2016-frequency',
+    short: 'Schoenfeld 2016 training frequency',
+    title:
+      'Effects of Resistance Training Frequency on Measures of Muscle Hypertrophy: A Systematic Review and Meta-Analysis',
+    authors: 'Schoenfeld BJ, Ogborn D, Krieger JW',
+    source: 'Sports Medicine, 46(11):1689–1697',
+    year: 2016,
+    url: 'https://doi.org/10.1007/s40279-016-0543-8',
+    takeaway:
+      'Training a muscle group at least twice a week produced greater hypertrophy than training it once a week in the pooled studies. Splitting the same weekly volume across two sessions is the cheapest structural change most people can make.',
+    caveat:
+      'Weekly volume was not equated in every included study, so part of the effect may be volume rather than frequency itself. There is no evidence that going beyond twice weekly adds much once volume is matched.',
+    topics: ['resistance', 'volume'],
+  },
+  {
+    id: 'schoenfeld-2017-load',
+    short: 'Schoenfeld 2017 load vs hypertrophy',
+    title:
+      'Strength and Hypertrophy Adaptations Between Low- vs. High-Load Resistance Training: A Systematic Review and Meta-Analysis',
+    authors: 'Schoenfeld BJ, Grgic J, Ogborn D, Krieger JW',
+    source: 'Journal of Strength and Conditioning Research, 31(12):3508–3523',
+    year: 2017,
+    url: 'https://doi.org/10.1519/JSC.0000000000002200',
+    takeaway:
+      'Muscle growth was similar whether sets used heavy loads or light ones, provided the sets were taken close to failure. Maximal strength favoured the heavier loads. For hypertrophy this means the rep range is a preference, not a requirement — anywhere from roughly 6 to 30 reps works.',
+    caveat:
+      'Light-load sets have to be genuinely hard to count. A comfortable set of 25 is not equivalent to a hard set of 25.',
+    topics: ['resistance', 'effort'],
+  },
+  {
+    id: 'schoenfeld-2016-rest',
+    short: 'Schoenfeld 2016 rest intervals',
+    title:
+      'Longer Interset Rest Periods Enhance Muscle Strength and Hypertrophy in Resistance-Trained Men',
+    authors: 'Schoenfeld BJ, Pope ZK, Benik FM, et al.',
+    source: 'Journal of Strength and Conditioning Research, 30(7):1805–1812',
+    year: 2016,
+    url: 'https://doi.org/10.1519/JSC.0000000000001272',
+    takeaway:
+      'Three minutes of rest between sets produced greater strength and muscle thickness gains than one minute, in trained men doing an otherwise identical programme. Short rest cuts the reps you can do on later sets, and those lost reps are lost volume.',
+    caveat:
+      'One study in trained men on a fixed programme. It argues against rushing compound sets; it does not mean every isolation set needs three minutes.',
+    topics: ['recovery', 'resistance', 'volume'],
+  },
+  {
+    id: 'krzysztofik-2019-techniques',
+    short: 'Krzysztofik 2019 advanced techniques review',
+    title:
+      'Maximizing Muscle Hypertrophy: A Systematic Review of Advanced Resistance Training Techniques and Methods',
+    authors: 'Krzysztofik M, Wilk M, Wojdała G, Gołaś A',
+    source: 'International Journal of Environmental Research and Public Health, 16(24):4897',
+    year: 2019,
+    url: 'https://doi.org/10.3390/ijerph16244897',
+    takeaway:
+      'Reviewing drop sets, rest-pause, supersets and forced reps, the evidence for any of them being superior to ordinary straight sets is limited. Their clearest documented advantage is efficiency — comparable stimulus in less training time.',
+    caveat:
+      'A narrative-leaning review of a small and heterogeneous literature. "Not proven superior" is not the same as "useless", and the fatigue cost of these techniques is real.',
+    topics: ['resistance', 'effort', 'volume'],
+  },
+  {
+    id: 'fink-2018-dropset',
+    short: 'Fink 2018 drop sets',
+    title:
+      'Effects of drop set resistance training on acute stress indicators and long-term muscle hypertrophy and strength',
+    authors: 'Fink J, Schoenfeld BJ, Kikuchi N, Nakazato K',
+    source: 'The Journal of Sports Medicine and Physical Fitness, 58(5):597–605',
+    year: 2018,
+    url: 'https://pubmed.ncbi.nlm.nih.gov/28399613/',
+    takeaway:
+      'A drop-set group reached hypertrophy comparable to a conventional group while spending roughly half the time under the bar. Drop sets bought volume per minute; they did not buy extra growth per set.',
+    caveat:
+      'Small, short, and in a single movement. Treat it as evidence for time efficiency, not for superiority.',
+    topics: ['resistance', 'effort'],
+  },
+  {
+    id: 'maeo-2021-long-length',
+    short: 'Maeo 2021 long muscle lengths',
+    title:
+      'Greater Hamstrings Muscle Hypertrophy but Similar Damage Protection after Training at Long versus Short Muscle Lengths',
+    authors: 'Maeo S, Huang M, Wu Y, et al.',
+    source: 'Medicine & Science in Sports & Exercise, 53(4):825–837',
+    year: 2021,
+    url: 'https://doi.org/10.1249/MSS.0000000000002523',
+    takeaway:
+      'Training the hamstrings at long muscle lengths produced substantially more hypertrophy than matched work at short lengths. Where a movement loads the stretched position, that position is doing much of the work.',
+    caveat:
+      'One muscle group, one movement. The direction of the effect is consistent across the wider range-of-motion literature, but the size of it is not settled.',
+    topics: ['resistance'],
+  },
+  {
+    id: 'kassiano-2023-rom',
+    short: 'Kassiano 2023 range of motion review',
+    title:
+      'Which ROMs Lead to Rome? A Systematic Review of the Effects of Range of Motion on Muscle Hypertrophy',
+    authors: 'Kassiano W, Costa B, Nunes JP, et al.',
+    source: 'Journal of Strength and Conditioning Research, 37(5):1135–1144',
+    year: 2023,
+    url: 'https://doi.org/10.1519/JSC.0000000000004415',
+    takeaway:
+      'Full range of motion generally matches or beats partial range, and partials performed in the stretched portion of the movement do about as well as full range — while partials in the shortened portion do worse. If you shorten a movement, shorten it at the top, never at the bottom.',
+    caveat:
+      'Studies differ in how they defined "full" range, and most are short. The practical rule — never cut the stretch — is better supported than any precise number.',
+    topics: ['resistance'],
+  },
+  {
     id: 'zourdos-2016-rir',
     short: 'Zourdos 2016 RIR scale',
     title:

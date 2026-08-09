@@ -16,9 +16,12 @@ import {
   TextArea,
   cx,
 } from '@/components/ui'
-import { EXERCISE_BY_ID } from '@/data/exercises'
+import { citationsFor } from '@/data/citations'
+import { EXERCISE_BY_ID, searchExercises } from '@/data/exercises'
 import { RULES } from '@/config/rules'
 import { historyFor, recommendNextSession } from '@/engine/progression'
+import { BLOCK_EXPLANATION, primaryMuscle, suggestFinisher } from '@/engine/intensity'
+import { startingVolumeRange, weeklyMuscleVolume } from '@/engine/volume'
 import { fromDisplay, formatWeight, roundToIncrement, toDisplay } from '@/engine/units'
 import {
   barKgFor,
@@ -30,7 +33,7 @@ import {
   weightLabel,
   type PlateGroup,
 } from '@/engine/plates'
-import { formatClock, formatDateLabel, toIsoDate } from '@/lib/date'
+import { addDays, formatClock, formatDateLabel, startOfWeek, toIsoDate } from '@/lib/date'
 import { useStore } from '@/state/store'
 import type { LoadingStyle, LoggedSet, SessionEntry, TechniqueRating, Units } from '@/types'
 
@@ -368,6 +371,42 @@ function ExerciseBlock({
   const workingSets = entry.sets.filter((s) => !s.warmup)
   const done = workingSets.length >= entry.plannedSets
 
+  // Should this movement earn a finisher? The answer depends on how short the
+  // week is for the muscle it trains, so the weekly tally has to be computed
+  // here rather than guessed.
+  const finisher = useMemo(() => {
+    if (!exercise || readOnly) return { technique: null, blockedBy: null }
+    const muscle = primaryMuscle(exercise)
+    if (!muscle) return { technique: null, blockedBy: null }
+    const start = startOfWeek(toIsoDate())
+    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(start, i))
+    const volume = weeklyMuscleVolume(data.sessions, data.exercises, weekDates)
+    return suggestFinisher({
+      goal: data.profile?.goal ?? 'general',
+      exercise,
+      entry,
+      weeklySets: volume[muscle]?.hardSets ?? 0,
+      weeklyRange: startingVolumeRange(data.profile?.experience ?? 'beginner'),
+      finishersUsedThisSession: 0,
+      deloadActive: data.deloads.some((d) => d.status === 'accepted' && d.endDate === null),
+      units,
+    })
+  }, [exercise, entry, data.sessions, data.exercises, data.profile, data.deloads, units, readOnly])
+
+  // Total reps this session vs last, which is exactly what double progression
+  // is comparing. Only sets at a comparable load count toward "to beat" —
+  // beating last week's reps on a lighter bar is not progress.
+  const repsThisSession = workingSets.reduce((n, s) => n + s.reps, 0)
+  // History entries are already reduced to working sets by the engine.
+  const previousWorking = previous?.sets ?? []
+  const previousReps = previousWorking.reduce((n, s) => n + s.reps, 0)
+  const currentLoad = workingSets[0]?.weightKg ?? fromDisplay(draftWeight, units)
+  const comparableLoad =
+    previousWorking.length > 0 &&
+    Math.abs((previousWorking[0]?.weightKg ?? 0) - currentLoad) <= entry.incrementKg / 2
+  const repsToBeat = comparableLoad ? previousReps : 0
+  const beatenTarget = repsToBeat > 0 && repsThisSession > repsToBeat
+
   const log = () => {
     store.logSet(sessionId, entry.id, {
       weightKg: fromDisplay(draftWeight, units),
@@ -408,9 +447,56 @@ function ExerciseBlock({
 
       {exercise?.cue && <p className="text-xs text-smoke mt-2 italic">{exercise.cue}</p>}
 
-      {/* Last time --------------------------------------------------------- */}
+      {/*
+        Running rep total.
+
+        Double progression asks you to beat last session's reps at the same
+        load, and until now the app said "chase one more rep" while making you
+        add up your own sets to know whether you had. This is the number the
+        recommendation is actually about.
+      */}
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="rounded-lg bg-coal/70 border border-slate/70 px-2.5 py-2 text-center">
+          <p className="text-[10px] uppercase tracking-wider text-smoke">Reps so far</p>
+          <p className="font-display text-2xl text-parchment tabular leading-none mt-0.5">{repsThisSession}</p>
+        </div>
+        <div className="rounded-lg bg-coal/70 border border-slate/70 px-2.5 py-2 text-center">
+          <p className="text-[10px] uppercase tracking-wider text-smoke">Last time</p>
+          <p className="font-display text-2xl text-ash tabular leading-none mt-0.5">
+            {previousReps || '—'}
+          </p>
+        </div>
+        <div
+          className={cx(
+            'rounded-lg border px-2.5 py-2 text-center',
+            beatenTarget ? 'border-vital/45 bg-vital/10' : 'border-ember-500/40 bg-ember-500/10',
+          )}
+        >
+          {/* "Reps left", not "to beat": the number shown is the gap, and a
+              label that names the target while showing the gap is the kind of
+              small lie that makes people distrust the whole screen. */}
+          <p className="text-[10px] uppercase tracking-wider text-smoke">Reps left</p>
+          <p
+            className={cx(
+              'font-display text-2xl tabular leading-none mt-0.5',
+              beatenTarget ? 'text-vital' : 'text-ember-400',
+            )}
+          >
+            {repsToBeat ? (beatenTarget ? '✓' : repsToBeat + 1 - repsThisSession) : '—'}
+          </p>
+        </div>
+      </div>
+      {repsToBeat > 0 && (
+        <p className="text-[11px] text-smoke mt-1.5 leading-relaxed">
+          {beatenTarget
+            ? `${repsThisSession} total reps beats the ${repsToBeat} you managed last time at this load.`
+            : `${repsToBeat + 1 - repsThisSession} more total reps at this load beats last session.`}
+        </p>
+      )}
+
+      {/* Last session's sets ------------------------------------------------ */}
       <div className="mt-3 rounded-lg bg-coal/70 border border-slate/70 px-3 py-2">
-        <p className="text-[11px] uppercase tracking-wider text-smoke">Last time</p>
+        <p className="text-[11px] uppercase tracking-wider text-smoke">Last time’s sets</p>
         {previous ? (
           <p className="text-sm text-parchment mt-0.5">
             {formatDateLabel(previous.date)} —{' '}
@@ -438,6 +524,68 @@ function ExerciseBlock({
           detailHref={`/progress/recommendation/${entry.exerciseId}`}
         />
       </Disclosure>
+
+      {/* Finisher ----------------------------------------------------------
+          Only after the planned sets are done, and only when the week is
+          actually short on volume for this muscle. It is deliberately a
+          disclosure rather than a banner: the honest version of this feature
+          is an option you can take, not a target you have failed to hit. */}
+      {done && finisher.technique && (
+        <div className="mt-3 rounded-lg border border-ember-500/35 bg-ember-500/[0.07] px-3 py-2.5">
+          <Disclosure
+            summary={
+              <span className="flex items-center gap-2 flex-wrap">
+                <Chip tone="ember">Optional</Chip>
+                <span className="text-ember-300 font-medium text-sm">{finisher.technique.headline}</span>
+                <span className="text-xs text-smoke">— how &amp; why?</span>
+              </span>
+            }
+            tone="quiet"
+          >
+            <p className="text-[11px] uppercase tracking-wider text-smoke mt-2">
+              {finisher.technique.name}
+            </p>
+            <ol className="mt-1.5 space-y-1.5">
+              {finisher.technique.steps.map((step, i) => (
+                <li key={i} className="text-sm text-parchment flex gap-2">
+                  <span className="shrink-0 text-smoke tabular">{i + 1}.</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="text-xs text-ash mt-2.5 leading-relaxed">{finisher.technique.reason}</p>
+            {finisher.technique.missingData.map((gap) => (
+              <p key={gap} className="text-[11px] text-smoke mt-1.5 leading-relaxed">
+                Missing: {gap}
+              </p>
+            ))}
+            <p className="text-[11px] text-smoke mt-2">
+              Rule <span className="text-ash">{finisher.technique.rule}</span> · confidence{' '}
+              {finisher.technique.confidence} · counts as {finisher.technique.countsAsSets} of a hard set
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {citationsFor(finisher.technique.citationIds).map((c) => (
+                <a
+                  key={c.id}
+                  href={c.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] text-ember-300 underline underline-offset-2"
+                >
+                  {c.short}
+                </a>
+              ))}
+            </div>
+          </Disclosure>
+        </div>
+      )}
+      {done && !finisher.technique && finisher.blockedBy && finisher.blockedBy !== 'sets_incomplete' && (
+        // Saying why NOT is the same promise as saying why. A silent absence
+        // teaches people the feature is broken.
+        <p className="text-[11px] text-smoke mt-2.5 leading-relaxed">
+          No finisher today: {BLOCK_EXPLANATION[finisher.blockedBy]}
+        </p>
+      )}
 
       {/* Logged sets ------------------------------------------------------- */}
       {entry.sets.length > 0 && (
@@ -878,11 +1026,10 @@ export function ExercisePicker({
   const { data } = useStore()
   const [query, setQuery] = useState('')
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    const list = data.exercises.filter((e) => !q || e.name.toLowerCase().includes(q))
-    return list.slice(0, 60)
-  }, [data.exercises, query])
+  const results = useMemo(
+    () => searchExercises(data.exercises, query).slice(0, 60),
+    [data.exercises, query],
+  )
 
   const suggested = suggestions.map((id) => data.exercises.find((e) => e.id === id)).filter(Boolean)
 
@@ -916,7 +1063,7 @@ export function ExercisePicker({
         </>
       )}
       <ul className="space-y-1.5">
-        {results.map((exercise) => (
+        {results.map(({ exercise, matchedAlias }) => (
           <li key={exercise.id}>
             <button
               type="button"
@@ -925,7 +1072,9 @@ export function ExercisePicker({
             >
               <span className="block text-sm text-parchment">{exercise.name}</span>
               <span className="block text-[11px] text-smoke">
-                {Object.keys(exercise.contributions).slice(0, 3).join(', ').replace(/_/g, ' ')}
+                {matchedAlias
+                  ? `also called “${matchedAlias}”`
+                  : Object.keys(exercise.contributions).slice(0, 3).join(', ').replace(/_/g, ' ')}
               </span>
             </button>
           </li>

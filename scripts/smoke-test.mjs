@@ -159,6 +159,25 @@ for (let i = 0; i < 3; i++) {
 const loggedRows = await page.locator('li:has-text("RIR")').count()
 record('logs working sets', loggedRows >= 3, `${loggedRows} set rows`)
 
+// The running rep total.
+//
+// Asserted as a sum of the rows on screen rather than against a hard-coded
+// number: the point of the tile is that it agrees with the sets you logged,
+// and a fixed expectation would still pass if the tile froze at whatever
+// number happened to match.
+const repsPerSet = (await page.locator('li:has-text("RIR")').allInnerTexts())
+  .map((t) => t.match(/×\s*(\d+)/))
+  .filter(Boolean)
+  .map((m) => Number(m[1]))
+const expectedTotal = repsPerSet.reduce((n, r) => n + r, 0)
+const totalTile = page.locator('div:has(> p:text-is("Reps so far")) > p.tabular').first()
+const shownTotal = Number((await totalTile.innerText().catch(() => '')).trim())
+record(
+  'sums the reps logged so far',
+  repsPerSet.length >= 3 && shownTotal === expectedTotal,
+  `tile ${shownTotal} vs ${repsPerSet.join('+')} = ${expectedTotal}`,
+)
+
 // Rest-timer chess. It must only exist while a rest timer is running — that
 // gate is what keeps the reward tied to actually training.
 const puzzleToggle = page.getByRole('button', { name: 'Puzzle' })
@@ -207,6 +226,24 @@ record(
 const filtered = await page.getByRole('dialog').getByRole('button', { name: /press/i }).count()
 record('search filters the exercise list as you type', filtered > 0, `${filtered} matches`)
 
+// Searching by the name people actually use.
+//
+// The overhead press is the "barbell shoulder press" to most of the world, and
+// an empty result reads as a missing exercise rather than a different name.
+// Asserted on the result, not on the alias data existing.
+await exSearch.fill('barbell shoulder press')
+await page.waitForTimeout(250)
+const aliasHits = await page.getByRole('dialog').locator('button').allInnerTexts()
+record(
+  'finds the overhead press by its common name',
+  aliasHits.some((t) => /^Overhead Press/.test(t)),
+  aliasHits.slice(0, 3).map((t) => t.split('\n')[0]).join(', ') || 'no results',
+)
+record(
+  'explains which other name matched',
+  aliasHits.some((t) => /also called/i.test(t)),
+)
+
 // Adding a movement mid-session must produce gym-native numbers, not a kg
 // constant converted literally into something like 44.1 lb.
 await exSearch.fill('lateral raise')
@@ -228,6 +265,46 @@ const stackValue = Number(await stackInput.inputValue())
 // 44.1 is what a kilogram constant looks like after a literal conversion.
 const loadable = Number.isInteger(stackValue) && stackValue % 5 === 0
 record('a newly added movement opens on a loadable weight', loadable, `${stackValue} lb`)
+
+// Intensity finisher.
+//
+// The machine lateral raise is a pin-loaded stack on a fresh account whose
+// week is nearly empty, which is exactly the case the rules are written for.
+// Asserted on the drop target appearing with a real number in it, because a
+// suggestion that says "do a drop set" without saying to what is useless.
+const lateralLogButton = page.getByRole('button', { name: 'Log set' }).last()
+for (let i = 0; i < 3; i += 1) {
+  await lateralLogButton.click()
+  await page.waitForTimeout(150)
+}
+const finisherText = await page
+  .locator('text=/Drop to .* and go again/')
+  .first()
+  .innerText()
+  .catch(() => '')
+// The number has to be a weight the machine can actually be set to. A 2.5 kg
+// increment converted literally lands on 33.1 lb, which exists on no stack —
+// the fifth time a kilogram constant has reached the UI in this app.
+const dropLb = Number(finisherText.match(/Drop to ([\d.]+) lb/)?.[1])
+record(
+  'offers a drop set once the sets are done and the week is short',
+  Number.isFinite(dropLb),
+  finisherText || 'no finisher shown',
+)
+record(
+  'drops to a weight the stack actually has',
+  Number.isInteger(dropLb) && dropLb % 5 === 0,
+  `${dropLb} lb`,
+)
+if (finisherText) {
+  await page.locator('button[aria-expanded]:has-text("Drop to")').first().click()
+  await page.waitForTimeout(250)
+  const honest = await page.locator('text=/not a bigger stimulus per set/').count()
+  record('says plainly that a drop set is not extra growth', honest > 0)
+  const cited = await page.locator('a:has-text("Fink 2018"), a:has-text("Krzysztofik 2019")').count()
+  record('cites the drop-set evidence inline', cited > 0, `${cited} links`)
+  await noOverflow('finisher')
+}
 await page.evaluate(() => window.scrollTo(0, 0))
 await page.waitForTimeout(150)
 
@@ -352,10 +429,29 @@ record('progress dashboard renders from saved data', consistency)
 const consistencyMsg = await page.locator('text=/planned day/').first().innerText().catch(() => '')
 record('new account is not blamed for days before signup', !/1[0-9] planned days missed/.test(consistencyMsg), consistencyMsg.slice(0, 90))
 
+// Strength percentile. The comparison group has to be stated on screen — a
+// bare percentile is silently read as "against everyone", which it is not.
+const standing = await page.locator('text="Where you stand"').count()
+record('shows where you stand on the benchmark lifts', standing > 0)
+const groupStated = await page.locator('text=/people who log lifts/').count()
+record('names the group the percentile compares you against', groupStated > 0)
+
 await page.goto(`${BASE}#/progress/volume`, { waitUntil: 'networkidle' })
 await page.waitForSelector('text=Weekly hard sets, text=Hard sets', { timeout: 10000 }).catch(() => {})
 await shot('12-volume')
 await noOverflow('volume')
+
+// The hypertrophy check grades the four levers that actually move growth. Each
+// one must carry a verdict AND advice — a grade with nothing to do about it is
+// a scoreboard, not coaching.
+const leverLabels = ['Weekly volume', 'Proximity to failure', 'Frequency', 'Rest between sets', 'Range of motion']
+const leversFound = []
+for (const label of leverLabels) {
+  if (await page.locator(`text="${label}"`).count()) leversFound.push(label)
+}
+record('grades every hypertrophy lever', leversFound.length === leverLabels.length, leversFound.join(', '))
+const verdicts = await page.locator('text=/On track|Worth a look|No data yet/').count()
+record('each lever carries a verdict', verdicts >= leverLabels.length, `${verdicts} verdicts`)
 
 // -------------------------------------------------------------------- forge
 await page.goto(`${BASE}#/forge`, { waitUntil: 'networkidle' })
@@ -366,6 +462,50 @@ await noOverflow('forge')
 // Buy + open a pack (onboarding grants 120 coins; a workout adds more).
 const coinsText = await page.locator('text=/◈ \\d+/').first().innerText()
 record('forge shows coin balance', /\d/.test(coinsText), coinsText)
+
+// The warrior's build tracks level, and the screen says so. Asserted on the
+// stated cap rather than on pixels: the claim is that training moves it and
+// buying cannot.
+await page.goto(`${BASE}#/forge/character`, { waitUntil: 'networkidle' })
+await page.waitForSelector('text=Build', { timeout: 10000 }).catch(() => {})
+const buildLine = await page.locator('text=/level \\d+ of \\d+/').first().innerText().catch(() => '')
+record('character build is tied to level', /level \d+ of \d+/.test(buildLine), buildLine)
+const notBuyable = await page.locator('text=/Nothing in the Forge can buy this|Fully built/').count()
+record('says plainly that build cannot be bought', notBuyable > 0)
+await noOverflow('character')
+await shot('13b-character')
+
+// Sparring: the one place gear stats do anything, and it must be playable and
+// winnable with nothing equipped.
+await page.goto(`${BASE}#/forge/sparring`, { waitUntil: 'networkidle' })
+await page.waitForSelector('text=Pick an opponent', { timeout: 10000 })
+await noOverflow('sparring lobby')
+await controlsUsable('sparring lobby')
+const wallStated = await page.locator('text=/Gear stats move this bout and nothing else/').count()
+record('sparring states the wall between gear and coaching', wallStated > 0)
+
+await page.getByRole('button', { name: /Straw Sentinel/ }).click()
+await page.waitForSelector('text=Round log', { timeout: 10000 })
+const beforeHp = await page.locator('text=/^\\d+\\/\\d+$/').last().innerText()
+// The cross averages ~5 damage a round against a guard-heavy opponent, so a
+// 70 hp bout takes roughly fifteen of them. Forty is headroom, not patience.
+let bout = ''
+for (let i = 0; i < 40; i += 1) {
+  const crossButton = page.getByRole('button', { name: /^Cross/ })
+  if (!(await crossButton.count())) break
+  await crossButton.click()
+  await page.waitForTimeout(120)
+  bout = await page.locator('#root').innerText()
+  if (/Bout won|Bout lost/.test(bout)) break
+}
+record('a bout resolves to a result', /Bout won|Bout lost/.test(bout), beforeHp)
+record('the opening opponent is beatable bare-handed', /Bout won/.test(bout))
+record(
+  'a lost or won bout changes nothing about training',
+  /Nothing about your programme changed/.test(bout),
+)
+await noOverflow('sparring bout')
+await shot('13c-sparring')
 
 // -------------------------------------------------------------- persistence
 await page.goto(`${BASE}#/`, { waitUntil: 'networkidle' })

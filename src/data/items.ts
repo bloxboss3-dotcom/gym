@@ -25,12 +25,36 @@ const P = {
   steel: { base: '#3b5a7a', accent: '#8ab4dc' },
   violet: { base: '#4c2a6b', accent: '#a78bfa', glow: '#a78bfa' },
   ash: { base: '#4a4a52', accent: '#8b8b96' },
+  jade: { base: '#14532d', accent: '#4ade80' },
+  brine: { base: '#164e63', accent: '#67e8f9' },
+  rust: { base: '#7c2d12', accent: '#c2703a' },
+  frost: { base: '#334155', accent: '#cbd5e1', glow: '#e2e8f0' },
 } as const
 
-type Def = [id: string, name: string, art: string, rarity: Rarity, palette: keyof typeof P, lore: string]
+/**
+ * Sparring stats.
+ *
+ * Deliberately on SOME items and not others, so gear is a wardrobe rather than
+ * a ladder — an epic with no stats is still worth wearing because it looks
+ * better, and nobody is forced into an outfit they dislike to stay
+ * competitive. Every number here is read by exactly one thing: the sparring
+ * bout in `src/engine/duel.ts`. Nothing in `src/engine/` that produces a
+ * training recommendation can see this field.
+ */
+type Stats = { health?: number; damage?: number }
+
+type Def = [
+  id: string,
+  name: string,
+  art: string,
+  rarity: Rarity,
+  palette: keyof typeof P,
+  lore: string,
+  stats?: Stats,
+]
 
 function build(slot: Slot, defs: Def[]): CosmeticItem[] {
-  return defs.map(([id, name, art, rarity, palette, lore]) => ({
+  return defs.map(([id, name, art, rarity, palette, lore, stats]) => ({
     id,
     name,
     slot,
@@ -38,6 +62,7 @@ function build(slot: Slot, defs: Def[]): CosmeticItem[] {
     art,
     palette: { ...P[palette] } as CosmeticItem['palette'],
     lore,
+    ...(stats ? { stats } : {}),
   }))
 }
 
@@ -49,6 +74,8 @@ const FACES = build('face', [
   ['face-veiled', 'Veiled', 'veiled', 'rare', 'obsidian', 'Silence under the visor. Only the count matters.'],
   ['face-masked', 'Iron Mask', 'masked', 'epic', 'iron', 'Hammered from a bar that finally moved.'],
   ['face-ember-eyes', 'Ember-Eyed', 'ember-eyes', 'legendary', 'ember', 'They say the forge looks back.'],
+  ['face-brine', 'Saltworn', 'scarred', 'uncommon', 'brine', 'Weathered by early mornings by the water.'],
+  ['face-jade-paint', 'Jade Warpaint', 'warpaint', 'rare', 'jade', 'Drawn on the morning of a lift that finally moved.'],
 ])
 
 // --- Head / hair (8) --------------------------------------------------------
@@ -60,7 +87,9 @@ const HEADS = build('head', [
   ['head-open-helm', 'Open Helm', 'open-helm', 'rare', 'iron', 'Sight lines first, protection second.'],
   ['head-horned', 'Horned Helm', 'horned', 'rare', 'charcoal', 'Weight you learn to carry.'],
   ['head-crowned', 'Crowned Sallet', 'crowned', 'epic', 'gold', 'Awarded, never bought.'],
-  ['head-ember-crown', 'Emberforged Crown', 'ember-crown', 'legendary', 'ember', 'Cooled in a barrel that never stopped steaming.'],
+  ['head-ember-crown', 'Emberforged Crown', 'ember-crown', 'legendary', 'ember', 'Cooled in a barrel that never stopped steaming.', { health: 8 }],
+  ['head-frost-helm', 'Rimeguard Helm', 'open-helm', 'rare', 'frost', 'Cold to the touch, even indoors.', { health: 6 }],
+  ['head-rust-horns', 'Rusted Horns', 'horned', 'uncommon', 'rust', 'Older than the gym. Probably older than the town.', { health: 3 }],
 ])
 
 // --- Body armour (9) --------------------------------------------------------
@@ -73,7 +102,9 @@ const BODIES = build('body', [
   ['body-verdant', 'Verdant Cuirass', 'plate', 'rare', 'verdigris', 'Copper gone green from years of steam.'],
   ['body-plate', 'Forge Plate', 'plate', 'epic', 'steel', 'Fitted to a frame that changed to earn it.'],
   ['body-warden', 'Warden Plate', 'heavy-plate', 'epic', 'ash', 'Standard issue for those who hold the line.'],
-  ['body-ember-plate', 'Emberforged Plate', 'ember-plate', 'legendary', 'ember', 'Still warm. Always warm.'],
+  ['body-ember-plate', 'Emberforged Plate', 'ember-plate', 'legendary', 'ember', 'Still warm. Always warm.', { health: 30, damage: 4 }],
+  ['body-tidewrought', 'Tidewrought Mail', 'scale', 'rare', 'brine', 'Rings that have been wet a thousand times and never rusted.', { health: 14 }],
+  ['body-rimeplate', 'Rimeplate', 'heavy-plate', 'epic', 'frost', 'Heavy, silent, and cold enough to sting.', { health: 22 }],
 ])
 
 // --- Hands (7) --------------------------------------------------------------
@@ -84,7 +115,8 @@ const HANDS = build('hands', [
   ['hands-scaled', 'Scaled Mitts', 'gauntlets', 'uncommon', 'verdigris', 'Light enough to still feel the bar.'],
   ['hands-gauntlets', 'Forge Gauntlets', 'gauntlets', 'rare', 'steel', 'Made to hold heat.'],
   ['hands-heavy', 'Warden Gauntlets', 'heavy-gauntlets', 'epic', 'gold', 'Heavier than they look. So is the bar.'],
-  ['hands-ember', 'Emberforged Grips', 'ember-gauntlets', 'legendary', 'ember', 'Coals sit in the knuckles and never go out.'],
+  ['hands-ember', 'Emberforged Grips', 'ember-gauntlets', 'legendary', 'ember', 'Coals sit in the knuckles and never go out.', { damage: 8 }],
+  ['hands-jade', 'Jadebound Wraps', 'wraps', 'rare', 'jade', 'Silk over chalk. Quietly expensive.', { damage: 3 }],
 ])
 
 // --- Feet (7) ---------------------------------------------------------------
@@ -95,7 +127,8 @@ const FEET = build('feet', [
   ['feet-greaves', 'Iron Greaves', 'greaves', 'uncommon', 'iron', 'Shin protection for the heavy days.'],
   ['feet-warden', 'Warden Greaves', 'heavy-greaves', 'rare', 'steel', 'Planted. Immovable.'],
   ['feet-gilded', 'Gilded Sabatons', 'heavy-greaves', 'epic', 'gold', 'Ceremonial, and still squat-tested.'],
-  ['feet-ember', 'Emberforged Sabatons', 'ember-greaves', 'legendary', 'ember', 'They leave marks on the platform.'],
+  ['feet-ember', 'Emberforged Sabatons', 'ember-greaves', 'legendary', 'ember', 'They leave marks on the platform.', { damage: 6, health: 6 }],
+  ['feet-flat', 'Flat Lifters', 'boots', 'uncommon', 'rust', 'No cushion, no wobble, no excuses.', { damage: 2 }],
 ])
 
 // --- Weapons (12) -----------------------------------------------------------
@@ -111,7 +144,9 @@ const WEAPONS = build('weapon', [
   ['weapon-halberd', 'Halberd', 'halberd', 'rare', 'charcoal', 'Demands two committed hands.'],
   ['weapon-twin', 'Twin Fangs', 'twin-blades', 'epic', 'violet', 'Symmetry earned on both sides.'],
   ['weapon-greatsword', 'Greatsword', 'greatsword', 'epic', 'gold', 'You grew into this one.'],
-  ['weapon-ember-blade', 'Emberbrand', 'ember-blade', 'legendary', 'ember', 'Forged from the bar you swore you could not lift.'],
+  ['weapon-ember-blade', 'Emberbrand', 'ember-blade', 'legendary', 'ember', 'Forged from the bar you swore you could not lift.', { damage: 14 }],
+  ['weapon-tideglaive', 'Tideglaive', 'halberd', 'epic', 'brine', 'Balanced for reach. Patient in the same way water is.', { damage: 9 }],
+  ['weapon-rimefang', 'Rimefang', 'twin-blades', 'rare', 'frost', 'Two edges that never seem to warm up.', { damage: 6 }],
 ])
 
 // --- Back / capes (6) -------------------------------------------------------
@@ -121,7 +156,8 @@ const BACKS = build('back', [
   ['back-tattered', 'Tattered Cape', 'tattered', 'uncommon', 'ash', 'Torn honestly, never for show.'],
   ['back-banner', 'Warband Banner', 'banner', 'rare', 'crimson', 'Carried by whoever showed up most.'],
   ['back-heavy', 'Warden Mantle', 'heavy-cape', 'epic', 'steel', 'Weighted hem. It does not flap.'],
-  ['back-ember', 'Emberfall Mantle', 'ember-cape', 'legendary', 'ember', 'Sheds sparks on every step.'],
+  ['back-ember', 'Emberfall Mantle', 'ember-cape', 'legendary', 'ember', 'Sheds sparks on every step.', { health: 10 }],
+  ['back-jade-banner', 'Jadeleaf Banner', 'banner', 'rare', 'jade', 'Carried by whoever turned up in the rain.', { health: 5 }],
 ])
 
 // --- Auras (6) --------------------------------------------------------------
@@ -131,7 +167,8 @@ const AURAS = build('aura', [
   ['aura-smoke', 'Low Smoke', 'smoke', 'uncommon', 'obsidian', 'Quiet, dense, patient.'],
   ['aura-embers', 'Rising Embers', 'embers', 'rare', 'ember', 'Heat that keeps climbing.'],
   ['aura-frost', 'Coldsteel', 'frost', 'epic', 'steel', 'For those who never rush a set.'],
-  ['aura-starfall', 'Starfall', 'starfall', 'legendary', 'violet', 'Reserved for very long streaks.'],
+  ['aura-starfall', 'Starfall', 'starfall', 'legendary', 'violet', 'Reserved for very long streaks.', { health: 12, damage: 5 }],
+  ['aura-tide', 'Tidepull', 'smoke', 'rare', 'brine', 'The air moves toward you, slowly.', { damage: 3 }],
 ])
 
 // --- Companions (4) ---------------------------------------------------------
@@ -139,7 +176,8 @@ const COMPANIONS = build('companion', [
   ['companion-none', 'No Companion', 'none', 'common', 'bone', 'Solo work.'],
   ['companion-wisp', 'Ember Wisp', 'wisp', 'rare', 'ember', 'It hovers near the bar and waits.'],
   ['companion-raven', 'Iron Raven', 'raven', 'epic', 'obsidian', 'Counts your sets. Judges silently.'],
-  ['companion-hound', 'Forge Hound', 'hound', 'legendary', 'emberDeep', 'Sleeps through rest days, wakes for squats.'],
+  ['companion-hound', 'Forge Hound', 'hound', 'legendary', 'emberDeep', 'Sleeps through rest days, wakes for squats.', { damage: 7 }],
+  ['companion-owl', 'Rime Owl', 'wisp', 'epic', 'frost', 'Silent on the approach. Always is.', { damage: 4 }],
 ])
 
 // --- Titles (10) ------------------------------------------------------------
@@ -154,6 +192,8 @@ const TITLES = build('title', [
   ['title-unyielding', 'the Unyielding', 'text', 'epic', 'gold', 'You deloaded on purpose and came back stronger.'],
   ['title-ashen-sovereign', 'Ashen Sovereign', 'text', 'legendary', 'violet', 'Rare air.'],
   ['title-forgemaster', 'Forgemaster', 'text', 'legendary', 'ember', 'The last title anyone earns.'],
+  ['title-tidebound', 'Tidebound', 'text', 'rare', 'brine', 'For the ones who train on the days nobody would blame them for skipping.'],
+  ['title-rimewalker', 'Rimewalker', 'text', 'epic', 'frost', 'Cold mornings, warm bar.'],
 ])
 
 // --- Poses (5) --------------------------------------------------------------
@@ -163,6 +203,7 @@ const POSES = build('pose', [
   ['pose-rest', 'At Rest', 'rest', 'uncommon', 'ash', 'Between sets, breathing.'],
   ['pose-heroic', 'Heroic', 'heroic', 'rare', 'gold', 'Chest up. Earned it.'],
   ['pose-raised', 'Raised Blade', 'raised', 'epic', 'ember', 'For the session that finally broke the plateau.'],
+  ['pose-braced', 'Braced', 'guard', 'rare', 'jade', 'The stance you take before a set you respect.'],
 ])
 
 export const ITEMS: CosmeticItem[] = [
