@@ -504,6 +504,7 @@ export type RewardReason =
   | 'weekly_consistency'
   | 'benchmark_improved'
   | 'quest_completed'
+  | 'puzzle_solved'
   | 'level_up'
   | 'duplicate_refund'
 
@@ -546,6 +547,8 @@ export interface GameState {
   bestStreakDays: number
   streakShields: number
   lastActiveDate: IsoDate | null
+  /** Rest-timer chess puzzles already solved, so they are not shown again. */
+  solvedPuzzleIds?: string[]
 }
 
 // ---------------------------------------------------------------------------

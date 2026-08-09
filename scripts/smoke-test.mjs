@@ -159,6 +159,24 @@ for (let i = 0; i < 3; i++) {
 const loggedRows = await page.locator('li:has-text("RIR")').count()
 record('logs working sets', loggedRows >= 3, `${loggedRows} set rows`)
 
+// Rest-timer chess. It must only exist while a rest timer is running — that
+// gate is what keeps the reward tied to actually training.
+const puzzleToggle = page.getByRole('button', { name: 'Puzzle' })
+const puzzleOffered = await puzzleToggle.isVisible().catch(() => false)
+record('offers a puzzle only while resting', puzzleOffered)
+if (puzzleOffered) {
+  await puzzleToggle.click()
+  await page.waitForTimeout(400)
+  const board = page.locator('section[aria-label="Rest-timer chess puzzle"]')
+  const cells = await board.getByRole('gridcell').count()
+  record('renders a full chess board', cells === 64, `${cells} squares`)
+  await controlsUsable('rest puzzle')
+  await noOverflow('rest puzzle')
+  await shot('06b-rest-puzzle')
+  await page.getByRole('button', { name: 'Hide' }).first().click()
+  await page.waitForTimeout(200)
+}
+
 // Typing inside a sheet, one key at a time, ACROSS a re-render of the parent.
 //
 // Two things here are load-bearing and neither is obvious:

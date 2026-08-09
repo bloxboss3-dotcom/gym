@@ -131,14 +131,20 @@ describe('seeded demo data', () => {
 
   it('shows a full nutrition day, not just protein', () => {
     const today = toIsoDate()
-    // Pick the most recent day that actually has food logged — the demo
-    // deliberately misses one day a week, and "today" may be that day.
     const dates = [...new Set(data.proteinEntries.map((e) => e.date))].sort()
-    const latest = dates[dates.length - 1]
-    expect(latest).toBeTruthy()
-    expect(latest <= today).toBe(true)
+    expect(dates.length).toBeGreaterThan(0)
+    expect(dates[dates.length - 1] <= today).toBe(true)
 
-    const day = data.proteinEntries.filter((e) => e.date === latest)
+    // Assert on a representative FULL day, not simply the latest one. The demo
+    // deliberately under-eats one day a week, and depending on which weekday
+    // the suite runs, that lean day can be the most recent — which made this
+    // test pass or fail based on the calendar.
+    const byDate = new Map<string, typeof data.proteinEntries>()
+    for (const entry of data.proteinEntries) {
+      byDate.set(entry.date, [...(byDate.get(entry.date) ?? []), entry])
+    }
+    const fullest = [...byDate.values()].sort((a, b) => b.length - a.length)[0]
+    const day = fullest
     const totals = totalsForEntries(day)
     expect(totals.hasUnknownEnergy).toBe(false)
     expect(totals.kcal).toBeGreaterThan(1200)

@@ -27,7 +27,7 @@ load it works with no network at all.
 | **Nutrition** | Calorie and full macro tracking on a meal-by-meal day view: search a ~90-item curated food list, pick a portion, log in three taps. Recents, favourites, custom foods, reusable meals and a quick-add path for when you already know the number. Targets come from Mifflin-St Jeor plus a documented activity model and a capped goal offset, with the protein engine untouched underneath. A protein-only mode hides every calorie number in the app for anyone who should not be counting them. |
 | **Recovery** | Readiness check-ins, soreness, sleep, joint pain, six-signal deload detection, deload history. |
 | **Body** | Body-weight trend with a 7-day rolling average, measurements, optional on-device progress photos. |
-| **Game** | XP, levels, coins, quests, achievements, four pack tiers, 80 original cosmetic items across 11 slots, duplicate compensation, a full pack-opening sequence and live character customisation. |
+| **Game** | Optional mate-in-one chess puzzles during the rest timer — capped so a whole day of them pays less than one workout, and only earnable while a rest timer is actually running. XP, levels, coins, quests, achievements, four pack tiers, 80 original cosmetic items across 11 slots, duplicate compensation, a full pack-opening sequence and live character customisation. |
 | **Data** | Everything in IndexedDB on the device. Full JSON export/import with validation. Seeded six-week demo dataset. |
 
 ---
@@ -46,7 +46,7 @@ Other scripts:
 ```bash
 npm run typecheck    # tsc --build, no emit
 npm run lint         # eslint
-npm run test         # vitest (293 unit tests)
+npm run test         # vitest (350 unit tests)
 npm run build        # tsc --build && vite build → dist/
 npm run preview      # serve dist/ at http://localhost:4173/gym/
 npm run verify       # typecheck + lint + test + build, the same gate CI runs
@@ -83,6 +83,7 @@ src/
 │   ├── items.ts       80 original cosmetics across 11 slots
 │   ├── quests.ts      quests + achievements
 │   ├── foods.ts       ~90 curated foods with full macros — a fast list, not a database
+│   ├── puzzles.ts     mate-in-one positions, validated against the rules engine
 │   └── citations.ts   every evidence source, with takeaways and caveats
 ├── engine/          Pure, deterministic, unit-tested TypeScript — no React, no I/O
 │   ├── progression.ts double progression, pain override, plateau, confidence
@@ -100,6 +101,7 @@ src/
 │   ├── schedule.ts    the adaptive "what should I do today" resolver
 │   ├── stats.ts       estimated 1RM, PRs, trends, rolling averages
 │   ├── units.ts       kg ↔ lb, increment rounding, pace, distance
+│   ├── chess.ts       full rules engine for the rest-timer puzzles (perft-verified)
 │   ├── plates.ts      plate maths, bar weight, loading styles
 │   └── backup.ts      export + defensive import validation
 ├── db/              Persistence, isolated behind one interface
@@ -121,7 +123,7 @@ src/
    changes a recommendation. Gym hardware is unit-native rather than converted — a pound user gets a
    45 lb bar, 45/35/25 lb plates and 5 lb jumps, not 44.1 lb and 55.12 lb.
 2. **The engine never touches React, storage or the network.** Every function in `src/engine/` takes
-   plain data and returns plain data, which is why 293 tests can cover the decision-making directly.
+   plain data and returns plain data, which is why 350 tests can cover the decision-making directly.
 
 ### Designed for Supabase without a rewrite
 
@@ -363,7 +365,7 @@ opt-in cohort view of anonymised progression rates.
 
 ## Testing
 
-293 unit tests across 15 files, plus a 51-check browser smoke test. Unit coverage:
+350 unit tests across 17 files, plus a 55-check browser smoke test. Unit coverage:
 
 weight-unit conversion · load-increment rounding (including gym-native pound plates) ·
 plate selection and its inverse · unit-native bar and plate defaults · paired-implement volume load ·

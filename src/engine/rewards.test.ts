@@ -258,4 +258,54 @@ describe('applying rewards to game state', () => {
     expect(earnings.coins).toBe(25)
     expect(earnings.xpCap).toBe(ECONOMY.limits.dailyXpCap)
   })
+
+  describe('chess must never out-earn training', () => {
+    // The character is a record of physical work. Rest-timer puzzles are a
+    // nice thing to do between sets, not an alternative way to earn — if a
+    // day of chess ever rivalled a workout, the whole premise would be a lie.
+    const puzzle = ECONOMY.rewards.puzzle_solved
+    const workout = ECONOMY.rewards.workout_completed
+
+    it('pays less per solve than a workout pays outright', () => {
+      expect(puzzle.xp).toBeLessThan(workout.xp)
+      expect(puzzle.coins).toBeLessThan(workout.coins)
+    })
+
+    it('caps a whole day of puzzles below a single completed workout', () => {
+      const perDay = ECONOMY.limits.perDay.puzzle_solved
+      expect(perDay).toBeGreaterThan(0)
+      expect(puzzle.xp * perDay).toBeLessThanOrEqual(workout.xp)
+      expect(puzzle.coins * perDay).toBeLessThanOrEqual(workout.coins)
+    })
+
+    it('is subject to the same daily ceiling as everything else', () => {
+      const perDay = ECONOMY.limits.perDay.puzzle_solved
+      expect(puzzle.xp * perDay).toBeLessThan(ECONOMY.limits.dailyXpCap)
+      expect(puzzle.coins * perDay).toBeLessThan(ECONOMY.limits.dailyCoinCap)
+    })
+
+    it('refuses to pay twice for the same puzzle', () => {
+      const grant = simpleGrant('puzzle_solved', 'puzzle:back-rank-1', 'solved')
+      const first = grantReward(grant, { ledger: [], date: '2026-03-01' })
+      expect(first.granted).toBe(true)
+      const second = grantReward(grant, { ledger: [first.entry!], date: '2026-03-01' })
+      expect(second.granted).toBe(false)
+    })
+
+    it('stops paying once the daily puzzle limit is reached', () => {
+      const ledger: RewardLedgerEntry[] = []
+      let paid = 0
+      for (let i = 0; i < 20; i++) {
+        const result = grantReward(simpleGrant('puzzle_solved', `puzzle:${i}`, 'solved'), {
+          ledger,
+          date: '2026-03-01',
+        })
+        if (result.granted && result.entry) {
+          ledger.push(result.entry)
+          paid++
+        }
+      }
+      expect(paid).toBe(ECONOMY.limits.perDay.puzzle_solved)
+    })
+  })
 })
