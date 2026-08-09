@@ -31,49 +31,77 @@ function paletteOf(item: CosmeticItem | undefined, fallback: Palette): Palette {
 // Base body
 // ---------------------------------------------------------------------------
 
-function Body({ heavy }: { heavy: boolean }) {
-  const shoulder = heavy ? 26 : 22
+/**
+ * The bare body, sized by `build` (0 → 1, from level).
+ *
+ * The character is a record of training, so it puts on muscle as you level —
+ * and level comes only from logged sessions, never from anything bought.
+ *
+ * Where the mass goes is constrained by the armour drawn on top of it. Torso
+ * armour paths span x 76–124 (or 70–130 for the plate variants), so the torso
+ * outline can only grow to meet them and no further, or bare skin shows
+ * through at the shoulders. The growth people actually read as muscle —
+ * deltoid caps, arm and leg thickness, trapezius, a narrower waist — sits
+ * outside those paths and is free to move.
+ */
+function Body({ heavy, build }: { heavy: boolean; build: number }) {
+  const b = Math.min(1, Math.max(0, build))
+  const shoulder = (heavy ? 24 : 21) + b * 3 // caps at 27 / 24, inside the armour
+  const delt = 6.5 + b * 6
+  const upperArm = 10 + b * 5
+  const foreArm = 8.5 + b * 3.5
+  const thigh = 12.5 + b * 4
+  const calf = 10.5 + b * 3
+  const waist = 16 - b * 2.5 // half-width at the navel: a taper, not a barrel
+  const trap = b * 7 // how far the neck line flares out to the shoulders
+
+  const leftShoulderX = 100 - shoulder + 2
+  const rightShoulderX = 100 + shoulder - 2
+
   return (
     <g>
       {/* legs */}
-      <path
-        d="M90 148 L87 200 L85 238"
-        stroke={SKIN}
-        strokeWidth="13"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <path
-        d="M110 148 L113 200 L115 238"
-        stroke={SKIN}
-        strokeWidth="13"
-        strokeLinecap="round"
-        fill="none"
-      />
+      <path d="M90 148 L87 196" stroke={SKIN} strokeWidth={thigh} strokeLinecap="round" fill="none" />
+      <path d="M87 196 L85 238" stroke={SKIN} strokeWidth={calf} strokeLinecap="round" fill="none" />
+      <path d="M110 148 L113 196" stroke={SKIN} strokeWidth={thigh} strokeLinecap="round" fill="none" />
+      <path d="M113 196 L115 238" stroke={SKIN} strokeWidth={calf} strokeLinecap="round" fill="none" />
       {/* hips */}
       <path d="M82 138 L118 138 L116 156 L84 156 Z" fill={SKIN_SHADE} />
-      {/* torso */}
+      {/* torso — shoulders out to the armour, waist drawn in */}
       <path
-        d={`M${100 - shoulder} 88 Q100 82 ${100 + shoulder} 88 L116 144 L84 144 Z`}
+        d={`M${100 - shoulder} 88 Q100 82 ${100 + shoulder} 88 L${100 + waist} 120 L116 144 L84 144 L${100 - waist} 120 Z`}
         fill={SKIN}
       />
+      {/* trapezius: a filled wedge from the neck out to each shoulder */}
+      {trap > 0.5 && (
+        <path
+          d={`M94 78 L${100 - shoulder + 3} ${88 + 2} L100 92 L${100 + shoulder - 3} ${88 + 2} L106 78 Z`}
+          fill={SKIN_SHADE}
+          opacity={0.55 + b * 0.35}
+        />
+      )}
       {/* arms */}
       <path
-        d={`M${100 - shoulder + 2} 92 L72 122 L67 150`}
+        d={`M${leftShoulderX} 92 L72 122`}
         stroke={SKIN}
-        strokeWidth="11"
+        strokeWidth={upperArm}
         strokeLinecap="round"
         fill="none"
       />
+      <path d="M72 122 L67 150" stroke={SKIN} strokeWidth={foreArm} strokeLinecap="round" fill="none" />
       <path
-        d={`M${100 + shoulder - 2} 92 L128 122 L133 150`}
+        d={`M${rightShoulderX} 92 L128 122`}
         stroke={SKIN}
-        strokeWidth="11"
+        strokeWidth={upperArm}
         strokeLinecap="round"
         fill="none"
       />
+      <path d="M128 122 L133 150" stroke={SKIN} strokeWidth={foreArm} strokeLinecap="round" fill="none" />
+      {/* deltoid caps, drawn last so they sit proud of the torso edge */}
+      <ellipse cx={leftShoulderX - 1} cy={92} rx={delt} ry={delt * 0.86} fill={SKIN} />
+      <ellipse cx={rightShoulderX + 1} cy={92} rx={delt} ry={delt * 0.86} fill={SKIN} />
       {/* neck + head */}
-      <rect x="94" y="74" width="12" height="12" fill={SKIN_SHADE} rx="3" />
+      <rect x={94 - b} y="74" width={12 + b * 2} height="12" fill={SKIN_SHADE} rx="3" />
       <ellipse cx="100" cy="58" rx="19" ry="21" fill={SKIN} />
     </g>
   )
@@ -736,9 +764,14 @@ export interface WarriorProps {
   /** Suppresses the ambient animation regardless of motion preference. */
   still?: boolean
   title?: string
+  /**
+   * How much muscle the figure carries, 0 → 1. Derived from level via
+   * `buildFromLevel`, so it only ever moves because sessions were logged.
+   */
+  build?: number
 }
 
-export function Warrior({ equipped, className, still, title }: WarriorProps) {
+export function Warrior({ equipped, className, still, title, build = 0 }: WarriorProps) {
   const reduced = useReducedMotion()
   const animate = !reduced && !still
   const glowId = useId()
@@ -783,7 +816,7 @@ export function Warrior({ equipped, className, still, title }: WarriorProps) {
 
       <g transform={POSE_TRANSFORM[pose?.art ?? 'ready'] || undefined}>
         {back && <BackArt art={back.art} p={paletteOf(back, { base: CLOTH, accent: '#666' })} />}
-        <Body heavy={heavy} />
+        <Body heavy={heavy} build={build} />
         {feet && <FeetArt art={feet.art} p={paletteOf(feet, { base: CLOTH, accent: '#777' })} />}
         {body && <BodyArt art={body.art} p={paletteOf(body, { base: CLOTH, accent: '#777' })} />}
         {head && head.art !== 'none' && <HeadArt art={head.art} p={paletteOf(head, { base: '#2b2b31', accent: '#888' })} />}

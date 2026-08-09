@@ -13,6 +13,21 @@
 import type { PackKind, Rarity, RewardReason } from '@/types'
 
 export const ECONOMY = {
+  /**
+   * How the warrior's build tracks levelling.
+   *
+   * Muscle on the character is a record of training, so it is driven by level
+   * — which is driven by logged sessions — and not by anything purchasable.
+   * The curve is deliberately front-loaded: the visible change from level 1 to
+   * 5 is larger than from 25 to 30, which is also how it works in a gym.
+   */
+  character: {
+    /** Level at which the build reaches its maximum. */
+    fullBuildLevel: 30,
+    /** Curve exponent below 1 front-loads the visible change. */
+    buildCurve: 0.62,
+  },
+
   /** XP needed for level N is `base * N^exponent`, rounded. */
   leveling: {
     base: 120,
@@ -43,6 +58,14 @@ export const ECONOMY = {
      * workout. The character has to stay a record of training, not of chess.
      */
     puzzle_solved: { xp: 8, coins: 3 },
+    /**
+     * Crossing a strength percentile band. Paid for the CLIMB, never for the
+     * standing: rewarding a percentile outright would hand the biggest prizes
+     * to whoever walked in strongest and the smallest to the person the app
+     * can help most. Every band is worth the same, so 30 → 40 pays exactly
+     * what 80 → 90 pays, and each one can only ever be collected once.
+     */
+    percentile_band: { xp: 50, coins: 25 },
     level_up: { xp: 0, coins: 0 },
     duplicate_refund: { xp: 0, coins: 0 },
   } satisfies Record<RewardReason, { xp: number; coins: number }>,
@@ -62,6 +85,7 @@ export const ECONOMY = {
       benchmark_improved: 1,
       quest_completed: 3,
       puzzle_solved: 5,
+      percentile_band: 3,
       level_up: 99,
       duplicate_refund: 99,
     } satisfies Record<RewardReason, number>,
@@ -173,4 +197,22 @@ export function levelFromXp(xp: number): {
     neededForNext: needed,
     progress: level >= ECONOMY.leveling.maxLevel ? 1 : Math.min(1, into / needed),
   }
+}
+
+
+/**
+ * Build, 0 → 1, from level.
+ *
+ * Clamped at both ends so the renderer never has to defend itself against a
+ * negative level or a level past the cap.
+ */
+export function buildFromLevel(level: number): number {
+  const { fullBuildLevel, buildCurve } = ECONOMY.character
+  const t = Math.min(1, Math.max(0, (level - 1) / Math.max(1, fullBuildLevel - 1)))
+  return Math.pow(t, buildCurve)
+}
+
+/** Build straight from XP, for callers that only hold the raw number. */
+export function buildFromXp(xp: number): number {
+  return buildFromLevel(levelFromXp(xp).level)
 }

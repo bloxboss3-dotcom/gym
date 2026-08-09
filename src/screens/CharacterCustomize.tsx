@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Screen } from '@/components/AppShell'
 import { ItemPreview, Warrior } from '@/character/Warrior'
-import { Button, Card, Chip, EmptyState, cx } from '@/components/ui'
+import { Button, Card, Chip, EmptyState, ProgressBar, cx } from '@/components/ui'
 import { ITEMS_BY_SLOT, ITEM_BY_ID, RARITY_META, SLOT_LABEL, SLOT_ORDER } from '@/data/items'
 import { useStore } from '@/state/store'
 import type { Slot } from '@/types'
+import { ECONOMY, buildFromXp, levelFromXp } from '@/config/economy'
 
 /**
  * Character customisation.
@@ -24,16 +25,41 @@ export default function CharacterCustomize() {
     [slot, owned],
   )
   const equippedTitle = data.game.equipped.title ? ITEM_BY_ID[data.game.equipped.title] : undefined
+  const level = levelFromXp(data.game.xp)
+  const build = buildFromXp(data.game.xp)
 
   return (
     <Screen title="Your warrior" subtitle={equippedTitle?.name ?? data.profile?.name} back="/forge">
       <div className="space-y-4">
         <Card raised>
           <div className="grid place-items-center">
-            <Warrior equipped={data.game.equipped} className="w-56 h-auto" />
+            <Warrior equipped={data.game.equipped} build={build} className="w-56 h-auto" />
           </div>
           <p className="text-center font-display text-2xl uppercase tracking-wide mt-1">{data.profile?.name}</p>
           {equippedTitle && <p className="text-center text-sm text-gold-300">{equippedTitle.name}</p>}
+
+          {/* The build bar. Deliberately not purchasable and deliberately
+              explained: the figure is a record of training, so the only way to
+              move this is to train. */}
+          <div className="mt-3 border-t border-slate/70 pt-3">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <p className="text-[11px] uppercase tracking-wider text-smoke">Build</p>
+              <p className="text-[11px] text-ash tabular">
+                level {level.level} of {ECONOMY.character.fullBuildLevel}
+              </p>
+            </div>
+            <ProgressBar
+              value={build}
+              max={1}
+              tone="ember"
+              ariaLabel={`Build ${Math.round(build * 100)} percent of full`}
+            />
+            <p className="text-[11px] text-smoke mt-1.5 leading-relaxed">
+              {build >= 1
+                ? 'Fully built. Everything from here is gear.'
+                : 'Your warrior puts on muscle as you level, and levels come only from logged training. Nothing in the Forge can buy this.'}
+            </p>
+          </div>
         </Card>
 
         <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">

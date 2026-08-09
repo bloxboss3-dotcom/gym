@@ -25,6 +25,7 @@ const Forge = lazy(() => import('@/screens/Forge'))
 const PackOpening = lazy(() => import('@/screens/PackOpening'))
 const Inventory = lazy(() => import('@/screens/Inventory'))
 const CharacterCustomize = lazy(() => import('@/screens/CharacterCustomize'))
+const Sparring = lazy(() => import('@/screens/Sparring'))
 const Quests = lazy(() => import('@/screens/Quests'))
 const Profile = lazy(() => import('@/screens/Profile'))
 const Science = lazy(() => import('@/screens/Science'))
@@ -99,6 +100,7 @@ export default function App() {
                 <Route path="/forge" element={<Forge />} />
                 <Route path="/forge/pack/:packId" element={<PackOpening />} />
                 <Route path="/forge/inventory" element={<Inventory />} />
+                <Route path="/forge/sparring" element={<Sparring />} />
                 <Route path="/forge/character" element={<CharacterCustomize />} />
                 <Route path="/forge/quests" element={<Quests />} />
 

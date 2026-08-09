@@ -429,6 +429,13 @@ record('progress dashboard renders from saved data', consistency)
 const consistencyMsg = await page.locator('text=/planned day/').first().innerText().catch(() => '')
 record('new account is not blamed for days before signup', !/1[0-9] planned days missed/.test(consistencyMsg), consistencyMsg.slice(0, 90))
 
+// Strength percentile. The comparison group has to be stated on screen — a
+// bare percentile is silently read as "against everyone", which it is not.
+const standing = await page.locator('text="Where you stand"').count()
+record('shows where you stand on the benchmark lifts', standing > 0)
+const groupStated = await page.locator('text=/people who log lifts/').count()
+record('names the group the percentile compares you against', groupStated > 0)
+
 await page.goto(`${BASE}#/progress/volume`, { waitUntil: 'networkidle' })
 await page.waitForSelector('text=Weekly hard sets, text=Hard sets', { timeout: 10000 }).catch(() => {})
 await shot('12-volume')
@@ -455,6 +462,50 @@ await noOverflow('forge')
 // Buy + open a pack (onboarding grants 120 coins; a workout adds more).
 const coinsText = await page.locator('text=/◈ \\d+/').first().innerText()
 record('forge shows coin balance', /\d/.test(coinsText), coinsText)
+
+// The warrior's build tracks level, and the screen says so. Asserted on the
+// stated cap rather than on pixels: the claim is that training moves it and
+// buying cannot.
+await page.goto(`${BASE}#/forge/character`, { waitUntil: 'networkidle' })
+await page.waitForSelector('text=Build', { timeout: 10000 }).catch(() => {})
+const buildLine = await page.locator('text=/level \\d+ of \\d+/').first().innerText().catch(() => '')
+record('character build is tied to level', /level \d+ of \d+/.test(buildLine), buildLine)
+const notBuyable = await page.locator('text=/Nothing in the Forge can buy this|Fully built/').count()
+record('says plainly that build cannot be bought', notBuyable > 0)
+await noOverflow('character')
+await shot('13b-character')
+
+// Sparring: the one place gear stats do anything, and it must be playable and
+// winnable with nothing equipped.
+await page.goto(`${BASE}#/forge/sparring`, { waitUntil: 'networkidle' })
+await page.waitForSelector('text=Pick an opponent', { timeout: 10000 })
+await noOverflow('sparring lobby')
+await controlsUsable('sparring lobby')
+const wallStated = await page.locator('text=/Gear stats move this bout and nothing else/').count()
+record('sparring states the wall between gear and coaching', wallStated > 0)
+
+await page.getByRole('button', { name: /Straw Sentinel/ }).click()
+await page.waitForSelector('text=Round log', { timeout: 10000 })
+const beforeHp = await page.locator('text=/^\\d+\\/\\d+$/').last().innerText()
+// The cross averages ~5 damage a round against a guard-heavy opponent, so a
+// 70 hp bout takes roughly fifteen of them. Forty is headroom, not patience.
+let bout = ''
+for (let i = 0; i < 40; i += 1) {
+  const crossButton = page.getByRole('button', { name: /^Cross/ })
+  if (!(await crossButton.count())) break
+  await crossButton.click()
+  await page.waitForTimeout(120)
+  bout = await page.locator('#root').innerText()
+  if (/Bout won|Bout lost/.test(bout)) break
+}
+record('a bout resolves to a result', /Bout won|Bout lost/.test(bout), beforeHp)
+record('the opening opponent is beatable bare-handed', /Bout won/.test(bout))
+record(
+  'a lost or won bout changes nothing about training',
+  /Nothing about your programme changed/.test(bout),
+)
+await noOverflow('sparring bout')
+await shot('13c-sparring')
 
 // -------------------------------------------------------------- persistence
 await page.goto(`${BASE}#/`, { waitUntil: 'networkidle' })

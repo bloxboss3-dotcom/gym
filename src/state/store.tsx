@@ -13,6 +13,7 @@ import { EXERCISE_BY_ID } from '@/data/exercises'
 import { createDefaultAppData } from '@/db/defaults'
 import { repository } from '@/db/repo'
 import { evaluateRunReward, evaluateSessionReward, applyLedgerEntry, grantReward, simpleGrant } from '@/engine/rewards'
+import { bandSourceId, newBandCrossings, paidBands, profileFromHistory } from '@/engine/percentile'
 import { buyPack as buyPackPure, grantItem, openPack as openPackPure } from '@/engine/packs'
 import { computeConsistency } from '@/engine/consistency'
 import { calculateProteinTarget, proteinForDate } from '@/engine/protein'
@@ -564,7 +565,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }
           const { grants, rejection } = evaluateSessionReward(completed)
           if (rejection) pushToast({ tone: 'info', title: 'Session saved', body: rejection })
-          return awardInto(withSession, grants, pushToast)
+
+          // Strength percentile bands. Paid for the climb, never the standing,
+          // and only the first time each band is crossed — the ledger's
+          // (reason, sourceId) idempotency makes that permanent rather than
+          // merely daily.
+          const profile = profileFromHistory(
+            withSession.sessions,
+            withSession.bodyWeights,
+            withSession.profile?.sex ?? 'unspecified',
+            withSession.profile?.bodyWeightKg ?? null,
+          )
+          const crossings = newBandCrossings(profile, paidBands(withSession.game.ledger))
+          const bandGrants = crossings.map((c) =>
+            simpleGrant('percentile_band', bandSourceId(c.exerciseId, c.band), c.detail),
+          )
+
+          return awardInto(withSession, [...grants, ...bandGrants], pushToast)
         })
       },
 

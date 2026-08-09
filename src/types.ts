@@ -478,6 +478,15 @@ export interface CosmeticItem {
   /** Primary + accent colours for the modular SVG. */
   palette: { base: string; accent: string; glow?: string }
   lore: string
+  /**
+   * Sparring stats. Present on some items, absent on most.
+   *
+   * These affect the sparring bout and NOTHING else. No training
+   * recommendation, target, chart or safety message reads this field, and
+   * none ever will — the promise that rewards stay cosmetic is about the
+   * coaching, and a bout against a bot is not coaching.
+   */
+  stats?: { health?: number; damage?: number }
 }
 
 export interface OwnedItem {
@@ -511,6 +520,8 @@ export type RewardReason =
   | 'benchmark_improved'
   | 'quest_completed'
   | 'puzzle_solved'
+  /** Crossed a strength percentile band for the first time. */
+  | 'percentile_band'
   | 'level_up'
   | 'duplicate_refund'
 

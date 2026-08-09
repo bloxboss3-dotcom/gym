@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Screen } from '@/components/AppShell'
 import { Warrior } from '@/character/Warrior'
+import { buildFromXp } from '@/config/economy'
 import {
   Alert,
   Button,
@@ -62,7 +63,12 @@ export default function Profile() {
 
         <Card raised>
           <div className="flex gap-4">
-            <Warrior equipped={data.game.equipped} className="w-20 h-auto shrink-0" still />
+            <Warrior
+              equipped={data.game.equipped}
+              build={buildFromXp(data.game.xp)}
+              className="w-20 h-auto shrink-0"
+              still
+            />
             <div className="min-w-0 flex-1">
               <p className="font-display text-2xl uppercase tracking-wide leading-none">{profile.name}</p>
               <p className="text-xs text-smoke mt-1">
