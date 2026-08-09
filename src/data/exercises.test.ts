@@ -19,6 +19,9 @@ const SEARCHES: [query: string, expectedId: string][] = [
   ['tricep pushdown', 'triceps-pushdown'],
   ['glute bridge', 'hip-thrust'],
   ['cgbp', 'close-grip-bench'],
+  ['machine bicep curl', 'machine-curl'],
+  ['bicep machine', 'machine-curl'],
+  ['preacher curl', 'preacher-curl'],
   ['bent over row', 'barbell-row'],
 ]
 

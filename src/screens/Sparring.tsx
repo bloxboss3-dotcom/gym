@@ -4,7 +4,7 @@ import { Screen } from '@/components/AppShell'
 import { Fighter } from '@/character/Fighter'
 import * as RIG from '@/character/rig'
 import { Alert, Button, Card, Chip, ProgressBar, SectionHeading, cx } from '@/components/ui'
-import { levelFromXp } from '@/config/economy'
+import { buildFromXp, levelFromXp } from '@/config/economy'
 import {
   ATTACKS,
   MOVES,
@@ -40,6 +40,7 @@ export default function Sparring() {
   const [seed, setSeed] = useState(1)
   const [log, setLog] = useState<string[]>([])
   const [animation, setAnimation] = useState<RIG.Animation>(RIG.IDLE)
+  const [theirAnimation, setTheirAnimation] = useState<RIG.Animation>(RIG.IDLE)
   const [playing, setPlaying] = useState(false)
   const [winner, setWinner] = useState<'you' | 'them' | null>(null)
 
@@ -53,6 +54,7 @@ export default function Sparring() {
     setLog([choice.taunt])
     setWinner(null)
     setAnimation(RIG.IDLE)
+    setTheirAnimation(RIG.IDLE)
     setPlaying(false)
   }
 
@@ -76,8 +78,20 @@ export default function Sparring() {
               : []),
         ].slice(-9),
       )
-      const key = MOVES[move].animation
-      setAnimation((RIG[key] as RIG.Animation) ?? RIG.IDLE)
+      // Both sides animate: yours from the button you pressed, theirs from
+      // whatever the engine says they committed to in the same instant.
+      setAnimation((RIG[MOVES[move].animation] as RIG.Animation) ?? RIG.IDLE)
+      // Their frame, in priority order: what they threw, else a flinch if your
+      // strike landed on them, else nothing. A defender who stands perfectly
+      // still while being kicked is the thing that breaks the illusion.
+      const theirMove = result.strikes[1].move
+      setTheirAnimation(
+        theirMove !== 'guard'
+          ? ((RIG[MOVES[theirMove].animation] as RIG.Animation) ?? RIG.IDLE)
+          : result.strikes[0].landed
+            ? RIG.HURT
+            : RIG.IDLE,
+      )
       setPlaying(true)
     },
     [you, them, opponent, seed, winner],
@@ -88,6 +102,20 @@ export default function Sparring() {
       <Screen title="Sparring" subtitle="Your warrior, a bot, and four ways to end it" back="/forge">
         <div className="space-y-4">
           <Card>
+            {/* Your actual warrior, in a fighting stance, wearing what you
+                earned. The character built through training is the one that
+                fights — that is the whole reason this screen exists. */}
+            <div className="rounded-xl bg-void/60 border border-slate/70 overflow-hidden mb-3">
+              <Fighter
+                animation={RIG.IDLE}
+                playing
+                loop
+                equipped={data.game.equipped}
+                build={buildFromXp(data.game.xp)}
+                className="w-full h-44"
+                label="Your warrior, ready to spar"
+              />
+            </div>
             <SectionHeading title="Your numbers" hint="Base 100 health, plus whatever your gear adds." />
             <div className="grid grid-cols-2 gap-2 mt-1">
               <div className="rounded-lg border border-slate/70 bg-coal/60 px-3 py-2.5 text-center">
@@ -192,16 +220,34 @@ export default function Sparring() {
             </div>
           </div>
 
-          <div className="rounded-xl bg-void/60 border border-slate/70 overflow-hidden">
+          {/* Both fighters on one stage, yours on the left facing in. This is
+              the warrior you have been building — same gear, same build, same
+              figure as the Forge — not a stand-in silhouette. */}
+          <div className="rounded-xl bg-void/60 border border-slate/70 overflow-hidden flex">
             <Fighter
               animation={animation}
               playing={playing}
               loop={animation === RIG.IDLE}
+              equipped={data.game.equipped}
+              build={buildFromXp(data.game.xp)}
               onDone={() => {
                 setAnimation(RIG.IDLE)
                 setPlaying(true)
               }}
-              className="w-full h-56"
+              className="w-1/2 h-56"
+              label={`Your warrior, ${animation.name}`}
+            />
+            <Fighter
+              animation={theirAnimation}
+              playing={playing}
+              loop={theirAnimation === RIG.IDLE}
+              equipped={opponent.look}
+              build={0.55}
+              mirror
+              accent="var(--color-caution)"
+              onDone={() => setTheirAnimation(RIG.IDLE)}
+              className="w-1/2 h-56"
+              label={`${opponent.name}, ${theirAnimation.name}`}
             />
           </div>
         </Card>

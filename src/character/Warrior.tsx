@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from 'react'
 import { ITEM_BY_ID } from '@/data/items'
+import { CLOTH, SKIN, SKIN_SHADE, paletteOf, type Palette } from '@/character/palette'
 import type { CosmeticItem, Slot } from '@/types'
 import { useReducedMotion } from '@/components/ui'
 
@@ -13,19 +14,9 @@ import { useReducedMotion } from '@/components/ui'
  * Coordinate space is a 200 × 280 viewBox with the ground plane at y = 252.
  */
 
-const SKIN = '#b78a63'
-const SKIN_SHADE = '#8c6647'
-const CLOTH = '#3a3a44'
-
-interface Palette {
-  base: string
-  accent: string
-  glow?: string
-}
-
-function paletteOf(item: CosmeticItem | undefined, fallback: Palette): Palette {
-  return item?.palette ?? fallback
-}
+// Skin, cloth and the palette helper live in `palette.ts` so this renderer and
+// the rigged one in `Fighter.tsx` cannot drift apart. A character that looks
+// like a different person once it starts fighting is not your character.
 
 // ---------------------------------------------------------------------------
 // Base body
