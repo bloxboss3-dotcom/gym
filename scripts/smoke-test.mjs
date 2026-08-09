@@ -159,6 +159,25 @@ for (let i = 0; i < 3; i++) {
 const loggedRows = await page.locator('li:has-text("RIR")').count()
 record('logs working sets', loggedRows >= 3, `${loggedRows} set rows`)
 
+// The running rep total.
+//
+// Asserted as a sum of the rows on screen rather than against a hard-coded
+// number: the point of the tile is that it agrees with the sets you logged,
+// and a fixed expectation would still pass if the tile froze at whatever
+// number happened to match.
+const repsPerSet = (await page.locator('li:has-text("RIR")').allInnerTexts())
+  .map((t) => t.match(/×\s*(\d+)/))
+  .filter(Boolean)
+  .map((m) => Number(m[1]))
+const expectedTotal = repsPerSet.reduce((n, r) => n + r, 0)
+const totalTile = page.locator('div:has(> p:text-is("Reps so far")) > p.tabular').first()
+const shownTotal = Number((await totalTile.innerText().catch(() => '')).trim())
+record(
+  'sums the reps logged so far',
+  repsPerSet.length >= 3 && shownTotal === expectedTotal,
+  `tile ${shownTotal} vs ${repsPerSet.join('+')} = ${expectedTotal}`,
+)
+
 // Rest-timer chess. It must only exist while a rest timer is running — that
 // gate is what keeps the reward tied to actually training.
 const puzzleToggle = page.getByRole('button', { name: 'Puzzle' })
@@ -206,6 +225,24 @@ record(
 )
 const filtered = await page.getByRole('dialog').getByRole('button', { name: /press/i }).count()
 record('search filters the exercise list as you type', filtered > 0, `${filtered} matches`)
+
+// Searching by the name people actually use.
+//
+// The overhead press is the "barbell shoulder press" to most of the world, and
+// an empty result reads as a missing exercise rather than a different name.
+// Asserted on the result, not on the alias data existing.
+await exSearch.fill('barbell shoulder press')
+await page.waitForTimeout(250)
+const aliasHits = await page.getByRole('dialog').locator('button').allInnerTexts()
+record(
+  'finds the overhead press by its common name',
+  aliasHits.some((t) => /^Overhead Press/.test(t)),
+  aliasHits.slice(0, 3).map((t) => t.split('\n')[0]).join(', ') || 'no results',
+)
+record(
+  'explains which other name matched',
+  aliasHits.some((t) => /also called/i.test(t)),
+)
 
 // Adding a movement mid-session must produce gym-native numbers, not a kg
 // constant converted literally into something like 44.1 lb.

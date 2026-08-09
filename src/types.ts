@@ -237,6 +237,12 @@ export interface Exercise {
   custom?: boolean
   /** Suggested drop-in replacements, by exercise id. */
   alternatives?: string[]
+  /**
+   * Other names people search for. The overhead press is the barbell shoulder
+   * press to most of the world, and a search that finds nothing reads as "this
+   * app does not have my exercise".
+   */
+  aliases?: string[]
 }
 
 export interface ProgramSlot {
