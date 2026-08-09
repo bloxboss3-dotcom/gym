@@ -2,7 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { ECONOMY } from '@/config/economy'
 import { ITEMS, ITEM_BY_ID, RARITY_ORDER, SLOT_ORDER } from '@/data/items'
 import { defaultGameState } from '@/db/defaults'
-import { buyPack, collectionProgress, grantItem, openPack, rollPack, unopenedPacks } from '@/engine/packs'
+import { STARTING_MOVES, UNLOCKABLE_MOVES } from '@/data/moves'
+import {
+  buyPack,
+  buyTechnique,
+  collectionProgress,
+  grantItem,
+  openPack,
+  rollPack,
+  rollTechnique,
+  unopenedPacks,
+} from '@/engine/packs'
 import type { GameState, PackKind } from '@/types'
 
 function gameWith(overrides: Partial<GameState> = {}): GameState {
@@ -176,5 +186,55 @@ describe('collection progress', () => {
     const item = ITEMS[0]
     const game = gameWith({ owned: [{ itemId: item.id, acquiredAt: 0, duplicates: 5, new: false }] })
     expect(collectionProgress(game).owned).toBe(1)
+  })
+})
+
+describe('technique crates', () => {
+  it('never rolls a technique you already know', () => {
+    // Eight moves is a finite set. A crate that can return a duplicate turns
+    // a collection into a treadmill, which is the opposite of the point.
+    const unlocked: string[] = []
+    for (let i = 0; i < UNLOCKABLE_MOVES.length; i += 1) {
+      const rolled = rollTechnique(unlocked, i * 7919 + 3)
+      expect(rolled, `roll ${i}`).not.toBeNull()
+      expect(unlocked, `roll ${i} was a duplicate`).not.toContain(rolled!)
+      expect(STARTING_MOVES).not.toContain(rolled!)
+      unlocked.push(rolled!)
+    }
+    // Everything unlocked: the crate refuses rather than paying out nothing.
+    expect(rollTechnique(unlocked, 1)).toBeNull()
+  })
+
+  it('reaches every unlockable technique across many seeds', () => {
+    const seen = new Set<string>()
+    for (let seed = 0; seed < 400; seed += 1) {
+      const rolled = rollTechnique([], seed)
+      if (rolled) seen.add(rolled)
+    }
+    expect(seen.size).toBe(UNLOCKABLE_MOVES.length)
+  })
+
+  it('charges for a scroll and records what it gave', () => {
+    const game = gameWith({ coins: ECONOMY.techniqueCrate.cost + 10 })
+    const result = buyTechnique(game, 5)
+    expect(result.error).toBeNull()
+    expect(result.moveId).not.toBeNull()
+    expect(result.game.coins).toBe(10)
+    expect(result.game.unlockedMoves).toContain(result.moveId!)
+  })
+
+  it('refuses when the coins are not there, and takes nothing', () => {
+    const game = gameWith({ coins: ECONOMY.techniqueCrate.cost - 1 })
+    const result = buyTechnique(game, 5)
+    expect(result.error).toMatch(/coins/i)
+    expect(result.moveId).toBeNull()
+    expect(result.game).toBe(game)
+  })
+
+  it('refuses once everything is known rather than charging for nothing', () => {
+    const game = gameWith({ coins: 99_999, unlockedMoves: UNLOCKABLE_MOVES.map((m) => m.id) })
+    const result = buyTechnique(game, 5)
+    expect(result.error).toMatch(/already unlocked/i)
+    expect(result.game.coins).toBe(99_999)
   })
 })

@@ -1,6 +1,7 @@
 import { ECONOMY } from '@/config/economy'
 import { ITEMS, ITEM_BY_ID, RARITY_ORDER } from '@/data/items'
 import type { CosmeticItem, GameState, OwnedItem, PackInstance, PackKind, Rarity } from '@/types'
+import { STARTING_MOVES, UNLOCKABLE_MOVES } from '@/data/moves'
 import { makeRng, newId } from '@/lib/id'
 
 /**
@@ -177,4 +178,55 @@ export function collectionProgress(game: GameState): { owned: number; total: num
     if (ownedIds.has(item.id)) byRarity[item.rarity].owned++
   }
   return { owned: ownedIds.size, total: ITEMS.length, byRarity }
+}
+
+
+// ---------------------------------------------------------------------------
+// Technique crates
+// ---------------------------------------------------------------------------
+
+/**
+ * Roll one fighting technique you do not already have.
+ *
+ * No duplicates, ever. A crate that can hand back something you own turns a
+ * finite set of eight moves into a slot machine, and the point of these is to
+ * change how you fight, not to farm refunds. When everything is unlocked the
+ * crate refuses to be bought at all rather than paying out nothing.
+ */
+export function rollTechnique(unlockedIds: string[], seed?: number): string | null {
+  const owned = new Set([...STARTING_MOVES, ...unlockedIds])
+  const pool = UNLOCKABLE_MOVES.filter((m) => !owned.has(m.id))
+  if (!pool.length) return null
+
+  const rng = makeRng(seed ?? 1)
+  const weights = ECONOMY.techniqueCrate.weights as Record<Rarity, number>
+  // Weight by rarity, but only across what is actually still available, so the
+  // last legendary cannot become unreachable because commons soak the roll.
+  const total = pool.reduce((sum, m) => sum + (weights[m.rarity] ?? 0.001), 0)
+  let roll = rng() * total
+  for (const move of pool) {
+    roll -= weights[move.rarity] ?? 0.001
+    if (roll <= 0) return move.id
+  }
+  return pool[pool.length - 1].id
+}
+
+export function buyTechnique(
+  game: GameState,
+  seed?: number,
+): { game: GameState; error: string | null; moveId: string | null } {
+  const cost = ECONOMY.techniqueCrate.cost
+  const unlocked = game.unlockedMoves ?? []
+  if (rollTechnique(unlocked, seed) === null) {
+    return { game, error: 'Every technique is already unlocked.', moveId: null }
+  }
+  if (game.coins < cost) {
+    return { game, error: `Not enough coins. A scroll costs ${cost}.`, moveId: null }
+  }
+  const moveId = rollTechnique(unlocked, seed)!
+  return {
+    game: { ...game, coins: game.coins - cost, unlockedMoves: [...unlocked, moveId] },
+    error: null,
+    moveId,
+  }
 }

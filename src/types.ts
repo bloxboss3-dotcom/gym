@@ -566,6 +566,14 @@ export interface GameState {
   lastActiveDate: IsoDate | null
   /** Rest-timer chess puzzles already solved, so they are not shown again. */
   solvedPuzzleIds?: string[]
+  /**
+   * Fighting techniques pulled out of crates. Separate from `owned` because a
+   * move is not a costume: it changes what you can do in the arena, and it is
+   * the one thing in the reward layer that does.
+   */
+  unlockedMoves?: string[]
+  /** The four taken into a bout, in the order they appear on the pad. */
+  loadout?: string[]
 }
 
 // ---------------------------------------------------------------------------

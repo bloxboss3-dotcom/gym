@@ -82,12 +82,13 @@ export default function Forge() {
           </div>
           <Link to="/forge/sparring" className="contents">
             <Button full className="mt-2">
-              Sparring ›
+              Enter the arena ›
             </Button>
           </Link>
           <p className="text-[11px] text-smoke mt-1.5 leading-relaxed">
-            Some gear carries health and damage. Those numbers move a bout against a bot and nothing else — no
-            training recommendation in this app has ever read what you are wearing.
+            Walk, jump, duck and block against a bot, with the techniques you have unlocked. Some gear carries health
+            and damage; those numbers move a bout and nothing else — no training recommendation in this app has ever
+            read what you are wearing.
           </p>
         </Card>
 

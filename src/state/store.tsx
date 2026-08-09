@@ -14,7 +14,8 @@ import { createDefaultAppData } from '@/db/defaults'
 import { repository } from '@/db/repo'
 import { evaluateRunReward, evaluateSessionReward, applyLedgerEntry, grantReward, simpleGrant } from '@/engine/rewards'
 import { bandSourceId, newBandCrossings, paidBands, profileFromHistory } from '@/engine/percentile'
-import { buyPack as buyPackPure, grantItem, openPack as openPackPure } from '@/engine/packs'
+import { buyPack as buyPackPure, buyTechnique as buyTechniquePure, grantItem, openPack as openPackPure } from '@/engine/packs'
+import { MOVE_BY_ID, resolveLoadout } from '@/data/moves'
 import { computeConsistency } from '@/engine/consistency'
 import { calculateProteinTarget, proteinForDate } from '@/engine/protein'
 import { newlyUnlockedAchievements } from '@/engine/quests'
@@ -117,6 +118,8 @@ export interface ForgedStore {
   // Game ---------------------------------------------------------------------
   openPack: (packId: string) => string[]
   buyPack: (kind: PackKind) => string | null
+  buyTechnique: () => string | null
+  setLoadout: (moveIds: string[]) => void
   equipItem: (slot: Slot, itemId: string) => void
   markItemSeen: (itemId: string) => void
   claimQuest: (questId: string, periodKey: string) => void
@@ -816,6 +819,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           return { ...current, game: result.game }
         })
         return packId
+      },
+
+      buyTechnique() {
+        let moveId: string | null = null
+        mutate((current) => {
+          // Seeded from the ledger length so a crate is reproducible from the
+          // saved state rather than from a clock the engine cannot have.
+          const result = buyTechniquePure(current.game, current.game.ledger.length + current.game.coins)
+          if (result.error) {
+            pushToast({ tone: 'warn', title: 'No scroll opened', body: result.error })
+            return current
+          }
+          moveId = result.moveId
+          const move = result.moveId ? MOVE_BY_ID[result.moveId] : undefined
+          if (move) {
+            pushToast({ tone: 'reward', title: `${move.name} unlocked`, body: move.lore, icon: '✦' })
+          }
+          return { ...current, game: result.game }
+        })
+        return moveId
+      },
+
+      setLoadout(moveIds) {
+        mutate((current) => ({
+          ...current,
+          game: {
+            ...current.game,
+            loadout: resolveLoadout(moveIds, current.game.unlockedMoves ?? []),
+          },
+        }))
       },
 
       equipItem(slot, itemId) {

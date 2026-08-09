@@ -40,6 +40,21 @@ export const ECONOMY = {
     packOnLevelKind: 'warband' as PackKind,
   },
 
+  /**
+   * Technique crates.
+   *
+   * Deliberately its own currency sink rather than a roll inside the cosmetic
+   * packs: a technique changes how you fight, and burying it in a costume pull
+   * would make it feel like a consolation prize. Duplicates are impossible —
+   * a crate only ever rolls something you do not have — so the cost is a
+   * ceiling on the whole set rather than a slot machine.
+   */
+  techniqueCrate: {
+    name: 'Technique Scroll',
+    cost: 220,
+    weights: { common: 0, uncommon: 46, rare: 32, epic: 17, legendary: 5 },
+  },
+
   /** Base payouts before multipliers. */
   rewards: {
     workout_completed: { xp: 60, coins: 25 },

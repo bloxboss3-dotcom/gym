@@ -126,16 +126,7 @@ export function Fighter({
   const impactPoint = frame.impactJoint ? skeleton[frame.impactJoint] : null
   const shake = frame.impact > 0.05 ? (Math.random() - 0.5) * frame.impact * 5 : 0
 
-  const gear = {
-    face: itemIn(equipped, 'face'),
-    head: itemIn(equipped, 'head'),
-    body: itemIn(equipped, 'body'),
-    hands: itemIn(equipped, 'hands'),
-    feet: itemIn(equipped, 'feet'),
-    weapon: itemIn(equipped, 'weapon'),
-    back: itemIn(equipped, 'back'),
-    aura: itemIn(equipped, 'aura'),
-  }
+  const gear = resolveGear(equipped)
 
   // The accessible name names the gear on purpose. It is how a screen-reader
   // user knows the figure in the ring is the one they dressed, and it is what
@@ -245,7 +236,21 @@ function along(from: Point, to: Point, distance: number): Point {
   return { x: to.x + (dx / length) * distance, y: to.y + (dy / length) * distance }
 }
 
-type GearSet = {
+/** Resolve an equipped map into the item objects the renderer draws. */
+export function resolveGear(equipped: Equipped): GearSet {
+  return {
+    face: itemIn(equipped, 'face'),
+    head: itemIn(equipped, 'head'),
+    body: itemIn(equipped, 'body'),
+    hands: itemIn(equipped, 'hands'),
+    feet: itemIn(equipped, 'feet'),
+    weapon: itemIn(equipped, 'weapon'),
+    back: itemIn(equipped, 'back'),
+    aura: itemIn(equipped, 'aura'),
+  }
+}
+
+export type GearSet = {
   face?: ReturnType<typeof itemIn>
   head?: ReturnType<typeof itemIn>
   body?: ReturnType<typeof itemIn>
@@ -265,7 +270,7 @@ type GearSet = {
  * then the cape, then the torso and its armour, then near-side limbs and the
  * weapon on top. Get it wrong and an arm passes through the breastplate.
  */
-function RiggedWarrior({
+export function RiggedWarrior({
   skeleton: s,
   build,
   gear,
@@ -277,12 +282,22 @@ function RiggedWarrior({
   accent: string
 }) {
   const b = Math.min(1, Math.max(0, build))
-  // The same growth curve the fixed-pose renderer uses, in stroke widths.
-  const upperArm = 10 + b * 5
-  const foreArm = 8.5 + b * 3.5
-  const thigh = 13 + b * 4
-  const calf = 11 + b * 3
-  const delt = 7 + b * 6
+  /*
+   * Limb widths, and the reason they are what they are.
+   *
+   * The first pass drew a figure that read as spindly: thin limbs hung off a
+   * long rectangular torso, and the pauldrons sat on top as loose circles. A
+   * side-on fighter needs the opposite emphasis — heavy limbs, a short deep
+   * chest, and a waist that is visibly narrower than both. These numbers are
+   * tuned against the rig's own bone lengths (thigh 52, shin 40, upper arm
+   * 30), so a limb is roughly a quarter as wide as it is long, which is about
+   * where a drawn figure stops looking like wire.
+   */
+  const upperArm = 13 + b * 5
+  const foreArm = 11 + b * 3.5
+  const thigh = 17 + b * 5
+  const calf = 14 + b * 3.5
+  const delt = 9 + b * 5
 
   const bodyPalette = paletteOf(gear.body, { base: CLOTH, accent: '#777' })
   const family = bodyFamily(gear.body?.art)
@@ -310,8 +325,8 @@ function RiggedWarrior({
     y: from.y + perp.y * distance * nearSign,
   })
 
-  const shoulderHalf = 17 + b * 4
-  const hipHalf = 14 + b * 1.5
+  const shoulderHalf = 20 + b * 5
+  const hipHalf = 15 + b * 1
   const shoulderNear = out(s.chest, shoulderHalf)
   const shoulderFar = out(s.chest, -shoulderHalf)
   const hipNear = out(s.pelvis, hipHalf)
@@ -383,8 +398,8 @@ function RiggedWarrior({
       <ellipse
         cx={shoulderNear.x}
         cy={shoulderNear.y}
-        rx={family === 'heavy' ? delt + 3 : delt}
-        ry={(family === 'heavy' ? delt + 3 : delt) * 0.88}
+        rx={family === 'heavy' ? delt + 2 : delt}
+        ry={(family === 'heavy' ? delt + 2 : delt) * 0.8}
         fill={gear.body ? (family === 'heavy' ? bodyPalette.accent : bodyPalette.base) : SKIN}
       />
       <Foot at={s.footNear} from={s.kneeNear} item={gear.feet} />
@@ -392,7 +407,7 @@ function RiggedWarrior({
 
       {/* Neck, head, face, headgear. */}
       {limbLine(s.neck, s.chest, 11 + b * 2, SKIN)}
-      <circle cx={s.head.x} cy={s.head.y} r={BONES.head * 0.86} fill={SKIN} />
+      <circle cx={s.head.x} cy={s.head.y} r={BONES.head * 0.95} fill={SKIN} />
       <Face at={s.head} from={s.neck} item={gear.face} accent={accent} nearSign={nearSign} />
       <Headgear at={s.head} from={s.neck} item={gear.head} />
 
