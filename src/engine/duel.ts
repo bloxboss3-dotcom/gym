@@ -1,4 +1,5 @@
 import { ITEM_BY_ID } from '@/data/items'
+import type { BotProfile } from '@/engine/arena'
 import type { CosmeticItem, Slot } from '@/types'
 
 /**
@@ -152,8 +153,12 @@ export interface Opponent {
   name: string
   health: number
   damage: number
-  /** How often it guards instead of striking, 0–1. */
+  /** How often it guards instead of striking, 0–1. Legacy turn-based knob. */
   caution: number
+  /** Reaction and temperament in the real-time arena. */
+  profile: BotProfile
+  /** What it can actually throw. Its difficulty is mostly this list. */
+  moves: string[]
   taunt: string
   /**
    * What it wears, in the same shape the Forge writes for you.
@@ -174,6 +179,11 @@ export const OPPONENTS: Opponent[] = [
     // Guards half the time. The opening bout has to be winnable with nothing
     // equipped, or the whole mode reads as pay-to-play the moment you see it.
     caution: 0.5,
+    // Guards far more than it strikes. This is the first thing anyone fights,
+    // and it exists to teach the controls — a bot that can chip a stationary
+    // beginner to death in five seconds teaches nothing but frustration.
+    profile: { caution: 0.22, reads: 0.1, thinkMs: 520, aggression: 0.22 },
+    moves: ['jab'],
     taunt: 'It does not move much. That is the point.',
     look: { body: 'body-tunic', face: 'face-recruit', hands: 'hands-wraps', feet: 'feet-wraps', weapon: 'weapon-none' },
   },
@@ -183,6 +193,8 @@ export const OPPONENTS: Opponent[] = [
     health: 100,
     damage: 3,
     caution: 0.2,
+    profile: { caution: 0.24, reads: 0.34, thinkMs: 300, aggression: 0.45 },
+    moves: ['jab', 'front-kick', 'roundhouse'],
     taunt: 'Started the same week you did.',
     look: {
       body: 'body-padded',
@@ -199,6 +211,8 @@ export const OPPONENTS: Opponent[] = [
     health: 135,
     damage: 7,
     caution: 0.35,
+    profile: { caution: 0.3, reads: 0.55, thinkMs: 240, aggression: 0.62 },
+    moves: ['jab', 'front-kick', 'sweep', 'uppercut'],
     taunt: 'Holds the line on the boring weeks.',
     look: {
       body: 'body-warden',
@@ -216,6 +230,8 @@ export const OPPONENTS: Opponent[] = [
     health: 170,
     damage: 12,
     caution: 0.28,
+    profile: { caution: 0.26, reads: 0.75, thinkMs: 190, aggression: 0.8 },
+    moves: ['jab', 'roundhouse', 'uppercut', 'axe-kick', 'spinning-kick'],
     taunt: 'Waits at the end of every long streak.',
     look: {
       body: 'body-ember-plate',

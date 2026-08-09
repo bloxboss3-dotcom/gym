@@ -43,7 +43,10 @@ describe('forward kinematics', () => {
 
   it('leaves the standing pose standing on the ground plane', () => {
     const s = solve(STANCE)
-    expect(s.pelvis).toEqual(ROOT)
+    // The stance bends the knees, so the pelvis sits below ROOT by exactly the
+    // pose's own offset — a fighting stance that stood bolt upright would be
+    // the bug here, not this.
+    expect(s.pelvis).toEqual({ x: ROOT.x + STANCE.dx, y: ROOT.y + STANCE.dy })
     // Feet near the ground line at 252, not floating or buried.
     for (const foot of [s.footNear, s.footFar]) {
       expect(foot.y).toBeGreaterThan(220)
@@ -54,7 +57,7 @@ describe('forward kinematics', () => {
 
   it('rotates the whole body about the pelvis without stretching it', () => {
     const spun = solve({ ...STANCE, rotate: 90 })
-    expect(spun.pelvis).toEqual(ROOT)
+    expect(spun.pelvis).toEqual({ x: ROOT.x + STANCE.dx, y: ROOT.y + STANCE.dy })
     expect(Math.hypot(spun.pelvis.x - spun.chest.x, spun.pelvis.y - spun.chest.y)).toBeCloseTo(
       BONES.spine,
       4,

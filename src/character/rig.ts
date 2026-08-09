@@ -150,16 +150,23 @@ export function solve(pose: Pose): Skeleton {
 
 const limb = (upper: number, lower: number): Limb => ({ upper, lower })
 
-/** Weight slightly back, guard up — a fighting stance, not a standing pose. */
+/**
+ * Fighting stance.
+ *
+ * Lead hand out in front, rear hand tucked by the chin, knees genuinely bent,
+ * weight back over the rear leg. The earlier version had both arms up in the
+ * same place, which reads as "surrendering" rather than "guarding" — a stance
+ * has to be asymmetric or the figure looks like a doll being held up.
+ */
 export const STANCE: Pose = {
   dx: 0,
-  dy: 0,
-  lean: 4,
-  headTilt: -2,
-  armFar: limb(150, 120),
-  armNear: limb(160, 130),
-  legFar: limb(-14, -4),
-  legNear: limb(16, 6),
+  dy: 6,
+  lean: 5,
+  headTilt: -3,
+  armFar: limb(163, 132),
+  armNear: limb(128, 104),
+  legFar: limb(-22, 2),
+  legNear: limb(24, 2),
   rotate: 0,
 }
 
@@ -295,8 +302,154 @@ export const IDLE: Animation = {
   ],
 }
 
-export const ATTACKS: Animation[] = [ROUNDHOUSE, SPIN_KICK, FLYING_KNEE, CROSS]
-export const ANIMATIONS: Animation[] = [...ATTACKS, HURT, IDLE]
+
+// ---------------------------------------------------------------------------
+// Locomotion and defence
+// ---------------------------------------------------------------------------
+
+/**
+ * Walking, as a loop.
+ *
+ * Two-beat rather than the four-beat cycle a walk really has, because at this
+ * size the extra keys read as noise. What sells it is the vertical bob: a walk
+ * with no rise and fall looks like a figure on a conveyor belt.
+ */
+export const WALK: Animation = {
+  name: 'Walk',
+  durationMs: 620,
+  frames: [
+    { t: 0, pose: pose({ dy: 6, legNear: limb(34, 8), legFar: limb(-30, 4), armNear: limb(136, 108), armFar: limb(158, 128) }) },
+    { t: 0.25, pose: pose({ dy: 1, legNear: limb(12, 2), legFar: limb(-8, 0), armNear: limb(130, 104), armFar: limb(164, 134) }) },
+    { t: 0.5, pose: pose({ dy: 6, legNear: limb(-30, 4), legFar: limb(34, 8), armNear: limb(124, 100), armFar: limb(168, 138) }) },
+    { t: 0.75, pose: pose({ dy: 1, legNear: limb(-8, 0), legFar: limb(12, 2), armNear: limb(130, 104), armFar: limb(164, 134) }) },
+    { t: 1, pose: pose({ dy: 6, legNear: limb(34, 8), legFar: limb(-30, 4), armNear: limb(136, 108), armFar: limb(158, 128) }) },
+  ],
+}
+
+/**
+ * Airborne.
+ *
+ * Held rather than played: the arena decides how long a fighter is off the
+ * ground, so this is sampled at a fixed t and the height comes from the
+ * simulation, not from the animation.
+ */
+export const JUMP: Animation = {
+  name: 'Jump',
+  durationMs: 700,
+  frames: [
+    { t: 0, pose: pose({ dy: 14, legNear: limb(34, 16), legFar: limb(-28, 12) }) },
+    { t: 0.5, pose: pose({ dy: -2, lean: 2, legNear: limb(54, 24), legFar: limb(-34, 40), armNear: limb(118, 96), armFar: limb(172, 146) }) },
+    { t: 1, pose: pose({ dy: 12, legNear: limb(30, 10), legFar: limb(-26, 8) }) },
+  ],
+}
+
+/** Guard up: forearms across the head, shoulders rolled forward, weight back. */
+export const BLOCK: Animation = {
+  name: 'Block',
+  durationMs: 400,
+  frames: [
+    { t: 0, pose: pose({ dy: 10, lean: -8, headTilt: -8, armNear: limb(172, 214), armFar: limb(178, 208), legNear: limb(28, 0), legFar: limb(-26, 4) }) },
+    { t: 1, pose: pose({ dy: 12, lean: -10, headTilt: -9, armNear: limb(174, 216), armFar: limb(180, 210), legNear: limb(30, 0), legFar: limb(-28, 4) }) },
+  ],
+}
+
+/** Ducked under a high strike, hands still up. */
+export const CROUCH: Animation = {
+  name: 'Crouch',
+  durationMs: 400,
+  frames: [
+    { t: 0, pose: pose({ dy: 30, lean: 8, legNear: limb(58, -34), legFar: limb(-46, 34), armNear: limb(140, 116), armFar: limb(166, 136) }) },
+    { t: 1, pose: pose({ dy: 32, lean: 9, legNear: limb(60, -36), legFar: limb(-48, 36), armNear: limb(142, 118), armFar: limb(168, 138) }) },
+  ],
+}
+
+/** Flat on the ground after a knockdown. */
+export const DOWN: Animation = {
+  name: 'Knocked down',
+  durationMs: 900,
+  frames: [
+    { t: 0, pose: pose({ dx: -10, dy: 40, lean: -60, headTilt: -20, legNear: limb(66, 40), legFar: limb(40, 20), armNear: limb(120, 80), armFar: limb(110, 70) }) },
+    { t: 0.5, pose: pose({ dx: -16, dy: 62, lean: -84, headTilt: -26, legNear: limb(78, 52), legFar: limb(52, 30), armNear: limb(104, 66), armFar: limb(96, 58) }) },
+    { t: 1, pose: pose({ dx: -14, dy: 60, lean: -82, headTilt: -24, legNear: limb(76, 50), legFar: limb(50, 28), armNear: limb(106, 68), armFar: limb(98, 60) }) },
+  ],
+}
+
+// ---------------------------------------------------------------------------
+// Unlockable strikes
+// ---------------------------------------------------------------------------
+
+/** Teep. Straight push-kick off the lead leg — the range-control tool. */
+export const FRONT_KICK: Animation = {
+  name: 'Front kick',
+  durationMs: 620,
+  frames: [
+    { t: 0, pose: STANCE },
+    { t: 0.24, pose: pose({ dy: 2, lean: -6, legNear: limb(64, -22), legFar: limb(-24, 4) }) },
+    { t: 0.4, pose: pose({ dy: 0, lean: 14, legNear: limb(88, 86), legFar: limb(-20, 2), armFar: limb(186, 160), armNear: limb(-160, -130) }), trail: 'footNear', impact: 'footNear' },
+    { t: 0.54, pose: pose({ dy: 0, lean: 16, legNear: limb(92, 90), legFar: limb(-22, 0), armFar: limb(190, 164), armNear: limb(-155, -125) }), trail: 'footNear' },
+    { t: 0.78, pose: pose({ dy: 6, lean: 6, legNear: limb(44, -6) }) },
+    { t: 1, pose: STANCE },
+  ],
+}
+
+/**
+ * Sweep. Low and flat, and it is the reason jumping exists — the whole point
+ * of a low attack is that it can be leapt over, so the leg genuinely travels
+ * along the floor rather than at shin height.
+ */
+export const SWEEP: Animation = {
+  name: 'Sweep',
+  durationMs: 700,
+  frames: [
+    { t: 0, pose: STANCE },
+    { t: 0.22, pose: pose({ dy: 30, lean: -10, legNear: limb(50, -40), legFar: limb(-44, 34), armNear: limb(120, 150), armFar: limb(150, 170) }) },
+    { t: 0.42, pose: pose({ dy: 34, lean: 10, legNear: limb(96, 96), legFar: limb(-48, 40), armNear: limb(96, 150), armFar: limb(140, 176) }), trail: 'footNear', impact: 'footNear' },
+    { t: 0.56, pose: pose({ dy: 34, lean: 14, legNear: limb(104, 102), legFar: limb(-50, 42) }), trail: 'footNear' },
+    { t: 0.8, pose: pose({ dy: 20, lean: 2, legNear: limb(52, -10), legFar: limb(-34, 20) }) },
+    { t: 1, pose: STANCE },
+  ],
+}
+
+/** Uppercut. Drops, then drives up through the target — the anti-air. */
+export const UPPERCUT: Animation = {
+  name: 'Uppercut',
+  durationMs: 620,
+  frames: [
+    { t: 0, pose: STANCE },
+    { t: 0.24, pose: pose({ dy: 22, lean: -12, armNear: limb(20, 40), armFar: limb(160, 130), legNear: limb(46, -22), legFar: limb(-36, 24) }) },
+    { t: 0.42, pose: pose({ dy: -10, lean: 10, armNear: limb(174, 196), armFar: limb(150, 120), legNear: limb(18, 0), legFar: limb(-14, 0) }), trail: 'handNear', impact: 'handNear' },
+    { t: 0.56, pose: pose({ dy: -14, lean: 12, armNear: limb(180, 202), armFar: limb(148, 118) }), trail: 'handNear' },
+    { t: 0.8, pose: pose({ dy: 10, lean: 2, armNear: limb(150, 124) }) },
+    { t: 1, pose: STANCE },
+  ],
+}
+
+/** Axe kick. Rises high, then chops straight down — duckable, and it hurts. */
+export const AXE_KICK: Animation = {
+  name: 'Axe kick',
+  durationMs: 900,
+  frames: [
+    { t: 0, pose: STANCE },
+    { t: 0.2, pose: pose({ dy: 10, lean: -12, legNear: limb(38, -14), legFar: limb(-28, 6) }) },
+    { t: 0.4, pose: pose({ dy: -6, lean: -22, legNear: limb(146, 150), legFar: limb(-24, 2), armFar: limb(196, 176), armNear: limb(-150, -120) }), trail: 'footNear' },
+    { t: 0.54, pose: pose({ dy: 4, lean: 18, legNear: limb(76, 78), legFar: limb(-22, 2), armFar: limb(200, 180), armNear: limb(-140, -110) }), trail: 'footNear', impact: 'footNear' },
+    { t: 0.64, pose: pose({ dy: 12, lean: 24, legNear: limb(50, 46), legFar: limb(-24, 0) }), trail: 'footNear' },
+    { t: 0.84, pose: pose({ dy: 10, lean: 8, legNear: limb(32, 6) }) },
+    { t: 1, pose: STANCE },
+  ],
+}
+
+export const ATTACKS: Animation[] = [
+  CROSS,
+  FRONT_KICK,
+  ROUNDHOUSE,
+  SWEEP,
+  UPPERCUT,
+  SPIN_KICK,
+  AXE_KICK,
+  FLYING_KNEE,
+]
+export const ANIMATIONS: Animation[] = [...ATTACKS, HURT, IDLE, WALK, JUMP, BLOCK, CROUCH, DOWN]
 
 // ---------------------------------------------------------------------------
 // Interpolation

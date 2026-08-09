@@ -500,28 +500,106 @@ record(
   `label "${lobbyLabel}" vs forge "${equippedBody}"`,
 )
 
+// The loadout starts with exactly the two moves everyone has, and they are
+// enough — the arena must be playable before a single crate is opened.
+const startingStrikes = await page.locator('text=/Jab|Front kick/').count()
+record('starts with strikes you already own', startingStrikes > 0, `${startingStrikes} listed`)
+
 await page.getByRole('button', { name: /Straw Sentinel/ }).click()
 await page.waitForSelector('text=Round log', { timeout: 10000 })
-const beforeHp = await page.locator('text=/^\\d+\\/\\d+$/').last().innerText()
-// The cross averages ~5 damage a round against a guard-heavy opponent, so a
-// 70 hp bout takes roughly fifteen of them. Forty is headroom, not patience.
-let bout = ''
-for (let i = 0; i < 40; i += 1) {
-  const crossButton = page.getByRole('button', { name: /^Cross/ })
-  if (!(await crossButton.count())) break
-  await crossButton.click()
-  await page.waitForTimeout(120)
-  bout = await page.locator('#root').innerText()
-  if (/Bout won|Bout lost/.test(bout)) break
+await noOverflow('arena')
+await controlsUsable('arena')
+
+// Movement is real: holding a direction has to change the distance between
+// the fighters. A fighting game where walking does nothing is a slideshow.
+const distance = async () => {
+  const text = await page.locator('text=/\\d+ apart/').first().innerText().catch(() => '')
+  return Number(text.match(/(\d+)/)?.[1] ?? NaN)
 }
-record('a bout resolves to a result', /Bout won|Bout lost/.test(bout), beforeHp)
-record('the opening opponent is beatable bare-handed', /Bout won/.test(bout))
+const startGap = await distance()
+const left = page.getByRole('button', { name: 'Move left' })
+await left.dispatchEvent('pointerdown', { pointerId: 1 })
+await page.waitForTimeout(700)
+await left.dispatchEvent('pointerup', { pointerId: 1 })
+await page.waitForTimeout(150)
+const backedGap = await distance()
+record(
+  'walking changes the distance between fighters',
+  Number.isFinite(startGap) && Number.isFinite(backedGap) && backedGap !== startGap,
+  `${startGap} → ${backedGap}`,
+)
+
+// Jumping leaves the ground. Asserted on the readout rather than on pixels,
+// because "airborne" is the state the low-attack dodge depends on.
+const jump = page.getByRole('button', { name: 'Jump' })
+await jump.dispatchEvent('pointerdown', { pointerId: 1 })
+await page.waitForTimeout(140)
+const airborne = await page.locator('text=/airborne/').count()
+await jump.dispatchEvent('pointerup', { pointerId: 1 })
+record('jumping actually leaves the ground', airborne > 0)
+
+// Now fight it. Walk in, jab, repeat — the same plain strategy the engine
+// tests hold the bot to.
+// Restart before fighting. The movement and jump checks above take seconds of
+// real time during which the bot is landing strikes, and a bout that is
+// already over has no buttons left to press.
+// Route away and back: navigating to the same hash leaves the screen mounted
+// and holding the bout it is already in the middle of.
+await page.goto(`${BASE}#/forge`, { waitUntil: 'networkidle' })
+await page.waitForSelector('text=The Forge', { timeout: 10000 })
+await page.goto(`${BASE}#/forge/sparring`, { waitUntil: 'networkidle' })
+await page.getByRole('button', { name: /Straw Sentinel/ }).click()
+await page.waitForSelector('text=Round log', { timeout: 10000 })
+
+// Walk in once, then jab on a timer. Reading the distance every iteration is
+// what made the first version time out — the poll cost more than the fight.
+// Hold forward for the whole fight and jab on top of it — which is exactly
+// how a beginner plays, and the only way to stay in range: every landed jab
+// shoves them back, so a loop that only jabs slowly drifts out of reach and
+// then punches thin air forever.
+const right = page.getByRole('button', { name: 'Move right' })
+await right.dispatchEvent('pointerdown', { pointerId: 1 })
+
+let bout = ''
+// An attribute selector, not getByRole: the arena re-renders every frame, and
+// resolving the accessibility tree against a target that changes 60 times a
+// second is a race the test loses.
+const jabButton = page.locator('button[aria-label^="Jab"]').first()
+for (let i = 0; i < 120; i += 1) {
+  // Check the button still exists EVERY iteration. Checking every fifth meant
+  // the loop kept pressing for four more turns after the bout ended and the
+  // controls were replaced by the result card — which looked like the fight
+  // never finishing, when in fact it had.
+  if (!(await jabButton.count())) break
+  await jabButton.dispatchEvent('pointerdown', { pointerId: 1 })
+  await page.waitForTimeout(140)
+}
+// Only release if the pad is still there — once the bout ends the controls
+// are replaced by the result card and there is nothing left to let go of.
+if (await right.count()) await right.dispatchEvent('pointerup', { pointerId: 1 })
+bout = await page.locator('#root').innerText()
+record('a bout resolves to a result', /bout won|bout lost/i.test(bout), bout.match(/bout (won|lost)/i)?.[0] ?? '')
+record('the round log reports the strikes that landed', /landed Jab for \d+/.test(bout))
+record('the opening opponent is beatable with the starting moves', /bout won/i.test(bout))
 record(
   'a lost or won bout changes nothing about training',
   /Nothing about your programme changed/.test(bout),
 )
-await noOverflow('sparring bout')
-await shot('13c-sparring')
+await noOverflow('arena bout')
+await shot('13c-arena')
+
+// Techniques: rarity, frame data, and a crate that cannot roll a duplicate.
+await page.goto(`${BASE}#/forge/techniques`, { waitUntil: 'networkidle' })
+await page.waitForSelector('text=Technique Scroll', { timeout: 10000 })
+const lockedShown = await page.locator('text="???"').count()
+record('locked techniques are visible but not usable', lockedShown > 0, `${lockedShown} locked`)
+const frameData = await page.locator('text=/ms wind-up/').count()
+record('shows the frame data behind each technique', frameData > 0, `${frameData} with timings`)
+const honesty = await page.locator('text=/Rarer is not simply stronger/').count()
+record('says outright that rarer is not simply stronger', honesty > 0)
+await noOverflow('techniques')
+await controlsUsable('techniques')
+await shot('13d-techniques')
 
 // -------------------------------------------------------------- persistence
 await page.goto(`${BASE}#/`, { waitUntil: 'networkidle' })
