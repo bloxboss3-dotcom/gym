@@ -78,7 +78,9 @@ export default function CharacterCustomize() {
                 )}
               >
                 <span className="block text-[10px] uppercase tracking-wider text-smoke">{SLOT_LABEL[key]}</span>
-                <span className="block text-xs text-parchment whitespace-nowrap">{item?.name ?? 'Empty'}</span>
+                <span data-testid={`equipped-${key}`} className="block text-xs text-parchment whitespace-nowrap">
+                  {item?.name ?? 'Empty'}
+                </span>
               </button>
             )
           })}

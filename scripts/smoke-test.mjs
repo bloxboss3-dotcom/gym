@@ -472,6 +472,12 @@ const buildLine = await page.locator('text=/level \\d+ of \\d+/').first().innerT
 record('character build is tied to level', /level \d+ of \d+/.test(buildLine), buildLine)
 const notBuyable = await page.locator('text=/Nothing in the Forge can buy this|Fully built/').count()
 record('says plainly that build cannot be bought', notBuyable > 0)
+// Remember what the Forge says is on the figure, to cross-check the fighter.
+const equippedBody = await page
+  .locator('[data-testid="equipped-body"]')
+  .first()
+  .innerText()
+  .catch(() => '')
 await noOverflow('character')
 await shot('13b-character')
 
@@ -483,6 +489,16 @@ await noOverflow('sparring lobby')
 await controlsUsable('sparring lobby')
 const wallStated = await page.locator('text=/Gear stats move this bout and nothing else/').count()
 record('sparring states the wall between gear and coaching', wallStated > 0)
+
+// The fighter must BE your character, not a stand-in silhouette. Cross-checked
+// against what the Forge itself reports as equipped, so this cannot pass on a
+// hard-coded costume that merely happens to match today's default loadout.
+const lobbyLabel = (await page.locator('svg[role="img"]').first().getAttribute('aria-label')) ?? ''
+record(
+  'the sparring fighter is your own warrior, in your own gear',
+  equippedBody.length > 0 && lobbyLabel.includes(equippedBody),
+  `label "${lobbyLabel}" vs forge "${equippedBody}"`,
+)
 
 await page.getByRole('button', { name: /Straw Sentinel/ }).click()
 await page.waitForSelector('text=Round log', { timeout: 10000 })

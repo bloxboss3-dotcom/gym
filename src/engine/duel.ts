@@ -155,6 +155,14 @@ export interface Opponent {
   /** How often it guards instead of striking, 0–1. */
   caution: number
   taunt: string
+  /**
+   * What it wears, in the same shape the Forge writes for you.
+   *
+   * The opponent is rendered by the same rig as your own warrior, so an
+   * opponent is a costume rather than a separate art pipeline — and you can
+   * see at a glance that the thing across the ring is playing by your rules.
+   */
+  look: Partial<Record<Slot, string | null>>
 }
 
 export const OPPONENTS: Opponent[] = [
@@ -167,6 +175,7 @@ export const OPPONENTS: Opponent[] = [
     // equipped, or the whole mode reads as pay-to-play the moment you see it.
     caution: 0.5,
     taunt: 'It does not move much. That is the point.',
+    look: { body: 'body-tunic', face: 'face-recruit', hands: 'hands-wraps', feet: 'feet-wraps', weapon: 'weapon-none' },
   },
   {
     id: 'recruit',
@@ -175,6 +184,14 @@ export const OPPONENTS: Opponent[] = [
     damage: 3,
     caution: 0.2,
     taunt: 'Started the same week you did.',
+    look: {
+      body: 'body-padded',
+      head: 'head-bound',
+      face: 'face-scarred',
+      hands: 'hands-gloves',
+      feet: 'feet-boots',
+      weapon: 'weapon-shortsword',
+    },
   },
   {
     id: 'warden',
@@ -183,6 +200,15 @@ export const OPPONENTS: Opponent[] = [
     damage: 7,
     caution: 0.35,
     taunt: 'Holds the line on the boring weeks.',
+    look: {
+      body: 'body-warden',
+      head: 'head-open-helm',
+      face: 'face-veiled',
+      hands: 'hands-heavy',
+      feet: 'feet-warden',
+      weapon: 'weapon-warhammer',
+      back: 'back-heavy',
+    },
   },
   {
     id: 'emberblade',
@@ -191,6 +217,16 @@ export const OPPONENTS: Opponent[] = [
     damage: 12,
     caution: 0.28,
     taunt: 'Waits at the end of every long streak.',
+    look: {
+      body: 'body-ember-plate',
+      head: 'head-ember-crown',
+      face: 'face-ember-eyes',
+      hands: 'hands-ember',
+      feet: 'feet-ember',
+      weapon: 'weapon-ember-blade',
+      back: 'back-ember',
+      aura: 'aura-embers',
+    },
   },
 ]
 
