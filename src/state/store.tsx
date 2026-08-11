@@ -15,7 +15,7 @@ import { repository } from '@/db/repo'
 import { evaluateRunReward, evaluateSessionReward, applyLedgerEntry, grantReward, simpleGrant } from '@/engine/rewards'
 import { bandSourceId, newBandCrossings, paidBands, profileFromHistory } from '@/engine/percentile'
 import { buyPack as buyPackPure, buyTechnique as buyTechniquePure, grantItem, openPack as openPackPure } from '@/engine/packs'
-import { MOVE_BY_ID, resolveLoadout } from '@/data/moves'
+import { MOVE_BY_ID } from '@/data/moves'
 import { computeConsistency } from '@/engine/consistency'
 import { calculateProteinTarget, proteinForDate } from '@/engine/protein'
 import { newlyUnlockedAchievements } from '@/engine/quests'
@@ -119,7 +119,6 @@ export interface ForgedStore {
   openPack: (packId: string) => string[]
   buyPack: (kind: PackKind) => string | null
   buyTechnique: () => string | null
-  setLoadout: (moveIds: string[]) => void
   equipItem: (slot: Slot, itemId: string) => void
   markItemSeen: (itemId: string) => void
   claimQuest: (questId: string, periodKey: string) => void
@@ -839,16 +838,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           return { ...current, game: result.game }
         })
         return moveId
-      },
-
-      setLoadout(moveIds) {
-        mutate((current) => ({
-          ...current,
-          game: {
-            ...current.game,
-            loadout: resolveLoadout(moveIds, current.game.unlockedMoves ?? []),
-          },
-        }))
       },
 
       equipItem(slot, itemId) {

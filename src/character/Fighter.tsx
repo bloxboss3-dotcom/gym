@@ -52,6 +52,7 @@ export function Fighter({
   equipped = {},
   build = 0,
   mirror = false,
+  speed = 1,
   accent = 'var(--color-ember-500)',
   label,
 }: {
@@ -64,8 +65,14 @@ export function Fighter({
   equipped?: Equipped
   /** 0 → 1, from level. Same lever as the fixed-pose renderer. */
   build?: number
-  /** Face left instead of right, for the opponent's side of the ring. */
+  /** Face left instead of right. */
   mirror?: boolean
+  /**
+   * Playback rate. Half and quarter speed are not a gimmick here — a tornado
+   * kick is over in a little over a second, and a second is not long enough to
+   * see a coil, a launch, a turn and a landing.
+   */
+  speed?: number
   accent?: string
   label?: string
 }) {
@@ -95,7 +102,7 @@ export function Fighter({
     startedAt.current = performance.now()
     const tick = (now: number) => {
       const elapsed = now - startedAt.current
-      const t = elapsed / animation.durationMs
+      const t = (elapsed * Math.max(0.05, speed)) / animation.durationMs
       if (t >= 1) {
         if (loop) {
           startedAt.current = now
@@ -120,7 +127,7 @@ export function Fighter({
     return () => {
       if (raf.current) cancelAnimationFrame(raf.current)
     }
-  }, [animation, playing, loop, reduced])
+  }, [animation, playing, loop, reduced, speed])
 
   const skeleton = solve(frame.pose)
   const impactPoint = frame.impactJoint ? skeleton[frame.impactJoint] : null
@@ -141,7 +148,14 @@ export function Fighter({
 
   return (
     <svg
-      viewBox="0 0 200 280"
+      /*
+       * Taller and wider than the figure's own 200x280 space, because the
+       * aerials leave it. A backflip puts the feet above y = 0 and a flying
+       * side kick carries the whole body 50 units downrange; the first version
+       * cropped the head off the best frame of every showpiece in the game.
+       * The ground line stays at 252 either way.
+       */
+      viewBox="-24 -76 248 356"
       className={className}
       role="img"
       aria-label={[label ?? `Your warrior performing ${animation.name}`, described].filter(Boolean).join(', ')}
@@ -162,7 +176,7 @@ export function Fighter({
       <g transform={mirror ? 'translate(200 0) scale(-1 1)' : undefined}>
         <g transform={`translate(${shake} 0)`}>
           {/* Ground line and contact shadow. */}
-          <rect x="10" y="251" width="180" height="2" fill="url(#fighter-ground)" />
+          <rect x="-24" y="251" width="248" height="2" fill="url(#fighter-ground)" />
           <ellipse cx={skeleton.pelvis.x} cy="252" rx="34" ry="5" fill="#000" opacity="0.45" />
 
           {gear.aura && gear.aura.art !== 'none' && (
@@ -387,14 +401,9 @@ export function RiggedWarrior({
         />
       )}
 
-      {/* Near side on top. */}
-      {limbLine(hipNear, s.kneeNear, thigh, SKIN)}
-      {limbLine(s.kneeNear, s.footNear, calf, SKIN)}
-      {limbLine(shoulderNear, s.elbowNear, upperArm, SKIN)}
-      {limbLine(s.elbowNear, s.handNear, foreArm, SKIN)}
-      {/* The shoulder cap takes the armour's colour when armour is worn, so
-          the arm reads as joined to the torso rather than as a patch of bare
-          skin sitting on top of a breastplate. */}
+      {/* Shoulder cap belongs with the torso: it takes the armour's colour
+          when armour is worn, so the arm reads as joined to a breastplate
+          rather than as a patch of bare skin sitting on top of one. */}
       <ellipse
         cx={shoulderNear.x}
         cy={shoulderNear.y}
@@ -402,8 +411,6 @@ export function RiggedWarrior({
         ry={(family === 'heavy' ? delt + 2 : delt) * 0.8}
         fill={gear.body ? (family === 'heavy' ? bodyPalette.accent : bodyPalette.base) : SKIN}
       />
-      <Foot at={s.footNear} from={s.kneeNear} item={gear.feet} />
-      <Hand at={s.handNear} from={s.elbowNear} item={gear.hands} />
 
       {/* Neck, head, face, headgear. */}
       {limbLine(s.neck, s.chest, 11 + b * 2, SKIN)}
@@ -411,7 +418,23 @@ export function RiggedWarrior({
       <Face at={s.head} from={s.neck} item={gear.face} accent={accent} nearSign={nearSign} />
       <Headgear at={s.head} from={s.neck} item={gear.head} />
 
-      {/* The weapon last, in the near hand. */}
+      {/*
+        The near limbs go LAST, over the head.
+        
+        They are the closest things to the camera, and drawing them under the
+        head hid the best frame of half the moves: an axe kick, a crescent and
+        a backflip kick all finish with the foot at head height, and every one
+        of them vanished into the skull. A raised limb passing in front of the
+        face is correct; a leg disappearing behind it is not.
+      */}
+      {limbLine(hipNear, s.kneeNear, thigh, SKIN)}
+      {limbLine(s.kneeNear, s.footNear, calf, SKIN)}
+      {limbLine(shoulderNear, s.elbowNear, upperArm, SKIN)}
+      {limbLine(s.elbowNear, s.handNear, foreArm, SKIN)}
+      <Foot at={s.footNear} from={s.kneeNear} item={gear.feet} />
+      <Hand at={s.handNear} from={s.elbowNear} item={gear.hands} />
+
+      {/* The weapon last of all, in the near hand. */}
       <Weapon hand={s.handNear} elbow={s.elbowNear} item={gear.weapon} />
     </g>
   )

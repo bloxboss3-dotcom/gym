@@ -478,15 +478,6 @@ export interface CosmeticItem {
   /** Primary + accent colours for the modular SVG. */
   palette: { base: string; accent: string; glow?: string }
   lore: string
-  /**
-   * Sparring stats. Present on some items, absent on most.
-   *
-   * These affect the sparring bout and NOTHING else. No training
-   * recommendation, target, chart or safety message reads this field, and
-   * none ever will — the promise that rewards stay cosmetic is about the
-   * coaching, and a bout against a bot is not coaching.
-   */
-  stats?: { health?: number; damage?: number }
 }
 
 export interface OwnedItem {
@@ -567,13 +558,10 @@ export interface GameState {
   /** Rest-timer chess puzzles already solved, so they are not shown again. */
   solvedPuzzleIds?: string[]
   /**
-   * Fighting techniques pulled out of crates. Separate from `owned` because a
-   * move is not a costume: it changes what you can do in the arena, and it is
-   * the one thing in the reward layer that does.
+   * Techniques pulled out of scrolls. Separate from `owned` because a move is
+   * not a costume — it is something the warrior can be asked to perform.
    */
   unlockedMoves?: string[]
-  /** The four taken into a bout, in the order they appear on the pad. */
-  loadout?: string[]
 }
 
 // ---------------------------------------------------------------------------
