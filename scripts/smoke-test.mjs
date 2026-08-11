@@ -481,125 +481,61 @@ const equippedBody = await page
 await noOverflow('character')
 await shot('13b-character')
 
-// Sparring: the one place gear stats do anything, and it must be playable and
-// winnable with nothing equipped.
-await page.goto(`${BASE}#/forge/sparring`, { waitUntil: 'networkidle' })
-await page.waitForSelector('text=Pick an opponent', { timeout: 10000 })
-await noOverflow('sparring lobby')
-await controlsUsable('sparring lobby')
-const wallStated = await page.locator('text=/Gear stats move this bout and nothing else/').count()
-record('sparring states the wall between gear and coaching', wallStated > 0)
-
-// The fighter must BE your character, not a stand-in silhouette. Cross-checked
-// against what the Forge itself reports as equipped, so this cannot pass on a
-// hard-coded costume that merely happens to match today's default loadout.
-const lobbyLabel = (await page.locator('svg[role="img"]').first().getAttribute('aria-label')) ?? ''
-record(
-  'the sparring fighter is your own warrior, in your own gear',
-  equippedBody.length > 0 && lobbyLabel.includes(equippedBody),
-  `label "${lobbyLabel}" vs forge "${equippedBody}"`,
-)
-
-// The loadout starts with exactly the two moves everyone has, and they are
-// enough — the arena must be playable before a single crate is opened.
-const startingStrikes = await page.locator('text=/Jab|Front kick/').count()
-record('starts with strikes you already own', startingStrikes > 0, `${startingStrikes} listed`)
-
-await page.getByRole('button', { name: /Straw Sentinel/ }).click()
-await page.waitForSelector('text=Round log', { timeout: 10000 })
-await noOverflow('arena')
-await controlsUsable('arena')
-
-// Movement is real: holding a direction has to change the distance between
-// the fighters. A fighting game where walking does nothing is a slideshow.
-const distance = async () => {
-  const text = await page.locator('text=/\\d+ apart/').first().innerText().catch(() => '')
-  return Number(text.match(/(\d+)/)?.[1] ?? NaN)
-}
-const startGap = await distance()
-const left = page.getByRole('button', { name: 'Move left' })
-await left.dispatchEvent('pointerdown', { pointerId: 1 })
-await page.waitForTimeout(700)
-await left.dispatchEvent('pointerup', { pointerId: 1 })
-await page.waitForTimeout(150)
-const backedGap = await distance()
-record(
-  'walking changes the distance between fighters',
-  Number.isFinite(startGap) && Number.isFinite(backedGap) && backedGap !== startGap,
-  `${startGap} → ${backedGap}`,
-)
-
-// Jumping leaves the ground. Asserted on the readout rather than on pixels,
-// because "airborne" is the state the low-attack dodge depends on.
-const jump = page.getByRole('button', { name: 'Jump' })
-await jump.dispatchEvent('pointerdown', { pointerId: 1 })
-await page.waitForTimeout(140)
-const airborne = await page.locator('text=/airborne/').count()
-await jump.dispatchEvent('pointerup', { pointerId: 1 })
-record('jumping actually leaves the ground', airborne > 0)
-
-// Now fight it. Walk in, jab, repeat — the same plain strategy the engine
-// tests hold the bot to.
-// Restart before fighting. The movement and jump checks above take seconds of
-// real time during which the bot is landing strikes, and a bout that is
-// already over has no buttons left to press.
-// Route away and back: navigating to the same hash leaves the screen mounted
-// and holding the bout it is already in the middle of.
-await page.goto(`${BASE}#/forge`, { waitUntil: 'networkidle' })
-await page.waitForSelector('text=The Forge', { timeout: 10000 })
-await page.goto(`${BASE}#/forge/sparring`, { waitUntil: 'networkidle' })
-await page.getByRole('button', { name: /Straw Sentinel/ }).click()
-await page.waitForSelector('text=Round log', { timeout: 10000 })
-
-// Walk in once, then jab on a timer. Reading the distance every iteration is
-// what made the first version time out — the poll cost more than the fight.
-// Hold forward for the whole fight and jab on top of it — which is exactly
-// how a beginner plays, and the only way to stay in range: every landed jab
-// shoves them back, so a loop that only jabs slowly drifts out of reach and
-// then punches thin air forever.
-const right = page.getByRole('button', { name: 'Move right' })
-await right.dispatchEvent('pointerdown', { pointerId: 1 })
-
-let bout = ''
-// An attribute selector, not getByRole: the arena re-renders every frame, and
-// resolving the accessibility tree against a target that changes 60 times a
-// second is a race the test loses.
-const jabButton = page.locator('button[aria-label^="Jab"]').first()
-for (let i = 0; i < 120; i += 1) {
-  // Check the button still exists EVERY iteration. Checking every fifth meant
-  // the loop kept pressing for four more turns after the bout ended and the
-  // controls were replaced by the result card — which looked like the fight
-  // never finishing, when in fact it had.
-  if (!(await jabButton.count())) break
-  await jabButton.dispatchEvent('pointerdown', { pointerId: 1 })
-  await page.waitForTimeout(140)
-}
-// Only release if the pad is still there — once the bout ends the controls
-// are replaced by the result card and there is nothing left to let go of.
-if (await right.count()) await right.dispatchEvent('pointerup', { pointerId: 1 })
-bout = await page.locator('#root').innerText()
-record('a bout resolves to a result', /bout won|bout lost/i.test(bout), bout.match(/bout (won|lost)/i)?.[0] ?? '')
-record('the round log reports the strikes that landed', /landed Jab for \d+/.test(bout))
-record('the opening opponent is beatable with the starting moves', /bout won/i.test(bout))
-record(
-  'a lost or won bout changes nothing about training',
-  /Nothing about your programme changed/.test(bout),
-)
-await noOverflow('arena bout')
-await shot('13c-arena')
-
-// Techniques: rarity, frame data, and a crate that cannot roll a duplicate.
-await page.goto(`${BASE}#/forge/techniques`, { waitUntil: 'networkidle' })
+// The Dojo: unlock techniques and watch the warrior perform them. There is
+// nothing to fight here, so what has to work is the playback.
+await page.goto(`${BASE}#/forge/dojo`, { waitUntil: 'networkidle' })
 await page.waitForSelector('text=Technique Scroll', { timeout: 10000 })
+await noOverflow('dojo')
+await controlsUsable('dojo')
+
+// The stage names the move it is playing, which is the only checkable proof
+// that picking a technique actually changed what is on screen.
+const stageLabel = async () =>
+  (await page.locator('svg[role="img"]').last().getAttribute('aria-label')) ?? ''
+const firstLabel = await stageLabel()
+record(
+  'the dojo stage is your own warrior, in your own gear',
+  equippedBody.length > 0 && firstLabel.includes(equippedBody),
+  `label "${firstLabel}" vs forge "${equippedBody}"`,
+)
+
 const lockedShown = await page.locator('text="???"').count()
-record('locked techniques are visible but not usable', lockedShown > 0, `${lockedShown} locked`)
-const frameData = await page.locator('text=/ms wind-up/').count()
-record('shows the frame data behind each technique', frameData > 0, `${frameData} with timings`)
-const honesty = await page.locator('text=/Rarer is not simply stronger/').count()
-record('says outright that rarer is not simply stronger', honesty > 0)
-await noOverflow('techniques')
-await controlsUsable('techniques')
-await shot('13d-techniques')
+record('locked techniques are listed but not watchable', lockedShown > 0, `${lockedShown} locked`)
+
+// Switching move must switch animation.
+await page.getByRole('button', { name: 'Watch Front kick' }).click()
+await page.waitForTimeout(250)
+const switched = await stageLabel()
+record(
+  'picking a technique changes what plays',
+  /Front kick/.test(switched) && switched !== firstLabel,
+  switched,
+)
+
+// Slow motion, because a showpiece is over in about a second.
+const speeds = await page.locator('text=/^(Full|Half|Quarter)$/').count()
+record('offers slow motion for the fast ones', speeds >= 3, `${speeds} speeds`)
+await page.getByText('Quarter', { exact: true }).click()
+await page.getByRole('button', { name: 'Play again' }).click()
+await page.waitForTimeout(300)
+record('replays on demand', (await stageLabel()).length > 0)
+
+// A scroll unlocks something new. The demo account can afford exactly this.
+const knownBefore = Number((await page.locator('text=/\\d+ of \\d+ techniques/').first().innerText()).match(/(\d+) of/)?.[1] ?? 0)
+const scroll = page.getByRole('button', { name: /Open a scroll/ })
+if (await scroll.count()) {
+  await scroll.click()
+  await page.waitForTimeout(500)
+  const knownAfter = Number((await page.locator('text=/\\d+ of \\d+ techniques/').first().innerText()).match(/(\d+) of/)?.[1] ?? 0)
+  record('a scroll unlocks a new technique', knownAfter === knownBefore + 1, `${knownBefore} → ${knownAfter}`)
+  const revealed = await page.locator('text=/technique$/i').count()
+  record('the scroll says what it gave you', revealed > 0)
+}
+
+const honesty = await page.locator('text=/Rarity here means spectacle, not power/').count()
+record('says outright that rarity is spectacle, not power', honesty > 0)
+await noOverflow('dojo after unlock')
+await shot('13c-dojo')
 
 // -------------------------------------------------------------- persistence
 await page.goto(`${BASE}#/`, { waitUntil: 'networkidle' })

@@ -80,15 +80,14 @@ export default function Forge() {
               <Button full>Inventory</Button>
             </Link>
           </div>
-          <Link to="/forge/sparring" className="contents">
+          <Link to="/forge/dojo" className="contents">
             <Button full className="mt-2">
-              Enter the arena ›
+              The Dojo ›
             </Button>
           </Link>
           <p className="text-[11px] text-smoke mt-1.5 leading-relaxed">
-            Walk, jump, duck and block against a bot, with the techniques you have unlocked. Some gear carries health
-            and damage; those numbers move a bout and nothing else — no training recommendation in this app has ever
-            read what you are wearing.
+            Unlock techniques and watch your warrior perform them — roundhouses, spinning kicks, backflips. Nothing
+            here is fought or won; it is the reward, not the mechanism.
           </p>
         </Card>
 

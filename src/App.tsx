@@ -25,8 +25,7 @@ const Forge = lazy(() => import('@/screens/Forge'))
 const PackOpening = lazy(() => import('@/screens/PackOpening'))
 const Inventory = lazy(() => import('@/screens/Inventory'))
 const CharacterCustomize = lazy(() => import('@/screens/CharacterCustomize'))
-const Sparring = lazy(() => import('@/screens/Sparring'))
-const Techniques = lazy(() => import('@/screens/Techniques'))
+const Dojo = lazy(() => import('@/screens/Dojo'))
 const Quests = lazy(() => import('@/screens/Quests'))
 const Profile = lazy(() => import('@/screens/Profile'))
 const Science = lazy(() => import('@/screens/Science'))
@@ -101,8 +100,10 @@ export default function App() {
                 <Route path="/forge" element={<Forge />} />
                 <Route path="/forge/pack/:packId" element={<PackOpening />} />
                 <Route path="/forge/inventory" element={<Inventory />} />
-                <Route path="/forge/sparring" element={<Sparring />} />
-                <Route path="/forge/techniques" element={<Techniques />} />
+                <Route path="/forge/dojo" element={<Dojo />} />
+                {/* The arena that used to live here is gone. Old links land in the dojo. */}
+                <Route path="/forge/sparring" element={<Navigate to="/forge/dojo" replace />} />
+                <Route path="/forge/techniques" element={<Navigate to="/forge/dojo" replace />} />
                 <Route path="/forge/character" element={<CharacterCustomize />} />
                 <Route path="/forge/quests" element={<Quests />} />
 
