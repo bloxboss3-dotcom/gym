@@ -80,15 +80,6 @@ export default function Forge() {
               <Button full>Inventory</Button>
             </Link>
           </div>
-          <Link to="/forge/dojo" className="contents">
-            <Button full className="mt-2">
-              The Dojo ›
-            </Button>
-          </Link>
-          <p className="text-[11px] text-smoke mt-1.5 leading-relaxed">
-            Unlock techniques and watch your warrior perform them — roundhouses, spinning kicks, backflips. Nothing
-            here is fought or won; it is the reward, not the mechanism.
-          </p>
         </Card>
 
         {packs.length > 0 && (
@@ -138,9 +129,13 @@ export default function Forge() {
                           {'floor' in config && config.floor ? ` · guaranteed ${config.floor}+` : ''}
                         </span>
                         <span className="flex flex-wrap gap-1 mt-1.5">
-                          {(Object.entries(config.weights) as [keyof typeof RARITY_META, number][]).map(
-                            ([rarity, weight]) => {
+                          {(Object.entries(config.weights) as [keyof typeof RARITY_META, number][])
+                            // A tier this pack cannot drop is not listed at all. Printing
+                            // "??? 0%" would advertise a secret that is not in the table.
+                            .filter(([, weight]) => weight > 0)
+                            .map(([rarity, weight]) => {
                               const total = Object.values(config.weights).reduce((a, b) => a + b, 0)
+                              const percent = (weight / total) * 100
                               return (
                                 <span
                                   key={rarity}
@@ -150,11 +145,13 @@ export default function Forge() {
                                     borderColor: `${RARITY_META[rarity].color}55`,
                                   }}
                                 >
-                                  {RARITY_META[rarity].label} {((weight / total) * 100).toFixed(0)}%
+                                  {/* Rounding a real 0.1% chance down to "0%" reads as
+                                      "impossible", which is a different claim. */}
+                                  {RARITY_META[rarity].label}{' '}
+                                  {percent < 1 ? '<1' : percent.toFixed(0)}%
                                 </span>
                               )
-                            },
-                          )}
+                            })}
                         </span>
                       </span>
                       <Button

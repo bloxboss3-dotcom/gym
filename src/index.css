@@ -236,6 +236,81 @@
   .animate-shake { animation: forge-shake 420ms ease-in-out; }
   .animate-burst { animation: rarity-burst 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
   .animate-sweep { animation: sweep 1.6s ease-in-out infinite; }
+
+  /* -------------------------------------------------------------------
+   * Idle life.
+   *
+   * A character that holds a single frame reads as a paper doll, however
+   * good the drawing is. These are the smallest motions that make one look
+   * alive: the chest rises, the eyes close now and then, and anything long
+   * enough to hang — hair, a scarf, a cloak, a tail — lags behind the body.
+   *
+   * Every one of them is a CSS animation on an SVG group rather than a
+   * React state update, so an idle warrior costs nothing per frame and a
+   * screen with four of them does not re-render at 60 Hz.
+   *
+   * `transform-box: fill-box` is load-bearing: without it an SVG transform
+   * origin resolves against the whole viewBox and a 2° sway becomes a
+   * limb swinging across the canvas.
+   * ------------------------------------------------------------------- */
+  .idle-anim {
+    transform-box: fill-box;
+    will-change: transform;
+  }
+
+  @keyframes warrior-breathe {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    45% { transform: translateY(-1.1px) scaleY(1.018); }
+  }
+  /* Blink: shut for a fraction of the cycle, which is what makes it read as
+     a blink rather than a slow wink. */
+  @keyframes warrior-blink {
+    0%, 92%, 100% { transform: scaleY(1); }
+    94%, 96% { transform: scaleY(0.08); }
+  }
+  @keyframes warrior-sway {
+    0%, 100% { transform: rotate(-1.6deg); }
+    50% { transform: rotate(1.9deg); }
+  }
+  @keyframes warrior-sway-wide {
+    0%, 100% { transform: rotate(-4deg) translateX(-0.6px); }
+    50% { transform: rotate(5deg) translateX(0.8px); }
+  }
+  @keyframes warrior-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3.5px); }
+  }
+  @keyframes warrior-glow {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 0.95; }
+  }
+  @keyframes warrior-flicker {
+    0%, 100% { opacity: 0.15; }
+    8% { opacity: 0.9; }
+    12% { opacity: 0.2; }
+    18% { opacity: 0.75; }
+    26%, 92% { opacity: 0.12; }
+  }
+  @keyframes warrior-petal {
+    0% { transform: translate(0, -14px) rotate(0deg); opacity: 0; }
+    15% { opacity: 0.85; }
+    100% { transform: translate(-16px, 96px) rotate(220deg); opacity: 0; }
+  }
+  @keyframes warrior-rise {
+    0% { transform: translateY(6px) scale(0.7); opacity: 0; }
+    30% { opacity: 0.8; }
+    100% { transform: translateY(-70px) scale(1.1); opacity: 0; }
+  }
+
+  .anim-breathe { animation: warrior-breathe 4.2s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+  .anim-blink { animation: warrior-blink 6.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+  .anim-sway { animation: warrior-sway 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 0%; }
+  .anim-sway-wide { animation: warrior-sway-wide 2.9s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 0%; }
+  .anim-float { animation: warrior-float 3.1s ease-in-out infinite; transform-box: fill-box; }
+  .anim-glow { animation: warrior-glow 2.8s ease-in-out infinite; }
+  .anim-flicker { animation: warrior-flicker 2.2s linear infinite; }
+  .anim-petal { animation: warrior-petal 5.2s linear infinite; transform-box: fill-box; }
+  .anim-rise { animation: warrior-rise 3.4s ease-out infinite; transform-box: fill-box; }
 }
 
 @media (prefers-reduced-motion: reduce) {

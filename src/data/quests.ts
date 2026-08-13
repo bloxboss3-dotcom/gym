@@ -268,6 +268,7 @@ export const REWARD_REASON_LABEL: Record<RewardReason, string> = {
   benchmark_improved: 'Benchmark improved',
   quest_completed: 'Quest completed',
   puzzle_solved: 'Rest-timer puzzle solved',
+  anvil_round: 'Anvil struck between sets',
   percentile_band: 'Strength percentile climbed',
   level_up: 'Level up',
   duplicate_refund: 'Duplicate converted',

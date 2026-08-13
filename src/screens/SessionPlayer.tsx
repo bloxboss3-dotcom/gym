@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { RecommendationCard } from '@/components/RecommendationCard'
+import { AnvilGame } from '@/components/AnvilGame'
 import { RestPuzzle } from '@/components/RestPuzzle'
 import {
   Alert,
@@ -58,7 +59,9 @@ export default function SessionPlayer() {
   const [addOpen, setAddOpen] = useState(false)
   const [substituteFor, setSubstituteFor] = useState<string | null>(null)
   const [notesOpen, setNotesOpen] = useState(false)
-  const [puzzleOpen, setPuzzleOpen] = useState(false)
+  // Only one rest-timer game at a time: two things competing for a ninety
+  // second window is how you end up finishing neither.
+  const [restGame, setRestGame] = useState<'none' | 'puzzle' | 'anvil'>('none')
   const timerRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -123,10 +126,17 @@ export default function SessionPlayer() {
               <span className="font-display text-lg text-ember-300 tabular">{formatClock(restLeft)}</span>
               <button
                 type="button"
-                onClick={() => setPuzzleOpen((v) => !v)}
+                onClick={() => setRestGame((v) => (v === 'anvil' ? 'none' : 'anvil'))}
                 className="text-xs text-ember-200 underline underline-offset-2 touch-target px-2"
               >
-                {puzzleOpen ? 'Hide puzzle' : 'Puzzle'}
+                {restGame === 'anvil' ? 'Hide anvil' : 'Anvil'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRestGame((v) => (v === 'puzzle' ? 'none' : 'puzzle'))}
+                className="text-xs text-ember-200 underline underline-offset-2 touch-target px-2"
+              >
+                {restGame === 'puzzle' ? 'Hide puzzle' : 'Puzzle'}
               </button>
               <button
                 type="button"
@@ -144,8 +154,19 @@ export default function SessionPlayer() {
         className="flex-1 max-w-lg mx-auto w-full px-4 pt-4 safe-x space-y-4"
         style={{ paddingBottom: 'calc(6rem + var(--safe-bottom))' }}
       >
-        {restLeft > 0 && puzzleOpen && (
-          <RestPuzzle seed={totalSets + session.entries.length} onClose={() => setPuzzleOpen(false)} />
+        {/* Opening a game is gated on resting — the toggles above only exist
+            while the timer runs — but FINISHING one is not. Unmounting a round
+            in progress because the clock hit zero would throw away the round
+            and the coins with it, which is a rotten thing to do to someone who
+            was three strikes in. */}
+        {restGame === 'anvil' && (
+          <AnvilGame
+            seed={(session.startedAt % 100000) + totalSets * 7919 + 1}
+            onClose={() => setRestGame('none')}
+          />
+        )}
+        {restGame === 'puzzle' && (
+          <RestPuzzle seed={totalSets + session.entries.length} onClose={() => setRestGame('none')} />
         )}
 
         {readOnly && (
