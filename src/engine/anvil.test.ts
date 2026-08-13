@@ -123,8 +123,13 @@ describe('scoring a round', () => {
     const perDay = ECONOMY.limits.perDay.anvil_round
     const best = round('perfect', 'perfect', 'perfect', 'perfect', 'perfect')
     expect(best.xp * perDay).toBeLessThan(ECONOMY.rewards.workout_completed.xp / 2)
-    // And it should be a genuinely useful amount of currency.
-    expect(best.coins * perDay).toBeGreaterThan(ECONOMY.rewards.workout_completed.coins * 4)
+    // And it must never be the better use of the time. A whole day of the
+    // mini-game has to come in under a single training session, or the app
+    // is quietly telling somebody to tap instead of lift.
+    expect(best.coins * perDay).toBeLessThan(ECONOMY.rewards.workout_completed.coins)
+    // Still worth playing, though — this is the faucet that makes the rest
+    // interval pay for itself.
+    expect(best.coins * perDay).toBeGreaterThan(ECONOMY.rewards.puzzle_solved.coins * 10)
   })
 
   it('describes the round in words', () => {

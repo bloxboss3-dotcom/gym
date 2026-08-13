@@ -42,7 +42,21 @@ export const ECONOMY = {
 
   /** Base payouts before multipliers. */
   rewards: {
-    workout_completed: { xp: 60, coins: 25 },
+    /**
+     * A finished session.
+     *
+     * Coins are set so that ANY session clearing the honesty threshold buys
+     * the cheapest pack outright, and a big one buys it with change to spare.
+     * At 25 a workout against a 150 pack it took six sessions to open
+     * anything, which puts the reward for training a fortnight away from the
+     * training — and a reward you cannot feel is not doing the job the
+     * cosmetic layer exists to do.
+     *
+     * The anti-farming design is untouched: this pays once a day, and only
+     * for a session with real work in it. Making one session worth one pack
+     * changes how it feels, not how hard it is to abuse.
+     */
+    workout_completed: { xp: 60, coins: 120 },
     run_completed: { xp: 45, coins: 18 },
     protein_target: { xp: 25, coins: 10 },
     checkin: { xp: 10, coins: 4 },
@@ -67,7 +81,7 @@ export const ECONOMY = {
      * Payout is passed in per round from the engine rather than taken from
      * here, so these are the ceiling a single round can be worth.
      */
-    anvil_round: { xp: 5, coins: 50 },
+    anvil_round: { xp: 5, coins: 30 },
     /**
      * Taking an intensity challenge and finishing it.
      *
@@ -118,7 +132,14 @@ export const ECONOMY = {
     } satisfies Record<RewardReason, number>,
     /** Hard ceiling on XP earned from all sources in one day. */
     dailyXpCap: 400,
-    dailyCoinCap: 200,
+    /**
+     * Raised alongside the workout payout. The per-reason caps above are what
+     * actually stop farming — one workout a day, three anvil rounds, two
+     * challenges. Leaving this at 200 while a single session pays 120 would
+     * mean the mini-games silently paid nothing on any day you trained
+     * properly, which punishes the training.
+     */
+    dailyCoinCap: 400,
     /**
      * A session only pays out if it looks like real training. These are
      * deliberately low so a short, honest session still counts.
@@ -131,13 +152,15 @@ export const ECONOMY = {
     volumeBonusSetCap: 30,
     /** Bonus XP per working set above the minimum, up to the cap. */
     xpPerExtraSet: 2,
+    /** And coins, so a harder session is worth more than a token one. */
+    coinsPerExtraSet: 4,
   },
 
   /** Pack contents. Weights are relative, not percentages. */
   packs: {
     recruit: {
       name: 'Recruit Cache',
-      cost: 150,
+      cost: 120,
       items: 1,
       weights: { common: 62, uncommon: 26, rare: 9, epic: 2.5, legendary: 0.5, mythical: 0, secret: 0 },
     },
