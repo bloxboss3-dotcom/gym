@@ -35,7 +35,19 @@ import { useReducedMotion } from '@/components/ui'
  * deltoid caps, arm and leg thickness, trapezius, a narrower waist — sits
  * outside those paths and is free to move.
  */
-function Body({ heavy, build }: { heavy: boolean; build: number }) {
+function Body({
+  heavy,
+  build,
+  legsOnly,
+  upperOnly,
+}: {
+  heavy: boolean
+  build: number
+  /** Everything below the hips, which stays planted. */
+  legsOnly?: boolean
+  /** Everything above them, which breathes. */
+  upperOnly?: boolean
+}) {
   const b = Math.min(1, Math.max(0, build))
   const shoulder = (heavy ? 24 : 21) + b * 3 // caps at 27 / 24, inside the armour
   const delt = 6.5 + b * 6
@@ -49,8 +61,8 @@ function Body({ heavy, build }: { heavy: boolean; build: number }) {
   const leftShoulderX = 100 - shoulder + 2
   const rightShoulderX = 100 + shoulder - 2
 
-  return (
-    <g>
+  const legs = (
+    <>
       {/* legs */}
       <path d="M90 148 L87 196" stroke={SKIN} strokeWidth={thigh} strokeLinecap="round" fill="none" />
       <path d="M87 196 L85 238" stroke={SKIN} strokeWidth={calf} strokeLinecap="round" fill="none" />
@@ -58,6 +70,13 @@ function Body({ heavy, build }: { heavy: boolean; build: number }) {
       <path d="M113 196 L115 238" stroke={SKIN} strokeWidth={calf} strokeLinecap="round" fill="none" />
       {/* hips */}
       <path d="M82 138 L118 138 L116 156 L84 156 Z" fill={SKIN_SHADE} />
+    </>
+  )
+  if (legsOnly) return <g>{legs}</g>
+
+  return (
+    <g>
+      {!upperOnly && legs}
       {/* torso — shoulders out to the armour, waist drawn in */}
       <path
         d={`M${100 - shoulder} 88 Q100 82 ${100 + shoulder} 88 L${100 + waist} 120 L116 144 L84 144 L${100 - waist} 120 Z`}
@@ -102,11 +121,97 @@ function Body({ heavy, build }: { heavy: boolean; build: number }) {
 // Body armour
 // ---------------------------------------------------------------------------
 
-function BodyArt({ art, p }: { art: string; p: Palette }) {
+function BodyArt({ art, p, animate }: { art: string; p: Palette; animate: boolean }) {
   const torso = 'M76 88 Q100 80 124 88 L118 146 L82 146 Z'
   const wide = 'M70 88 Q100 78 130 88 L120 148 L80 148 Z'
 
   switch (art) {
+    case 'shinobi':
+      return (
+        <g>
+          <path d={torso} fill={p.base} />
+          {/* Cross-wrapped straps and a wide obi — read as bound, not buckled. */}
+          <path d="M80 92 L120 126" stroke={p.accent} strokeWidth="3.5" opacity="0.85" />
+          <path d="M120 92 L80 126" stroke={p.accent} strokeWidth="3.5" opacity="0.85" />
+          <rect x="79" y="128" width="42" height="12" rx="2" fill={p.accent} opacity="0.95" />
+          <rect x="96" y="126" width="8" height="16" rx="1.5" fill={p.base} />
+          {[100, 110, 120].map((y) => (
+            <path key={y} d={`M82 ${y} L118 ${y}`} stroke={p.base} strokeWidth="1" opacity="0.5" />
+          ))}
+        </g>
+      )
+    case 'haori':
+      return (
+        <g>
+          {/* Open at the front, so the sleeves are the silhouette. */}
+          <path d="M74 88 Q86 82 92 88 L94 150 L78 154 Z" fill={p.base} />
+          <path d="M126 88 Q114 82 108 88 L106 150 L122 154 Z" fill={p.base} />
+          <path d="M92 88 L108 88 L106 140 L94 140 Z" fill={p.base} opacity="0.35" />
+          <g className={animate ? 'anim-sway' : undefined}>
+            <path d="M74 92 L66 140 L80 146 L82 96 Z" fill={p.base} opacity="0.9" />
+          </g>
+          <g className={animate ? 'anim-sway' : undefined}>
+            <path d="M126 92 L134 140 L120 146 L118 96 Z" fill={p.base} opacity="0.9" />
+          </g>
+          {/* Petal print, which is the whole reason it is a sakura haori. */}
+          {[[82, 104], [116, 116], [86, 132], [112, 96]].map(([x, y]) => (
+            <g key={`${x}-${y}`} opacity="0.85">
+              {[0, 72, 144, 216, 288].map((a) => (
+                <ellipse
+                  key={a}
+                  cx={x + Math.sin((a * Math.PI) / 180) * 3.2}
+                  cy={y - Math.cos((a * Math.PI) / 180) * 3.2}
+                  rx="2"
+                  ry="2.8"
+                  fill={p.accent}
+                  transform={`rotate(${a} ${x} ${y})`}
+                />
+              ))}
+            </g>
+          ))}
+        </g>
+      )
+    case 'mecha':
+      return (
+        <g>
+          <path d={wide} fill={p.base} />
+          <path d="M70 88 L130 88 L128 100 L72 100 Z" fill={p.accent} opacity="0.85" />
+          {/* Panel seams and a reactor core that never quite settles. */}
+          <path d="M78 108 L122 108 M78 126 L122 126" stroke="#0b0b12" strokeWidth="2" opacity="0.7" />
+          <path d="M100 88 L100 148" stroke="#0b0b12" strokeWidth="2" opacity="0.5" />
+          <g className={animate ? 'anim-glow' : undefined}>
+            <circle cx="100" cy="117" r="9" fill={p.glow ?? p.accent} opacity="0.7" />
+            <circle cx="100" cy="117" r="4.5" fill="#f8fafc" />
+          </g>
+          <ellipse cx="72" cy="94" rx="12" ry="9" fill={p.accent} />
+          <ellipse cx="128" cy="94" rx="12" ry="9" fill={p.accent} />
+          <path d="M82 148 L118 148 L114 160 L86 160 Z" fill={p.base} />
+        </g>
+      )
+    case 'celestial':
+      return (
+        <g>
+          <path d="M74 88 Q100 78 126 88 L124 152 Q100 162 76 152 Z" fill={p.base} />
+          <g className={animate ? 'anim-glow' : undefined}>
+            <path d="M74 88 Q100 78 126 88 L124 152 Q100 162 76 152 Z" fill={p.glow ?? p.accent} opacity="0.28" />
+          </g>
+          {/* Constellation, drawn once and left alone. */}
+          {[[86, 100], [96, 112], [110, 104], [118, 122], [92, 132], [106, 142]].map(([x, y], i, all) => (
+            <g key={`${x}-${y}`}>
+              <circle cx={x} cy={y} r={i % 2 ? 1.6 : 2.4} fill="#f8fafc" />
+              {i > 0 && (
+                <path
+                  d={`M${all[i - 1][0]} ${all[i - 1][1]} L${x} ${y}`}
+                  stroke={p.accent}
+                  strokeWidth="0.9"
+                  opacity="0.55"
+                />
+              )}
+            </g>
+          ))}
+          <rect x="78" y="136" width="44" height="7" rx="2" fill={p.accent} opacity="0.8" />
+        </g>
+      )
     case 'tunic':
       return (
         <g>
@@ -213,7 +318,70 @@ function BodyArt({ art, p }: { art: string; p: Palette }) {
 // Head / hair
 // ---------------------------------------------------------------------------
 
-function HeadArt({ art, p }: { art: string; p: Palette }) {
+function HeadArt({ art, p, animate }: { art: string; p: Palette; animate: boolean }) {
+  switch (art) {
+    case 'spiked':
+      return (
+        <g>
+          <path d="M81 52 Q100 30 119 52 L114 44 L108 56 L100 38 L92 56 L86 44 Z" fill={p.base} />
+          {[[84, 44, 74, 20], [92, 38, 88, 12], [100, 34, 104, 8], [110, 40, 118, 16], [116, 48, 128, 28]].map(
+            ([x1, y1, x2, y2]) => (
+              <path
+                key={`${x1}-${y1}`}
+                d={`M${x1} ${y1} L${x2} ${y2} L${x1 + 7} ${y1 - 3} Z`}
+                fill={p.base}
+              />
+            ),
+          )}
+          <path d="M84 46 Q100 34 116 46" stroke={p.accent} strokeWidth="1.6" fill="none" opacity="0.7" />
+        </g>
+      )
+    case 'ponytail':
+      return (
+        <g>
+          {/* Drawn behind the head, and it lags — hair that holds still is
+              the single most doll-like thing a character can do. */}
+          <g className={animate ? 'anim-sway-wide' : undefined}>
+            <path
+              d="M99 38 Q74 56 68 96 Q62 128 78 148 Q70 118 80 88 Q88 60 106 44 Z"
+              fill={p.base}
+            />
+            <path d="M97 44 Q76 62 72 96 Q68 122 78 140" stroke={p.accent} strokeWidth="2.2" fill="none" opacity="0.5" />
+          </g>
+          <path d="M81 50 Q100 32 119 50 L118 44 Q100 36 82 44 Z" fill={p.base} />
+          <ellipse cx="98" cy="41" rx="6" ry="4" fill={p.accent} />
+        </g>
+      )
+    case 'kabuto':
+      return (
+        <g>
+          <path d="M78 52 Q100 30 122 52 L122 60 L78 60 Z" fill={p.base} />
+          {/* Maedate — the crescent on the brow. */}
+          <path d="M88 34 Q100 22 112 34 Q100 30 88 34 Z" fill={p.accent} />
+          <path d="M100 24 L100 40" stroke={p.accent} strokeWidth="2.5" />
+          {/* Shikoro: the layered neck guard flaring out at the sides. */}
+          {[62, 70, 78].map((y, i) => (
+            <path
+              key={y}
+              d={`M${76 - i * 3} ${y} L${124 + i * 3} ${y} L${122 + i * 3} ${y + 7} L${78 - i * 3} ${y + 7} Z`}
+              fill={i % 2 ? p.accent : p.base}
+              opacity={0.95 - i * 0.1}
+            />
+          ))}
+        </g>
+      )
+    case 'halo':
+      return (
+        <g className={animate ? 'anim-glow' : undefined}>
+          <ellipse cx="100" cy="28" rx="21" ry="6" fill="none" stroke={p.glow ?? p.accent} strokeWidth="3" />
+          <ellipse cx="100" cy="28" rx="15" ry="4" fill="none" stroke={p.accent} strokeWidth="1.2" opacity="0.6" />
+        </g>
+      )
+  }
+  return <LegacyHeadArt art={art} p={p} />
+}
+
+function LegacyHeadArt({ art, p }: { art: string; p: Palette }) {
   switch (art) {
     case 'bound':
       return (
@@ -280,14 +448,65 @@ function HeadArt({ art, p }: { art: string; p: Palette }) {
 // Faces
 // ---------------------------------------------------------------------------
 
-function FaceArt({ art, p }: { art: string; p: Palette }) {
+function FaceArt({ art, p, animate }: { art: string; p: Palette; animate: boolean }) {
+  /*
+   * Eyes blink.
+   *
+   * Each eye is its own group so it can be squashed vertically about its own
+   * centre — one shared group would pivot both about the midpoint of the face
+   * and they would slide toward the nose as they closed.
+   */
   const eyes = (fill: string) => (
     <>
-      <ellipse cx="92" cy="58" rx="3" ry="2.4" fill={fill} />
-      <ellipse cx="108" cy="58" rx="3" ry="2.4" fill={fill} />
+      <g className={animate ? 'anim-blink' : undefined}>
+        <ellipse cx="92" cy="58" rx="3" ry="2.4" fill={fill} />
+      </g>
+      <g className={animate ? 'anim-blink' : undefined}>
+        <ellipse cx="108" cy="58" rx="3" ry="2.4" fill={fill} />
+      </g>
     </>
   )
   switch (art) {
+    case 'oni':
+      return (
+        <g>
+          <path d="M79 44 Q100 36 121 44 L118 74 Q100 82 82 74 Z" fill={p.base} />
+          <path d="M84 40 q-7 -12 1 -18 q5 8 4 17 Z" fill={p.accent} />
+          <path d="M116 40 q7 -12 -1 -18 q-5 8 -4 17 Z" fill={p.accent} />
+          <path d="M85 54 L96 58 M115 54 L104 58" stroke="#120a0a" strokeWidth="3" strokeLinecap="round" />
+          <ellipse cx="92" cy="60" rx="3.4" ry="2.2" fill={p.accent} />
+          <ellipse cx="108" cy="60" rx="3.4" ry="2.2" fill={p.accent} />
+          {/* Bared teeth: the detail that makes it a demon rather than a mask. */}
+          <path d="M88 68 L112 68 L110 74 L90 74 Z" fill="#f3ece2" />
+          {[93, 100, 107].map((x) => (
+            <path key={x} d={`M${x} 68 L${x} 74`} stroke={p.base} strokeWidth="1.2" />
+          ))}
+        </g>
+      )
+    case 'kitsune':
+      return (
+        <g>
+          <path d="M80 44 Q100 38 120 44 Q120 66 100 80 Q80 66 80 44 Z" fill="#f3ece2" />
+          <path d="M84 48 Q92 44 98 48" stroke={p.base} strokeWidth="2.4" fill="none" strokeLinecap="round" />
+          <path d="M116 48 Q108 44 102 48" stroke={p.base} strokeWidth="2.4" fill="none" strokeLinecap="round" />
+          <ellipse cx="92" cy="57" rx="3.6" ry="2.6" fill={p.base} />
+          <ellipse cx="108" cy="57" rx="3.6" ry="2.6" fill={p.base} />
+          <path d="M94 68 Q100 72 106 68" stroke={p.base} strokeWidth="1.8" fill="none" />
+          <path d="M86 72 L94 72 M106 72 L114 72" stroke={p.base} strokeWidth="1.6" strokeLinecap="round" />
+        </g>
+      )
+    case 'hollow':
+      return (
+        <g>
+          <ellipse cx="100" cy="58" rx="20" ry="22" fill="#0b0b0f" opacity="0.72" />
+          <g className={animate ? 'anim-glow' : undefined}>
+            <ellipse cx="92" cy="57" rx="4.2" ry="3" fill={p.glow ?? p.accent} />
+            <ellipse cx="108" cy="57" rx="4.2" ry="3" fill={p.glow ?? p.accent} />
+          </g>
+          <path d="M100 40 L100 78" stroke={p.accent} strokeWidth="1" opacity="0.35" />
+          <path d="M88 46 L112 46" stroke={p.accent} strokeWidth="1" opacity="0.25" />
+        </g>
+      )
     case 'scarred':
       return (
         <g>
@@ -344,7 +563,47 @@ function FaceArt({ art, p }: { art: string; p: Palette }) {
 // Hands
 // ---------------------------------------------------------------------------
 
-function HandsArt({ art, p }: { art: string; p: Palette }) {
+function HandsArt({ art, p, animate }: { art: string; p: Palette; animate: boolean }) {
+  switch (art) {
+    case 'claws':
+      return (
+        <g>
+          {[
+            [67, 150, -1],
+            [133, 150, 1],
+          ].map(([x, y, dir]) => (
+            <g key={x}>
+              <rect x={x - 7} y={y - 12} width="14" height="18" rx="3" fill={p.base} />
+              {[-5, -1, 3, 7].map((o) => (
+                <path
+                  key={o}
+                  d={`M${x + o * dir} ${y + 4} L${x + o * dir + dir * 2} ${y + 17}`}
+                  stroke={p.accent}
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+              ))}
+            </g>
+          ))}
+        </g>
+      )
+    case 'spirit-cuffs':
+      return (
+        <g className={animate ? 'anim-glow' : undefined}>
+          {[67, 133].map((x) => (
+            <g key={x}>
+              <rect x={x - 8} y="138" width="16" height="9" rx="4" fill={p.base} />
+              <circle cx={x} cy="154" r="6" fill={p.glow ?? p.accent} opacity="0.55" />
+              <circle cx={x} cy="154" r="2.6" fill="#f8fafc" />
+            </g>
+          ))}
+        </g>
+      )
+  }
+  return <LegacyHandsArt art={art} p={p} />
+}
+
+function LegacyHandsArt({ art, p }: { art: string; p: Palette }) {
   const left = { x: 67, y: 150 }
   const right = { x: 133, y: 150 }
   const pair = (render: (x: number, y: number, flip: number) => ReactNode) => (
@@ -411,7 +670,48 @@ function HandsArt({ art, p }: { art: string; p: Palette }) {
 // Feet
 // ---------------------------------------------------------------------------
 
-function FeetArt({ art, p }: { art: string; p: Palette }) {
+function FeetArt({ art, p, animate }: { art: string; p: Palette; animate: boolean }) {
+  switch (art) {
+    case 'tabi':
+      return (
+        <g>
+          {[85, 115].map((x) => (
+            <g key={x}>
+              <rect x={x - 8} y="212" width="16" height="22" rx="3" fill={p.base} />
+              <path d={`M${x - 9} 234 L${x + 10} 234 L${x + 12} 244 L${x - 9} 244 Z`} fill={p.base} />
+              {/* The split toe, which is the entire tell. */}
+              <path d={`M${x + 4} 236 L${x + 4} 244`} stroke={p.accent} strokeWidth="1.4" />
+              <path d={`M${x - 8} 226 L${x + 8} 226`} stroke={p.accent} strokeWidth="2" opacity="0.8" />
+            </g>
+          ))}
+        </g>
+      )
+    case 'stormstep':
+      return (
+        <g>
+          {[85, 115].map((x) => (
+            <g key={x}>
+              <rect x={x - 9} y="206" width="18" height="30" rx="4" fill={p.base} />
+              <path d={`M${x - 10} 236 L${x + 11} 236 L${x + 13} 246 L${x - 10} 246 Z`} fill={p.base} />
+              <path d={`M${x - 8} 214 L${x + 8} 214 M${x - 8} 224 L${x + 8} 224`} stroke={p.accent} strokeWidth="2" />
+              <g className={animate ? 'anim-flicker' : undefined}>
+                <path
+                  d={`M${x - 6} 246 L${x - 1} 252 L${x - 4} 252 L${x + 2} 260`}
+                  stroke={p.glow ?? p.accent}
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              </g>
+            </g>
+          ))}
+        </g>
+      )
+  }
+  return <LegacyFeetArt art={art} p={p} />
+}
+
+function LegacyFeetArt({ art, p }: { art: string; p: Palette }) {
   const foot = (x: number, flip: number, render: (x: number, flip: number) => ReactNode) => render(x, flip)
   const both = (render: (x: number, flip: number) => ReactNode) => (
     <>
@@ -474,7 +774,83 @@ function FeetArt({ art, p }: { art: string; p: Palette }) {
 // Weapons — held in the right hand (x ≈ 133)
 // ---------------------------------------------------------------------------
 
-function WeaponArt({ art, p }: { art: string; p: Palette }) {
+function WeaponArt({ art, p, animate }: { art: string; p: Palette; animate: boolean }) {
+  switch (art) {
+    case 'katana':
+      return (
+        <g>
+          {/* Curved, single-edged, and the curve is the whole silhouette. */}
+          <path d="M136 148 Q150 106 158 60" stroke={p.base} strokeWidth="5" fill="none" strokeLinecap="round" />
+          <path d="M136 148 Q149 107 156 62" stroke={p.accent} strokeWidth="1.6" fill="none" />
+          <rect x="130" y="146" width="14" height="4" rx="2" fill="#c9a227" transform="rotate(-16 137 148)" />
+          <path d="M132 150 L128 168" stroke="#3a2c24" strokeWidth="5" strokeLinecap="round" />
+          {[154, 160, 166].map((y) => (
+            <path key={y} d={`M${131 - (y - 154) * 0.22} ${y} l4 -1.4`} stroke="#8a6a3a" strokeWidth="1.2" />
+          ))}
+        </g>
+      )
+    case 'nodachi':
+      return (
+        <g>
+          <path d="M134 172 Q152 108 164 26" stroke={p.base} strokeWidth="8" fill="none" strokeLinecap="round" />
+          <path d="M134 172 Q151 109 162 30" stroke={p.accent} strokeWidth="2.2" fill="none" />
+          <rect x="126" y="168" width="18" height="5" rx="2.5" fill={p.accent} transform="rotate(-14 135 170)" />
+          <path d="M131 174 L124 198" stroke="#3a2c24" strokeWidth="6" strokeLinecap="round" />
+          <circle cx="123" cy="200" r="3.5" fill={p.accent} />
+        </g>
+      )
+    case 'kusarigama':
+      return (
+        <g>
+          {/* Sickle in the hand, chain hanging, weight swinging at the end. */}
+          <path d="M133 150 L131 176" stroke="#3a2c24" strokeWidth="5" strokeLinecap="round" />
+          <path d="M133 150 Q150 142 152 124 Q146 138 133 142 Z" fill={p.base} />
+          <path d="M133 148 Q148 141 151 127" stroke={p.accent} strokeWidth="1.4" fill="none" />
+          <g className={animate ? 'anim-sway-wide' : undefined}>
+            <path
+              d="M131 176 Q142 196 136 214"
+              stroke={p.accent}
+              strokeWidth="1.6"
+              fill="none"
+              strokeDasharray="3 3"
+            />
+            <circle cx="136" cy="218" r="5" fill={p.base} />
+            <circle cx="136" cy="218" r="2" fill={p.accent} />
+          </g>
+        </g>
+      )
+    case 'spirit-blade':
+      return (
+        <g>
+          <g className={animate ? 'anim-glow' : undefined}>
+            <path d="M136 150 L150 54" stroke={p.glow ?? p.accent} strokeWidth="14" opacity="0.22" strokeLinecap="round" />
+          </g>
+          <path d="M136 150 L149 58 L156 62 L142 152 Z" fill={p.base} opacity="0.9" />
+          <path d="M139 148 L150 62" stroke="#f0fdfa" strokeWidth="1.6" opacity="0.9" />
+          <rect x="130" y="148" width="16" height="4.5" rx="2" fill={p.accent} transform="rotate(-9 138 150)" />
+          <path d="M134 152 L131 170" stroke="#243b3a" strokeWidth="5" strokeLinecap="round" />
+        </g>
+      )
+    case 'null-blade':
+      return (
+        <g>
+          {/* A secret should look like an absence. This is a blade-shaped hole
+              with only an edge highlight to prove it is there at all. */}
+          <path d="M136 150 L146 56 L154 60 L143 152 Z" fill="#05050a" />
+          <path d="M146 56 L154 60" stroke="#f8fafc" strokeWidth="1.2" opacity="0.85" />
+          <path d="M136 150 L146 56" stroke="#f8fafc" strokeWidth="0.8" opacity="0.55" />
+          <g className={animate ? 'anim-flicker' : undefined}>
+            <path d="M143 152 L154 60" stroke="#f8fafc" strokeWidth="0.7" opacity="0.5" />
+          </g>
+          <rect x="130" y="148" width="15" height="4" rx="2" fill="#1a1a22" transform="rotate(-8 137 150)" />
+          <path d="M134 152 L131 170" stroke="#0b0b0f" strokeWidth="5" strokeLinecap="round" />
+        </g>
+      )
+  }
+  return <LegacyWeaponArt art={art} p={p} />
+}
+
+function LegacyWeaponArt({ art, p }: { art: string; p: Palette }) {
   const hx = 136
   const hy = 150
   switch (art) {
@@ -597,7 +973,92 @@ function WeaponArt({ art, p }: { art: string; p: Palette }) {
 // Back items
 // ---------------------------------------------------------------------------
 
-function BackArt({ art, p }: { art: string; p: Palette }) {
+function BackArt({ art, p, animate }: { art: string; p: Palette; animate: boolean }) {
+  switch (art) {
+    case 'scarf':
+      return (
+        <g>
+          <path d="M86 82 Q100 76 114 82 L112 94 Q100 88 88 94 Z" fill={p.base} />
+          {/* Twice your height and permanently caught in a wind nobody else
+              feels. Two tails at different rates so it never looks rigid. */}
+          <g className={animate ? 'anim-sway-wide' : undefined}>
+            <path d="M88 90 Q62 108 52 148 Q46 178 56 198 Q52 168 64 142 Q76 112 94 96 Z" fill={p.base} />
+            <path d="M88 92 Q66 110 58 146" stroke={p.accent} strokeWidth="1.4" fill="none" opacity="0.55" />
+          </g>
+          <g className={animate ? 'anim-sway' : undefined}>
+            <path d="M110 90 Q132 106 138 138 Q142 160 134 174 Q138 148 128 128 Q118 108 106 96 Z" fill={p.base} opacity="0.85" />
+          </g>
+        </g>
+      )
+    case 'wings':
+      return (
+        <g className={animate ? 'anim-sway' : undefined}>
+          {[-1, 1].map((dir) => (
+            <g key={dir}>
+              {[0, 1, 2, 3].map((i) => (
+                <path
+                  key={i}
+                  d={`M100 92 Q${100 + dir * (30 + i * 12)} ${86 + i * 10} ${100 + dir * (26 + i * 16)} ${124 + i * 16}
+                      Q${100 + dir * (18 + i * 8)} ${110 + i * 10} 100 96 Z`}
+                  fill={i % 2 ? p.accent : p.base}
+                  opacity={0.9 - i * 0.13}
+                />
+              ))}
+            </g>
+          ))}
+        </g>
+      )
+    case 'tails':
+      return (
+        <g>
+          {[-34, -18, 0, 18, 34].map((spread, i) => (
+            <g
+              key={spread}
+              className={animate ? 'anim-sway-wide' : undefined}
+              style={animate ? { animationDelay: `${i * 0.34}s`, animationDuration: `${2.6 + i * 0.35}s` } : undefined}
+            >
+              {/* They HANG. The first version splayed them horizontally at hip
+                  height and the whole set read as a second pair of arms. */}
+              <path
+                d={`M100 138 Q${100 + spread * 0.9} ${172} ${100 + spread * 1.15} ${222 - Math.abs(spread) * 0.5}
+                    Q${100 + spread * 0.55} ${180} 100 146 Z`}
+                fill={p.base}
+              />
+              <path
+                d={`M${100 + spread * 1.1} ${214 - Math.abs(spread) * 0.5} q${spread * 0.12} 10 ${spread * 0.01} 14
+                    q${-spread * 0.2} -5 ${-spread * 0.16} -12 Z`}
+                fill="#f8fafc"
+                opacity="0.9"
+              />
+            </g>
+          ))}
+        </g>
+      )
+    case 'starcloak':
+      return (
+        <g>
+          <path d="M80 84 Q100 76 120 84 L134 206 Q100 220 66 206 Z" fill={p.base} />
+          <g className={animate ? 'anim-glow' : undefined}>
+            <path d="M80 84 Q100 76 120 84 L134 206 Q100 220 66 206 Z" fill={p.glow ?? p.accent} opacity="0.18" />
+          </g>
+          {[[78, 108], [92, 126], [112, 116], [122, 150], [86, 168], [106, 186], [126, 178], [72, 190]].map(
+            ([x, y], i) => (
+              <g
+                key={`${x}-${y}`}
+                className={animate ? 'anim-glow' : undefined}
+                style={animate ? { animationDelay: `${i * 0.4}s` } : undefined}
+              >
+                <circle cx={x} cy={y} r={i % 3 === 0 ? 2.2 : 1.3} fill="#f8fafc" />
+              </g>
+            ),
+          )}
+        </g>
+      )
+  }
+  return <LegacyBackArt art={art} p={p} />
+}
+
+function LegacyBackArt({ art, p }: { art: string; p: Palette }) {
   switch (art) {
     case 'short-cloak':
       return <path d="M74 90 Q100 82 126 90 L132 136 Q100 128 68 136 Z" fill={p.base} opacity="0.95" />
@@ -642,6 +1103,70 @@ function BackArt({ art, p }: { art: string; p: Palette }) {
 // ---------------------------------------------------------------------------
 
 function AuraArt({ art, p, animate }: { art: string; p: Palette; animate: boolean }) {
+  switch (art) {
+    case 'sakura':
+      return (
+        <g>
+          {Array.from({ length: 11 }, (_, i) => {
+            const x = 24 + ((i * 37) % 156)
+            return (
+              <g
+                key={i}
+                className={animate ? 'anim-petal' : undefined}
+                style={animate ? { animationDelay: `${(i * 0.47) % 5.2}s` } : undefined}
+              >
+                <ellipse cx={x} cy={40 + (i % 4) * 22} rx="3.4" ry="2.2" fill={p.accent} opacity="0.9" />
+              </g>
+            )
+          })}
+        </g>
+      )
+    case 'lightning':
+      return (
+        <g>
+          {[[46, 96], [154, 108], [58, 176], [148, 168]].map(([x, y], i) => (
+            <g
+              key={`${x}-${y}`}
+              className={animate ? 'anim-flicker' : undefined}
+              style={animate ? { animationDelay: `${i * 0.53}s` } : undefined}
+            >
+              <path
+                d={`M${x} ${y} l7 12 l-5 1 l8 15 l-13 -14 l5 -1 Z`}
+                fill={p.glow ?? p.accent}
+              />
+            </g>
+          ))}
+          <g className={animate ? 'anim-glow' : undefined}>
+            <ellipse cx="100" cy="150" rx="66" ry="86" fill={p.glow ?? p.accent} opacity="0.08" />
+          </g>
+        </g>
+      )
+    case 'voidbloom':
+      return (
+        <g>
+          <g className={animate ? 'anim-glow' : undefined}>
+            <ellipse cx="100" cy="150" rx="60" ry="80" fill={p.glow ?? p.accent} opacity="0.12" />
+          </g>
+          {Array.from({ length: 9 }, (_, i) => {
+            const x = 34 + ((i * 43) % 132)
+            return (
+              <g
+                key={i}
+                className={animate ? 'anim-rise' : undefined}
+                style={animate ? { animationDelay: `${(i * 0.38) % 3.4}s` } : undefined}
+              >
+                {/* Falls upward, which is the tell that it is not petals. */}
+                <ellipse cx={x} cy={210} rx="2.8" ry="4" fill={p.accent} opacity="0.85" />
+              </g>
+            )
+          })}
+        </g>
+      )
+  }
+  return <LegacyAuraArt art={art} p={p} animate={animate} />
+}
+
+function LegacyAuraArt({ art, p, animate }: { art: string; p: Palette; animate: boolean }) {
   const motes = [
     { x: 56, d: '0s' },
     { x: 78, d: '0.7s' },
@@ -699,6 +1224,48 @@ function AuraArt({ art, p, animate }: { art: string; p: Palette; animate: boolea
 
 function CompanionArt({ art, p, animate }: { art: string; p: Palette; animate: boolean }) {
   switch (art) {
+    case 'fox':
+      return (
+        <g className={animate ? 'anim-float' : undefined}>
+          {/* Sits just out of reach, on the ground, watching. */}
+          <ellipse cx="42" cy="238" rx="14" ry="5" fill="#000" opacity="0.35" />
+          <path d="M32 236 Q34 220 44 218 Q54 220 54 234 L52 238 L34 238 Z" fill={p.base} />
+          <path d="M40 220 l-4 -12 l9 5 Z" fill={p.base} />
+          <path d="M50 220 l5 -11 l-1 10 Z" fill={p.base} />
+          <ellipse cx="41" cy="228" rx="1.6" ry="2" fill="#0b0b0f" />
+          <ellipse cx="49" cy="228" rx="1.6" ry="2" fill="#0b0b0f" />
+          <path d="M45 232 l-2 2 l4 0 Z" fill="#0b0b0f" />
+          {[0, 1, 2].map((i) => (
+            <g
+              key={i}
+              className={animate ? 'anim-sway-wide' : undefined}
+              style={animate ? { animationDelay: `${i * 0.4}s` } : undefined}
+            >
+              <path d={`M32 234 Q${18 - i * 5} ${228 - i * 8} ${14 - i * 6} ${212 - i * 10}`} stroke={p.base} strokeWidth="6" fill="none" strokeLinecap="round" />
+              <circle cx={14 - i * 6} cy={212 - i * 10} r="3.4" fill="#f8fafc" />
+            </g>
+          ))}
+        </g>
+      )
+    case 'phoenix':
+      return (
+        <g className={animate ? 'anim-float' : undefined}>
+          <g className={animate ? 'anim-glow' : undefined}>
+            <ellipse cx="158" cy="86" rx="26" ry="22" fill={p.glow ?? p.accent} opacity="0.2" />
+          </g>
+          <path d="M150 92 Q158 78 168 86 Q162 96 152 96 Z" fill={p.base} />
+          <path d="M152 90 Q136 74 130 56 Q146 68 156 84 Z" fill={p.accent} opacity="0.95" />
+          <path d="M164 88 Q178 76 184 60 Q172 76 166 86 Z" fill={p.accent} opacity="0.8" />
+          <path d="M154 96 Q152 116 142 130 Q156 118 158 98 Z" fill={p.accent} opacity="0.7" />
+          <circle cx="163" cy="86" r="1.6" fill="#0b0b0f" />
+        </g>
+      )
+  }
+  return <LegacyCompanionArt art={art} p={p} animate={animate} />
+}
+
+function LegacyCompanionArt({ art, p, animate }: { art: string; p: Palette; animate: boolean }) {
+  switch (art) {
     case 'wisp':
       return (
         <g className={animate ? 'animate-pulse-slow' : undefined}>
@@ -743,6 +1310,8 @@ const POSE_TRANSFORM: Record<string, string> = {
   rest: 'translate(0 4) rotate(1 100 140)',
   heroic: 'translate(0 -2) scale(1.03) translate(-3 -4)',
   raised: 'rotate(-4 100 150)',
+  sheathed: 'rotate(2 100 150) translate(-2 0)',
+  ascend: 'translate(0 -6) scale(1.02)',
 }
 
 // ---------------------------------------------------------------------------
@@ -779,7 +1348,10 @@ export function Warrior({ equipped, className, still, title, build = 0 }: Warrio
   const companion = item('companion')
   const pose = item('pose')
 
-  const heavy = body?.art === 'heavy-plate' || body?.art === 'ember-plate'
+  const heavy = body?.art === 'heavy-plate' || body?.art === 'ember-plate' || body?.art === 'mecha'
+  // Stagger the breath per instance so two warriors on one screen — the Forge
+  // card and an inventory preview — do not inhale in lockstep.
+  const breathDelay = -((glowId.replace(/\D/g, '').slice(-2) as unknown as number) % 40) / 10
   const label = [
     head?.name && head.art !== 'none' ? head.name : null,
     body?.name,
@@ -806,16 +1378,37 @@ export function Warrior({ equipped, className, still, title, build = 0 }: Warrio
       {aura && <AuraArt art={aura.art} p={paletteOf(aura, { base: '#666', accent: '#999' })} animate={animate} />}
 
       <g transform={POSE_TRANSFORM[pose?.art ?? 'ready'] || undefined}>
-        {back && <BackArt art={back.art} p={paletteOf(back, { base: CLOTH, accent: '#666' })} />}
-        <Body heavy={heavy} build={build} />
-        {feet && <FeetArt art={feet.art} p={paletteOf(feet, { base: CLOTH, accent: '#777' })} />}
-        {body && <BodyArt art={body.art} p={paletteOf(body, { base: CLOTH, accent: '#777' })} />}
-        {head && head.art !== 'none' && <HeadArt art={head.art} p={paletteOf(head, { base: '#2b2b31', accent: '#888' })} />}
-        <FaceArt art={face?.art ?? 'stoic'} p={paletteOf(face, { base: '#2b2b31', accent: '#888' })} />
-        {hands && <HandsArt art={hands.art} p={paletteOf(hands, { base: CLOTH, accent: '#888' })} />}
-        {weapon && weapon.art !== 'none' && (
-          <WeaponArt art={weapon.art} p={paletteOf(weapon, { base: '#8a8a94', accent: '#c9c9d2' })} />
-        )}
+        {back && <BackArt art={back.art} p={paletteOf(back, { base: CLOTH, accent: '#666' })} animate={animate} />}
+        {/*
+          Breathing.
+
+          Everything from the hips up is inside one group that rises and falls
+          about four seconds a cycle; the legs stay planted outside it. Moving
+          the whole figure would read as bobbing, and moving nothing at all is
+          what makes a character look like a paper doll however good the
+          drawing is.
+
+          The delay is derived from the component's own id so two warriors on
+          the same screen — the Forge card and an inventory preview — are not
+          inhaling in lockstep.
+        */}
+        <Body heavy={heavy} build={build} legsOnly />
+        {feet && <FeetArt art={feet.art} p={paletteOf(feet, { base: CLOTH, accent: '#777' })} animate={animate} />}
+        <g
+          className={animate ? 'anim-breathe' : undefined}
+          style={animate ? { animationDelay: `${breathDelay}s` } : undefined}
+        >
+          <Body heavy={heavy} build={build} upperOnly />
+          {body && <BodyArt art={body.art} p={paletteOf(body, { base: CLOTH, accent: '#777' })} animate={animate} />}
+          {head && head.art !== 'none' && (
+            <HeadArt art={head.art} p={paletteOf(head, { base: '#2b2b31', accent: '#888' })} animate={animate} />
+          )}
+          <FaceArt art={face?.art ?? 'stoic'} p={paletteOf(face, { base: '#2b2b31', accent: '#888' })} animate={animate} />
+          {hands && <HandsArt art={hands.art} p={paletteOf(hands, { base: CLOTH, accent: '#888' })} animate={animate} />}
+          {weapon && weapon.art !== 'none' && (
+            <WeaponArt art={weapon.art} p={paletteOf(weapon, { base: '#8a8a94', accent: '#c9c9d2' })} animate={animate} />
+          )}
+        </g>
       </g>
 
       {companion && (

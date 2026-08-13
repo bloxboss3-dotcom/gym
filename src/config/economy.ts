@@ -40,21 +40,6 @@ export const ECONOMY = {
     packOnLevelKind: 'warband' as PackKind,
   },
 
-  /**
-   * Technique crates.
-   *
-   * Deliberately its own currency sink rather than a roll inside the cosmetic
-   * packs: a technique changes how you fight, and burying it in a costume pull
-   * would make it feel like a consolation prize. Duplicates are impossible —
-   * a crate only ever rolls something you do not have — so the cost is a
-   * ceiling on the whole set rather than a slot machine.
-   */
-  techniqueCrate: {
-    name: 'Technique Scroll',
-    cost: 220,
-    weights: { common: 0, uncommon: 46, rare: 32, epic: 17, legendary: 5 },
-  },
-
   /** Base payouts before multipliers. */
   rewards: {
     workout_completed: { xp: 60, coins: 25 },
@@ -73,6 +58,16 @@ export const ECONOMY = {
      * workout. The character has to stay a record of training, not of chess.
      */
     puzzle_solved: { xp: 8, coins: 3 },
+    /**
+     * The Anvil. Coin-heavy and XP-light on purpose: it is a faucet for the
+     * currency that buys cosmetics, not a route to levels. Levels come from
+     * training, and the warrior's build comes from levels, so a mini-game
+     * must never be a way to grow the character.
+     *
+     * Payout is passed in per round from the engine rather than taken from
+     * here, so these are the ceiling a single round can be worth.
+     */
+    anvil_round: { xp: 5, coins: 50 },
     /**
      * Crossing a strength percentile band. Paid for the CLIMB, never for the
      * standing: rewarding a percentile outright would hand the biggest prizes
@@ -100,6 +95,7 @@ export const ECONOMY = {
       benchmark_improved: 1,
       quest_completed: 3,
       puzzle_solved: 5,
+      anvil_round: 3,
       percentile_band: 3,
       level_up: 99,
       duplicate_refund: 99,
@@ -127,25 +123,25 @@ export const ECONOMY = {
       name: 'Recruit Cache',
       cost: 150,
       items: 1,
-      weights: { common: 62, uncommon: 26, rare: 9, epic: 2.5, legendary: 0.5 },
+      weights: { common: 62, uncommon: 26, rare: 9, epic: 2.5, legendary: 0.5, mythical: 0, secret: 0 },
     },
     warband: {
       name: 'Warband Crate',
       cost: 350,
       items: 2,
-      weights: { common: 44, uncommon: 33, rare: 16, epic: 6, legendary: 1 },
+      weights: { common: 43, uncommon: 33, rare: 16, epic: 6, legendary: 1.8, mythical: 0.2, secret: 0 },
     },
     ember: {
       name: 'Ember Reliquary',
       cost: 700,
       items: 3,
-      weights: { common: 25, uncommon: 33, rare: 26, epic: 13, legendary: 3 },
+      weights: { common: 24, uncommon: 32, rare: 26, epic: 13, legendary: 4, mythical: 0.9, secret: 0.1 },
     },
     relic: {
       name: 'Relic Vault',
       cost: 1400,
       items: 3,
-      weights: { common: 8, uncommon: 26, rare: 36, epic: 22, legendary: 8 },
+      weights: { common: 6, uncommon: 24, rare: 34, epic: 22, legendary: 10, mythical: 3.4, secret: 0.6 },
       /** Guarantees at least this rarity on one item. */
       floor: 'rare' as Rarity,
     },
@@ -167,6 +163,8 @@ export const ECONOMY = {
     rare: 70,
     epic: 160,
     legendary: 400,
+    mythical: 900,
+    secret: 1500,
   } satisfies Record<Rarity, number>,
 
   /** Consistency multiplier applied to workout/run XP (never to coins caps). */

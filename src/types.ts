@@ -453,7 +453,15 @@ export interface Meal {
 // Game state
 // ---------------------------------------------------------------------------
 
-export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
+/**
+ * Rarity tiers.
+ *
+ * `secret` is different in kind from the rest: a secret item is not listed
+ * anywhere until it is pulled. The collection shows it as an unknown, so the
+ * only way to learn one exists is to find it — which is the entire point, and
+ * why it sits outside the ordinary drop weights.
+ */
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythical' | 'secret'
 
 export type Slot =
   | 'face'
@@ -511,6 +519,8 @@ export type RewardReason =
   | 'benchmark_improved'
   | 'quest_completed'
   | 'puzzle_solved'
+  /** A round of the Anvil, struck between sets. */
+  | 'anvil_round'
   /** Crossed a strength percentile band for the first time. */
   | 'percentile_band'
   | 'level_up'
@@ -557,11 +567,6 @@ export interface GameState {
   lastActiveDate: IsoDate | null
   /** Rest-timer chess puzzles already solved, so they are not shown again. */
   solvedPuzzleIds?: string[]
-  /**
-   * Techniques pulled out of scrolls. Separate from `owned` because a move is
-   * not a costume — it is something the warrior can be asked to perform.
-   */
-  unlockedMoves?: string[]
 }
 
 // ---------------------------------------------------------------------------

@@ -192,7 +192,74 @@ if (puzzleOffered) {
   await controlsUsable('rest puzzle')
   await noOverflow('rest puzzle')
   await shot('06b-rest-puzzle')
-  await page.getByRole('button', { name: 'Hide' }).first().click()
+  await page.getByRole('button', { name: 'Hide puzzle' }).first().click()
+  await page.waitForTimeout(200)
+}
+
+// The Anvil. Same gate as the puzzle — it only exists while a rest timer is
+// running — but unlike the puzzle it pays coins, so the check has to actually
+// PLAY it rather than confirm it renders. The loop below watches the hammer
+// and clicks when it overlaps the hot metal, which is the whole game; a build
+// where the hammer never moved, or where the tap read a stale position, would
+// score five misses and fail here.
+const anvilToggle = page.getByRole('button', { name: 'Anvil' })
+const anvilOffered = await anvilToggle.isVisible().catch(() => false)
+record('offers the anvil only while resting', anvilOffered)
+if (anvilOffered) {
+  await anvilToggle.click()
+  await page.waitForSelector('section[aria-label="The Anvil"]', { timeout: 5000 })
+  await controlsUsable('anvil')
+  await noOverflow('anvil')
+  await shot('06c-rest-anvil')
+
+  const played = await page.evaluate(async () => {
+    const root = document.querySelector('section[aria-label="The Anvil"]')
+    if (!root) return { strikes: 0, moved: false }
+    const strikeBtn = () =>
+      [...root.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Strike')
+    const positions = new Set()
+    let strikes = 0
+
+    for (let i = 0; i < 5; i++) {
+      const landed = await new Promise((resolve) => {
+        const deadline = performance.now() + 8000
+        const tick = () => {
+          const marker = root.querySelector('[data-testid="anvil-marker"]')
+          const zone = root.querySelector('[data-testid="anvil-zone"]')
+          const btn = strikeBtn()
+          if (!marker || !zone || !btn) return resolve(false)
+          const m = marker.getBoundingClientRect()
+          const z = zone.getBoundingClientRect()
+          positions.add(Math.round(m.left))
+          const centre = m.left + m.width / 2
+          if (centre >= z.left && centre <= z.right) {
+            btn.click()
+            return resolve(true)
+          }
+          if (performance.now() > deadline) return resolve(false)
+          requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      })
+      if (!landed) break
+      strikes++
+      // Let React commit the next strike's zone before aiming again.
+      await new Promise((r) => setTimeout(r, 400))
+    }
+    return { strikes, moved: positions.size > 5 }
+  })
+
+  record('the hammer actually sweeps the bar', played.moved)
+  record('a full round of five strikes can be played', played.strikes === 5, `${played.strikes} landed`)
+
+  const anvil = page.locator('section[aria-label="The Anvil"]')
+  const paid = await anvil.locator('text=/◈ \\d+/').first().innerText().catch(() => '')
+  const coins = Number(paid.replace(/\D/g, ''))
+  record('aiming at the hot metal pays coins', coins > 0, paid || 'no payout shown')
+  const banked = await anvil.locator('text=/capped at/').count()
+  record('says the payout is capped rather than farmable', banked > 0)
+  await shot('06d-anvil-result')
+  await page.getByRole('button', { name: 'Back to the set' }).first().click()
   await page.waitForTimeout(200)
 }
 
@@ -472,70 +539,96 @@ const buildLine = await page.locator('text=/level \\d+ of \\d+/').first().innerT
 record('character build is tied to level', /level \d+ of \d+/.test(buildLine), buildLine)
 const notBuyable = await page.locator('text=/Nothing in the Forge can buy this|Fully built/').count()
 record('says plainly that build cannot be bought', notBuyable > 0)
-// Remember what the Forge says is on the figure, to cross-check the fighter.
+// The figure has to be wearing what the loadout list says it is wearing.
+// Cross-checked between two independent places on the same screen, so a
+// renderer that silently drew a default body would be caught.
 const equippedBody = await page
   .locator('[data-testid="equipped-body"]')
   .first()
   .innerText()
   .catch(() => '')
+const figureLabel = (await page.locator('svg[role="img"]').first().getAttribute('aria-label')) ?? ''
+record(
+  'the figure on screen wears what the loadout says',
+  equippedBody.length > 0 && figureLabel.includes(equippedBody),
+  `figure "${figureLabel}" vs equipped "${equippedBody}"`,
+)
 await noOverflow('character')
 await shot('13b-character')
 
-// The Dojo: unlock techniques and watch the warrior perform them. There is
-// nothing to fight here, so what has to work is the playback.
-await page.goto(`${BASE}#/forge/dojo`, { waitUntil: 'networkidle' })
-await page.waitForSelector('text=Technique Scroll', { timeout: 10000 })
-await noOverflow('dojo')
-await controlsUsable('dojo')
-
-// The stage names the move it is playing, which is the only checkable proof
-// that picking a technique actually changed what is on screen.
-const stageLabel = async () =>
-  (await page.locator('svg[role="img"]').last().getAttribute('aria-label')) ?? ''
-const firstLabel = await stageLabel()
+// The warrior is alive on screen.
+//
+// Asserted on the animated transform matrix, sampled repeatedly, rather than
+// on the presence of a class. A class name proves the markup asked for an
+// animation; only a matrix that keeps CHANGING proves the stylesheet actually
+// shipped the keyframes and the browser is running them. The version of this
+// check that looked for `.anim-breathe` in the DOM passed against a build
+// where the keyframes had been purged and the figure stood dead still.
+const breathing = await page.evaluate(async () => {
+  const el = document.querySelector('.anim-breathe')
+  if (!el) return { found: false, frames: [] }
+  const frames = new Set()
+  for (let i = 0; i < 14; i++) {
+    frames.add(getComputedStyle(el).transform)
+    await new Promise((r) => setTimeout(r, 80))
+  }
+  return { found: true, frames: [...frames] }
+})
 record(
-  'the dojo stage is your own warrior, in your own gear',
-  equippedBody.length > 0 && firstLabel.includes(equippedBody),
-  `label "${firstLabel}" vs forge "${equippedBody}"`,
+  'the warrior breathes instead of standing frozen',
+  breathing.found && breathing.frames.length > 2 && !breathing.frames.includes('none'),
+  breathing.found ? `${breathing.frames.length} distinct transforms` : 'no breathing group',
 )
+const blinkers = await page.locator('.anim-blink').count()
+record('the warrior has eyes that blink', blinkers >= 2, `${blinkers} eye groups`)
 
-const lockedShown = await page.locator('text="???"').count()
-record('locked techniques are listed but not watchable', lockedShown > 0, `${lockedShown} locked`)
+// -------------------------------------------------------------- collection
+await page.goto(`${BASE}#/forge/inventory`, { waitUntil: 'networkidle' })
+await page.waitForSelector('text=/of \\d+ collected/', { timeout: 10000 })
+await noOverflow('inventory')
+await controlsUsable('inventory')
 
-// Switching move must switch animation.
-await page.getByRole('button', { name: 'Watch Front kick' }).click()
-await page.waitForTimeout(250)
-const switched = await stageLabel()
-record(
-  'picking a technique changes what plays',
-  /Front kick/.test(switched) && switched !== firstLabel,
-  switched,
-)
-
-// Slow motion, because a showpiece is over in about a second.
-const speeds = await page.locator('text=/^(Full|Half|Quarter)$/').count()
-record('offers slow motion for the fast ones', speeds >= 3, `${speeds} speeds`)
-await page.getByText('Quarter', { exact: true }).click()
-await page.getByRole('button', { name: 'Play again' }).click()
-await page.waitForTimeout(300)
-record('replays on demand', (await stageLabel()).length > 0)
-
-// A scroll unlocks something new. The demo account can afford exactly this.
-const knownBefore = Number((await page.locator('text=/\\d+ of \\d+ techniques/').first().innerText()).match(/(\d+) of/)?.[1] ?? 0)
-const scroll = page.getByRole('button', { name: /Open a scroll/ })
-if (await scroll.count()) {
-  await scroll.click()
-  await page.waitForTimeout(500)
-  const knownAfter = Number((await page.locator('text=/\\d+ of \\d+ techniques/').first().innerText()).match(/(\d+) of/)?.[1] ?? 0)
-  record('a scroll unlocks a new technique', knownAfter === knownBefore + 1, `${knownBefore} → ${knownAfter}`)
-  const revealed = await page.locator('text=/technique$/i').count()
-  record('the scroll says what it gave you', revealed > 0)
+// Every rarity band is on screen, including the two new top tiers. Checked by
+// label so a band that exists in the data but never renders is caught.
+for (const band of ['Mythical', '???']) {
+  record(`collection lists the ${band} band`, (await page.locator(`text="${band}"`).count()) > 0)
 }
 
-const honesty = await page.locator('text=/Rarity here means spectacle, not power/').count()
-record('says outright that rarity is spectacle, not power', honesty > 0)
-await noOverflow('dojo after unlock')
-await shot('13c-dojo')
+// A secret is only secret if the collection refuses to count them for you.
+const secretTile = await page.locator('[data-testid="secret-tile"]').count()
+record('an unknown tile stands in for what has not been found', secretTile > 0)
+const hiddenCount = await page.locator('text=/^0\\/\\?$/').count()
+record('does not say how many secrets exist', hiddenCount > 0)
+
+// The headline must agree with the rarity rows printed directly beneath it.
+// A headline two larger than their sum tells anyone who can subtract that
+// there are exactly two secrets left, which gives away the whole tier.
+const tally = await page.evaluate(() => {
+  const heading = document.body.innerText.match(/(\d+) of (\d+) collected/)
+  const rows = [...document.querySelectorAll('ul.grid-cols-4 > li')].map((li) => li.innerText.trim())
+  return { heading: heading ? Number(heading[2]) : null, rows }
+})
+// A hidden denominator contributes only what has actually been found, which
+// is exactly what the headline counts for that tier.
+const rowTotals = tally.rows.map((r) => {
+  const [left, right] = r.split('\n').pop().split('/')
+  return { counted: right === '?' ? Number(left) : Number(right), hidden: right === '?' }
+})
+const shown = rowTotals.reduce((sum, n) => sum + n.counted, 0)
+const hiddenRows = rowTotals.filter((n) => n.hidden).length
+record(
+  'the headline total gives nothing away by subtraction',
+  tally.heading !== null && hiddenRows === 1 && tally.heading === shown,
+  `headline ${tally.heading} vs rows ${rowTotals.map((n) => n.counted).join('+')} = ${shown}`,
+)
+await page.locator('[data-testid="secret-tile"]').first().click()
+await page.waitForTimeout(300)
+const secretCopy = await page.locator('text=/no name until it is yours/').count()
+record('explains the unknown tile without spoiling it', secretCopy > 0)
+await noOverflow('secret sheet')
+await shot('13c-collection')
+await page.getByRole('button', { name: 'Close' }).first().click()
+await page.waitForTimeout(200)
 
 // -------------------------------------------------------------- persistence
 await page.goto(`${BASE}#/`, { waitUntil: 'networkidle' })

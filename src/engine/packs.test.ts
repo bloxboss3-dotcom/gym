@@ -2,17 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ECONOMY } from '@/config/economy'
 import { ITEMS, ITEM_BY_ID, RARITY_ORDER, SLOT_ORDER } from '@/data/items'
 import { defaultGameState } from '@/db/defaults'
-import { STARTING_MOVES, UNLOCKABLE_MOVES } from '@/data/moves'
-import {
-  buyPack,
-  buyTechnique,
-  collectionProgress,
-  grantItem,
-  openPack,
-  rollPack,
-  rollTechnique,
-  unopenedPacks,
-} from '@/engine/packs'
+import { buyPack, collectionProgress, grantItem, openPack, rollPack, unopenedPacks } from '@/engine/packs'
 import type { GameState, PackKind } from '@/types'
 
 function gameWith(overrides: Partial<GameState> = {}): GameState {
@@ -74,6 +64,38 @@ describe('pack rolling', () => {
       const results = rollPack('relic', [], seed)
       const best = Math.max(...results.map((r) => RARITY_ORDER.indexOf(r.item.rarity)))
       expect(best).toBeGreaterThanOrEqual(floorIndex)
+    }
+  })
+
+  it('gives every pack a weight for every rarity', () => {
+    // A missing key reads as `undefined`, which poisons the running total and
+    // quietly turns the whole table into "always common".
+    for (const kind of Object.keys(ECONOMY.packs) as PackKind[]) {
+      for (const rarity of RARITY_ORDER) {
+        expect(ECONOMY.packs[kind].weights[rarity], `${kind} / ${rarity}`).toBeTypeOf('number')
+      }
+    }
+  })
+
+  it('actually drops the top tiers it advertises', () => {
+    // A rarity nobody can pull is a rarity that does not exist. Assert the
+    // presence of real mythical and secret pulls rather than the absence of
+    // anything wrong — a table where `secret` was unreachable would sail
+    // through every other test in this file.
+    const seen = new Set<string>()
+    for (let seed = 0; seed < 1200; seed++) {
+      for (const result of rollPack('relic', [], seed)) seen.add(result.item.rarity)
+    }
+    expect(seen.has('mythical')).toBe(true)
+    expect(seen.has('secret')).toBe(true)
+  })
+
+  it('never leaks the top tiers into the entry pack', () => {
+    const mythicalIndex = RARITY_ORDER.indexOf('mythical')
+    for (let seed = 0; seed < 600; seed++) {
+      for (const result of rollPack('recruit', [], seed)) {
+        expect(RARITY_ORDER.indexOf(result.item.rarity), `seed ${seed}`).toBeLessThan(mythicalIndex)
+      }
     }
   })
 
@@ -174,12 +196,39 @@ describe('opening and buying packs', () => {
 })
 
 describe('collection progress', () => {
-  it('counts owned items against the full catalogue', () => {
+  it('counts owned items against the catalogue you can see', () => {
     const game = gameWith()
     const progress = collectionProgress(game)
-    expect(progress.total).toBe(ITEMS.length)
+    expect(progress.total).toBe(ITEMS.filter((i) => i.rarity !== 'secret').length)
     expect(progress.owned).toBe(new Set(game.owned.map((o) => o.itemId)).size)
     expect(progress.owned).toBeLessThan(progress.total)
+  })
+
+  it('adds up to exactly what the rarity rows say', () => {
+    // The rows are printed under the headline. If the headline is larger than
+    // their sum, the difference IS the number of secrets left, and the tier
+    // has given itself away to anyone who can subtract.
+    const game = gameWith()
+    const progress = collectionProgress(game)
+    const shown = RARITY_ORDER.reduce(
+      (sum, r) => sum + (r === 'secret' ? progress.byRarity[r].owned : progress.byRarity[r].total),
+      0,
+    )
+    expect(progress.total).toBe(shown)
+  })
+
+  it('grows the total by one when a secret is found', () => {
+    const secret = ITEMS.find((i) => i.rarity === 'secret')
+    if (!secret) throw new Error('the catalogue has no secret item to test with')
+    const base = gameWith()
+    const before = collectionProgress(base)
+    const after = collectionProgress(
+      gameWith({
+        owned: [...base.owned, { itemId: secret.id, acquiredAt: 0, duplicates: 0, new: true }],
+      }),
+    )
+    expect(after.total).toBe(before.total + 1)
+    expect(after.owned).toBe(before.owned + 1)
   })
 
   it('does not double count duplicates', () => {
@@ -189,52 +238,3 @@ describe('collection progress', () => {
   })
 })
 
-describe('technique crates', () => {
-  it('never rolls a technique you already know', () => {
-    // Eight moves is a finite set. A crate that can return a duplicate turns
-    // a collection into a treadmill, which is the opposite of the point.
-    const unlocked: string[] = []
-    for (let i = 0; i < UNLOCKABLE_MOVES.length; i += 1) {
-      const rolled = rollTechnique(unlocked, i * 7919 + 3)
-      expect(rolled, `roll ${i}`).not.toBeNull()
-      expect(unlocked, `roll ${i} was a duplicate`).not.toContain(rolled!)
-      expect(STARTING_MOVES).not.toContain(rolled!)
-      unlocked.push(rolled!)
-    }
-    // Everything unlocked: the crate refuses rather than paying out nothing.
-    expect(rollTechnique(unlocked, 1)).toBeNull()
-  })
-
-  it('reaches every unlockable technique across many seeds', () => {
-    const seen = new Set<string>()
-    for (let seed = 0; seed < 400; seed += 1) {
-      const rolled = rollTechnique([], seed)
-      if (rolled) seen.add(rolled)
-    }
-    expect(seen.size).toBe(UNLOCKABLE_MOVES.length)
-  })
-
-  it('charges for a scroll and records what it gave', () => {
-    const game = gameWith({ coins: ECONOMY.techniqueCrate.cost + 10 })
-    const result = buyTechnique(game, 5)
-    expect(result.error).toBeNull()
-    expect(result.moveId).not.toBeNull()
-    expect(result.game.coins).toBe(10)
-    expect(result.game.unlockedMoves).toContain(result.moveId!)
-  })
-
-  it('refuses when the coins are not there, and takes nothing', () => {
-    const game = gameWith({ coins: ECONOMY.techniqueCrate.cost - 1 })
-    const result = buyTechnique(game, 5)
-    expect(result.error).toMatch(/coins/i)
-    expect(result.moveId).toBeNull()
-    expect(result.game).toBe(game)
-  })
-
-  it('refuses once everything is known rather than charging for nothing', () => {
-    const game = gameWith({ coins: 99_999, unlockedMoves: UNLOCKABLE_MOVES.map((m) => m.id) })
-    const result = buyTechnique(game, 5)
-    expect(result.error).toMatch(/already unlocked/i)
-    expect(result.game.coins).toBe(99_999)
-  })
-})
