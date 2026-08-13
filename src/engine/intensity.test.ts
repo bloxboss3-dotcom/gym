@@ -488,3 +488,29 @@ describe('what a finished challenge is worth', () => {
     )
   })
 })
+
+describe('the drop target is a landmark, not a requirement', () => {
+  const dropped = () => {
+    const result = suggestFinisher(context({}))
+    if (!result.technique) throw new Error('expected a finisher to be offered')
+    return result.technique
+  }
+
+  it('publishes a band, not just a number', () => {
+    // A figure printed to one decimal place reads as a requirement. Stacks
+    // have the pins they have, and nobody should be standing at a machine
+    // wondering whether the nearest hole counts.
+    const steps = dropped().steps.join(' ')
+    expect(steps).toMatch(/nearest pin either side is fine/i)
+    expect(steps).toMatch(/\bto\b/)
+  })
+
+  it('never calls a weight heavier than the working set a drop', () => {
+    const steps = dropped().steps.join(' ')
+    const numbers = [...steps.matchAll(/([\d.]+)\s*(kg|lb)/g)].map((m) => Number(m[1]))
+    expect(numbers.length).toBeGreaterThan(0)
+    // Everything named has to be below the load that was just used.
+    const working = 60
+    for (const n of numbers) expect(n).toBeLessThan(working)
+  })
+})

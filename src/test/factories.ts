@@ -20,6 +20,8 @@ export function performed(options: {
   date?: string
   reps: number[]
   weightKg?: number
+  /** Per-set loads, for sessions that were not all at one weight. */
+  weightsKg?: number[]
   rir?: (number | null)[] | number | null
   pain?: number
   technique?: TechniqueRating
@@ -32,6 +34,7 @@ export function performed(options: {
     date = toIsoDate(),
     reps,
     weightKg = 60,
+    weightsKg,
     rir = 2,
     pain = 0,
     technique = 'clean',
@@ -44,7 +47,7 @@ export function performed(options: {
   return {
     date,
     sessionId: nextId('sess'),
-    sets: reps.map((r, i) => ({ weightKg, reps: r, rir: rirs[i] ?? null })),
+    sets: reps.map((r, i) => ({ weightKg: weightsKg?.[i] ?? weightKg, reps: r, rir: rirs[i] ?? null })),
     pain,
     technique,
     plannedSets,
