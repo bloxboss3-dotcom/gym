@@ -48,6 +48,7 @@ export default function Forge() {
             <Warrior
               equipped={data.game.equipped}
               build={buildFromXp(data.game.xp)}
+              frame={data.game.figure ?? 'masculine'}
               className="w-28 h-auto shrink-0"
             />
             <div className="min-w-0 flex-1">

@@ -24,6 +24,7 @@ export default function Inventory() {
   const [showLocked, setShowLocked] = useState(true)
   const [preview, setPreview] = useState<CosmeticItem | null>(null)
   const [secretSheet, setSecretSheet] = useState(false)
+  const figure = data.game.figure ?? 'masculine'
 
   const ownedMap = useMemo(
     () => new Map(data.game.owned.map((o) => [o.itemId, o])),
@@ -121,7 +122,7 @@ export default function Inventory() {
                       {equipped && <span className="text-[10px] text-ember-400">EQUIPPED</span>}
                     </span>
                     <span className="grid place-items-center py-1">
-                      <ItemPreview item={item} className="w-16 h-auto" />
+                      <ItemPreview item={item} frame={figure} className="w-16 h-auto" />
                     </span>
                     <span className="block text-sm text-parchment leading-tight">{item.name}</span>
                     <span className="block text-[11px] text-smoke">{SLOT_LABEL[item.slot]}</span>
@@ -183,7 +184,7 @@ export default function Inventory() {
         {preview && (
           <div className="space-y-4">
             <div className="grid place-items-center">
-              <ItemPreview item={preview} className="w-44 h-auto" />
+              <ItemPreview item={preview} frame={figure} className="w-44 h-auto" />
             </div>
             <div className="text-center">
               <Chip tone="neutral" className="mb-2">

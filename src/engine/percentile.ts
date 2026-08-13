@@ -222,7 +222,23 @@ export interface StrengthProfile {
   missingData: string[]
   /** What the number does and does not mean — shown, not buried. */
   caveat: string
+  /**
+   * Exactly who the percentile is against, in words fit for the screen.
+   *
+   * A bare percentile is read as "against everyone". It is not: it is against
+   * one sex's published standards, and a woman at the 70th is at the 70th of
+   * women. Saying so is the difference between a number that means something
+   * and a number that flatters or insults at random.
+   */
+  comparisonGroup: string
   citationIds: string[]
+}
+
+/** Who a percentile places you among, given the sex used to look it up. */
+export function comparisonGroupFor(sex: Sex): string {
+  if (sex === 'male') return 'men who log lifts'
+  if (sex === 'female') return 'women who log lifts'
+  return 'people who log lifts, averaged across both standards'
 }
 
 export interface StrengthProfileInput {
@@ -247,6 +263,7 @@ export function strengthProfile(input: StrengthProfileInput): StrengthProfile {
       confidence: 'low',
       missingData: ['Log a body weight — every strength standard is relative to it.'],
       caveat: PERCENTILE_CAVEAT,
+      comparisonGroup: comparisonGroupFor(input.sex),
       citationIds: ['acsm-2009-progression'],
     }
   }
@@ -295,6 +312,7 @@ export function strengthProfile(input: StrengthProfileInput): StrengthProfile {
     confidence,
     missingData,
     caveat: PERCENTILE_CAVEAT,
+    comparisonGroup: comparisonGroupFor(input.sex),
     citationIds: ['acsm-2009-progression', 'schoenfeld-2017-load'],
   }
 }

@@ -58,6 +58,7 @@ export function defaultGameState(): GameState {
     streakShields: 2,
     lastActiveDate: null,
     solvedPuzzleIds: [],
+    figure: 'masculine',
   }
 }
 

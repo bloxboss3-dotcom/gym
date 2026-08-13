@@ -108,6 +108,10 @@ await noOverflow('welcome')
 await page.getByRole('button', { name: 'Begin' }).click()
 await page.getByLabel('Name or nickname').fill('Rook')
 await page.getByRole('radio', { name: /Pounds/ }).click()
+// Onboard as a woman. Everything downstream — the calorie target, the
+// strength standards, the figure — then runs the path that used to be the
+// one nobody checked.
+await page.getByRole('radio', { name: 'Female', exact: true }).click()
 await shot('02-about-you')
 await page.getByRole('button', { name: 'Continue' }).click() // experience
 await page.getByRole('radio', { name: /New or returning/ }).click()
@@ -128,6 +132,7 @@ record('onboarding previews a protein target', proteinShown)
 await page.getByRole('button', { name: 'Continue' }).click() // limitations
 await page.getByRole('button', { name: 'Continue' }).click() // archetype
 await page.getByRole('radio', { name: /Ironclad/ }).click()
+await page.getByRole('radio', { name: 'feminine' }).click()
 await page.getByRole('button', { name: 'Continue' }).click() // plan preview
 await shot('04-plan-preview')
 const planVisible = await page.getByText(/Starter Plan/).isVisible()
@@ -500,8 +505,15 @@ record('new account is not blamed for days before signup', !/1[0-9] planned days
 // bare percentile is silently read as "against everyone", which it is not.
 const standing = await page.locator('text="Where you stand"').count()
 record('shows where you stand on the benchmark lifts', standing > 0)
-const groupStated = await page.locator('text=/people who log lifts/').count()
-record('names the group the percentile compares you against', groupStated > 0)
+// The group must name the SEX whose standards were used, not just "people".
+// The demo profile is male, so the headline has to say so — a woman reading
+// "70th percentile" against men's standards is being told something false,
+// and the old version of this check passed on the word "people" sitting in
+// the caveat paragraph underneath, which is not the claim being made.
+const groupStated = await page.locator('text=/percentile among women who log lifts/').count()
+record('names the sex whose standards the percentile used', groupStated > 0)
+const genericGroup = await page.locator('text=/percentile among people who log lifts$/').count()
+record('does not pass a sexed number off as a general one', genericGroup === 0)
 
 await page.goto(`${BASE}#/progress/volume`, { waitUntil: 'networkidle' })
 await page.waitForSelector('text=Weekly hard sets, text=Hard sets', { timeout: 10000 }).catch(() => {})
@@ -581,6 +593,59 @@ record(
 )
 const blinkers = await page.locator('.anim-blink').count()
 record('the warrior has eyes that blink', blinkers >= 2, `${blinkers} eye groups`)
+
+// The figure choice.
+//
+// Measured on the geometry the renderer emits rather than on a pixel diff or
+// a class name: what has to be true is that picking the other figure changes
+// the drawing AND that the muscle already earned is still on it. A version
+// that swapped the figure but reset the build to zero would look fine in a
+// screenshot and be a straightforward lie about your training.
+const figureGeometry = async () =>
+  page.evaluate(() => {
+    const svg = document.querySelector('svg[role="img"]')
+    if (!svg) return null
+    const caps = [...svg.querySelectorAll('ellipse')].filter((e) => e.getAttribute('cy') === '92')
+    const span = caps.length
+      ? Math.max(...caps.map((c) => +c.getAttribute('cx') + +c.getAttribute('rx'))) -
+        Math.min(...caps.map((c) => +c.getAttribute('cx') - +c.getAttribute('rx')))
+      : null
+    return { span, delt: caps[0] ? +caps[0].getAttribute('rx') : null, markup: svg.innerHTML.length }
+  })
+
+const figureButtons = await page.getByRole('radio', { name: /Masculine|Feminine/ }).count()
+record('the figure can be either', figureButtons === 2, `${figureButtons} options`)
+if (figureButtons === 2) {
+  await page.getByRole('radio', { name: 'Masculine' }).click()
+  await page.waitForTimeout(350)
+  const masc = await figureGeometry()
+  await page.getByRole('radio', { name: 'Feminine' }).click()
+  await page.waitForTimeout(350)
+  const fem = await figureGeometry()
+
+  record(
+    'switching the figure actually redraws it',
+    masc && fem && masc.span !== fem.span,
+    `shoulder span ${masc?.span?.toFixed(1)} → ${fem?.span?.toFixed(1)}`,
+  )
+  record(
+    'the muscle you earned survives the switch',
+    masc && fem && Math.abs(masc.delt - fem.delt) < 0.5 && fem.delt > 6,
+    `deltoid ${masc?.delt?.toFixed(2)} → ${fem?.delt?.toFixed(2)}`,
+  )
+  const hair = await page.locator('svg[role="img"] .warrior-hair').count()
+  record('the feminine figure is not simply a bald one', hair > 0, `${hair} hair paths`)
+  await noOverflow('feminine figure')
+  await shot('13b-figure-feminine')
+
+  // And it must survive a reload — a figure that resets is worse than none.
+  await page.reload({ waitUntil: 'networkidle' })
+  await page.waitForTimeout(700)
+  const stillFeminine = await page
+    .getByRole('radio', { name: 'Feminine' })
+    .getAttribute('aria-checked')
+  record('the figure choice is remembered', stillFeminine === 'true', `aria-checked=${stillFeminine}`)
+}
 
 // -------------------------------------------------------------- collection
 await page.goto(`${BASE}#/forge/inventory`, { waitUntil: 'networkidle' })

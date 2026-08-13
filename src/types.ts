@@ -38,9 +38,10 @@ export type Diet =
 export type Archetype = 'ironclad' | 'emberblade' | 'stormrunner' | 'ashwarden' | 'duskstalker'
 
 /**
- * Only ever used as the sex constant in the Mifflin-St Jeor equation. It is
- * optional, and `unspecified` uses the midpoint of the two constants — the
- * calorie estimate simply carries a wider stated uncertainty.
+ * Used by two calculations and nothing else: the sex constant in the
+ * Mifflin-St Jeor equation, and which published strength ladder a percentile
+ * is read against. Optional, and `unspecified` averages the two — the
+ * estimates simply carry a wider stated uncertainty.
  */
 export type Sex = 'male' | 'female' | 'unspecified'
 
@@ -156,8 +157,13 @@ export interface Profile {
   weeklyRunKm: number
   diet: Diet
   /**
-   * Used for one thing only: the sex constant in the Mifflin-St Jeor BMR
-   * equation. Optional — `unspecified` widens the stated uncertainty instead.
+   * Used for two pieces of arithmetic and nothing else: the sex constant in
+   * the Mifflin-St Jeor BMR equation, and which published strength ladder the
+   * percentile is read against. Optional — `unspecified` averages both and
+   * widens the stated uncertainty.
+   *
+   * Explicitly NOT what the character is drawn as. That is `GameState.figure`,
+   * which this only seeds a first guess for.
    */
   sex?: Sex
   /** Non-exercise daily activity. Training is added separately. */
@@ -567,7 +573,23 @@ export interface GameState {
   lastActiveDate: IsoDate | null
   /** Rest-timer chess puzzles already solved, so they are not shown again. */
   solvedPuzzleIds?: string[]
+  /** Which figure the character is drawn as. Absent on old saves = masculine. */
+  figure?: Figure
 }
+
+/**
+ * Which figure the character is drawn as.
+ *
+ * Deliberately NOT derived from `Profile.sex`. That field exists for two
+ * pieces of arithmetic — the Mifflin-St Jeor constant and which strength
+ * ladder you are read against — and answering it does not tell anyone which
+ * character they want to look at for the next year. Seeded from it at
+ * onboarding because that is a decent first guess, then owned by the player.
+ *
+ * Free, changeable at any time, and never a drop. Nobody should have to pull
+ * their own figure out of a crate.
+ */
+export type Figure = 'masculine' | 'feminine'
 
 // ---------------------------------------------------------------------------
 // Planning / deloads

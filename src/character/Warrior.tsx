@@ -1,7 +1,7 @@
 import { useId, type ReactNode } from 'react'
 import { ITEM_BY_ID } from '@/data/items'
 import { CLOTH, SKIN, SKIN_SHADE, paletteOf, type Palette } from '@/character/palette'
-import type { CosmeticItem, Slot } from '@/types'
+import type { CosmeticItem, Figure, Slot } from '@/types'
 import { useReducedMotion } from '@/components/ui'
 
 /**
@@ -38,25 +38,53 @@ import { useReducedMotion } from '@/components/ui'
 function Body({
   heavy,
   build,
+  frame,
   legsOnly,
   upperOnly,
 }: {
   heavy: boolean
   build: number
+  frame: Figure
   /** Everything below the hips, which stays planted. */
   legsOnly?: boolean
   /** Everything above them, which breathes. */
   upperOnly?: boolean
 }) {
   const b = Math.min(1, Math.max(0, build))
-  const shoulder = (heavy ? 24 : 21) + b * 3 // caps at 27 / 24, inside the armour
-  const delt = 6.5 + b * 6
-  const upperArm = 10 + b * 5
-  const foreArm = 8.5 + b * 3.5
-  const thigh = 12.5 + b * 4
-  const calf = 10.5 + b * 3
-  const waist = 16 - b * 2.5 // half-width at the navel: a taper, not a barrel
+  const fem = frame === 'feminine'
+
+  /**
+   * The two frames differ in proportion, never in how much training shows.
+   *
+   * Every `b` coefficient below is identical across both — a feminine figure
+   * at level 30 has gained exactly as much deltoid, arm, back and leg as a
+   * masculine one, off the same curve. Only the starting proportions move:
+   * narrower shoulders, a shorter waist, a wider hip. Scaling the growth down
+   * for one of them would quietly tell half the users their training counts
+   * for less, which is both untrue and the opposite of the point.
+   */
+  const shoulder = (fem ? (heavy ? 23 : 20) : heavy ? 24 : 21) + b * 3
+  /**
+   * Deltoid caps are drawn proud of the torso edge, and the torso edge is
+   * where the armour is. Narrowing the feminine shoulder without widening the
+   * cap to compensate hid the delts behind the breastplate entirely — the
+   * figure gained a level and nothing on screen changed. The cap base is
+   * nudged up so both frames show the same amount of shoulder outside the
+   * armour at the same build.
+   */
+  const delt = (fem ? 6.3 : 6.5) + b * 6
+  const upperArm = (fem ? 9.4 : 10) + b * 5
+  const foreArm = (fem ? 8 : 8.5) + b * 3.5
+  const thigh = (fem ? 12.8 : 12.5) + b * 4
+  const calf = (fem ? 10.2 : 10.5) + b * 3
+  const waist = (fem ? 13.5 : 16) - b * 2.5 // half-width at the navel
   const trap = b * 7 // how far the neck line flares out to the shoulders
+  const hip = fem ? 21 : 18 // half-width at the widest point of the pelvis
+  const neckW = (fem ? 10 : 12) + b * 2
+  const headRx = fem ? 17.6 : 19
+  /** Where the waist pinches, as a fraction down the torso. Higher on a
+      feminine frame, which is most of what reads as the shape. */
+  const waistY = fem ? 116 : 120
 
   const leftShoulderX = 100 - shoulder + 2
   const rightShoulderX = 100 + shoulder - 2
@@ -68,8 +96,15 @@ function Body({
       <path d="M87 196 L85 238" stroke={SKIN} strokeWidth={calf} strokeLinecap="round" fill="none" />
       <path d="M110 148 L113 196" stroke={SKIN} strokeWidth={thigh} strokeLinecap="round" fill="none" />
       <path d="M113 196 L115 238" stroke={SKIN} strokeWidth={calf} strokeLinecap="round" fill="none" />
-      {/* hips */}
-      <path d="M82 138 L118 138 L116 156 L84 156 Z" fill={SKIN_SHADE} />
+      {/* hips — a straight block on one frame, flared on the other */}
+      <path
+        d={
+          fem
+            ? `M${100 - hip + 4} 136 Q${100 - hip} 146 ${100 - hip + 5} 157 L${100 + hip - 5} 157 Q${100 + hip} 146 ${100 + hip - 4} 136 Z`
+            : 'M82 138 L118 138 L116 156 L84 156 Z'
+        }
+        fill={SKIN_SHADE}
+      />
     </>
   )
   if (legsOnly) return <g>{legs}</g>
@@ -79,9 +114,18 @@ function Body({
       {!upperOnly && legs}
       {/* torso — shoulders out to the armour, waist drawn in */}
       <path
-        d={`M${100 - shoulder} 88 Q100 82 ${100 + shoulder} 88 L${100 + waist} 120 L116 144 L84 144 L${100 - waist} 120 Z`}
+        d={`M${100 - shoulder} 88 Q100 82 ${100 + shoulder} 88 L${100 + waist} ${waistY} L${100 + hip - 4} 144 L${100 - hip + 4} 144 L${100 - waist} ${waistY} Z`}
         fill={SKIN}
       />
+      {/* Bust, on the feminine frame only. Drawn in the shade tone rather than
+          as an outline so it reads as form under whatever is worn over it. */}
+      {fem && (
+        <path
+          d="M88 96 Q84 106 91 109 Q97 110 98 100 Q101 110 109 109 Q116 106 112 96 Z"
+          fill={SKIN_SHADE}
+          opacity="0.75"
+        />
+      )}
       {/* trapezius: a filled wedge from the neck out to each shoulder */}
       {trap > 0.5 && (
         <path
@@ -111,8 +155,58 @@ function Body({
       <ellipse cx={leftShoulderX - 1} cy={92} rx={delt} ry={delt * 0.86} fill={SKIN} />
       <ellipse cx={rightShoulderX + 1} cy={92} rx={delt} ry={delt * 0.86} fill={SKIN} />
       {/* neck + head */}
-      <rect x={94 - b} y="74" width={12 + b * 2} height="12" fill={SKIN_SHADE} rx="3" />
-      <ellipse cx="100" cy="58" rx="19" ry="21" fill={SKIN} />
+      <rect x={100 - neckW / 2} y="74" width={neckW} height="12" fill={SKIN_SHADE} rx="3" />
+      <ellipse cx="100" cy="58" rx={headRx} ry="21" fill={SKIN} />
+    </g>
+  )
+}
+
+const HAIR = '#322530'
+const HAIR_LIT = '#41303c'
+
+/**
+ * Hair that belongs to the figure rather than to a head slot.
+ *
+ * Two layers, and it needs both. The fall goes behind everything so a helmet
+ * sits over it rather than fighting it; the crown goes on top of the skull,
+ * under any headgear. The first attempt drew only the back layer, and because
+ * the head ellipse covers the middle of it, all that reached the screen was
+ * two dark slabs floating either side of the face — it read as ears, not hair.
+ *
+ * The fall sways on the same idle clock as cloaks and tails.
+ */
+function FrameHair({
+  frame,
+  layer,
+  animate,
+}: {
+  frame: Figure
+  layer: 'behind' | 'crown'
+  animate: boolean
+}) {
+  if (frame !== 'feminine') return null
+
+  if (layer === 'crown') {
+    // A crescent hugging the top of the skull (cx 100, cy 58, rx 17.6, ry 21),
+    // so the hairline frames the temples instead of cutting across the eyes.
+    return (
+      <g className="warrior-hair">
+        <path
+          d="M82.6 60 C82.6 42 90 36.5 100 36.5 C110 36.5 117.4 42 117.4 60 C115.5 48.5 109 44.5 100 44.5 C91 44.5 84.5 48.5 82.6 60 Z"
+          fill={HAIR_LIT}
+        />
+      </g>
+    )
+  }
+
+  return (
+    <g className={animate ? 'warrior-hair anim-sway' : 'warrior-hair'}>
+      {/* One connected mass. Solid rather than hollow because the head, neck
+          and torso all draw over the middle of it anyway. */}
+      <path
+        d="M100 26 C76 26 69.5 48 70.5 72 C71.3 92 74.5 108 77.5 120 L84 124 L92 120 C89 106 87.5 92 87.5 74 L112.5 74 C112.5 92 111 106 108 120 L116 124 L122.5 120 C125.5 108 128.7 92 129.5 72 C130.5 48 124 26 100 26 Z"
+        fill={HAIR}
+      />
     </g>
   )
 }
@@ -1329,9 +1423,11 @@ export interface WarriorProps {
    * `buildFromLevel`, so it only ever moves because sessions were logged.
    */
   build?: number
+  /** Which figure to draw. Defaults to masculine for saves made before the choice existed. */
+  frame?: Figure
 }
 
-export function Warrior({ equipped, className, still, title, build = 0 }: WarriorProps) {
+export function Warrior({ equipped, className, still, title, build = 0, frame = 'masculine' }: WarriorProps) {
   const reduced = useReducedMotion()
   const animate = !reduced && !still
   const glowId = useId()
@@ -1392,14 +1488,16 @@ export function Warrior({ equipped, className, still, title, build = 0 }: Warrio
           the same screen — the Forge card and an inventory preview — are not
           inhaling in lockstep.
         */}
-        <Body heavy={heavy} build={build} legsOnly />
+        <FrameHair frame={frame} layer="behind" animate={animate} />
+        <Body heavy={heavy} build={build} frame={frame} legsOnly />
         {feet && <FeetArt art={feet.art} p={paletteOf(feet, { base: CLOTH, accent: '#777' })} animate={animate} />}
         <g
           className={animate ? 'anim-breathe' : undefined}
           style={animate ? { animationDelay: `${breathDelay}s` } : undefined}
         >
-          <Body heavy={heavy} build={build} upperOnly />
+          <Body heavy={heavy} build={build} frame={frame} upperOnly />
           {body && <BodyArt art={body.art} p={paletteOf(body, { base: CLOTH, accent: '#777' })} animate={animate} />}
+          <FrameHair frame={frame} layer="crown" animate={animate} />
           {head && head.art !== 'none' && (
             <HeadArt art={head.art} p={paletteOf(head, { base: '#2b2b31', accent: '#888' })} animate={animate} />
           )}
@@ -1419,7 +1517,15 @@ export function Warrior({ equipped, className, still, title, build = 0 }: Warrio
 }
 
 /** Small isolated preview of a single item, used in inventory and pack reveals. */
-export function ItemPreview({ item, className }: { item: CosmeticItem; className?: string }) {
+export function ItemPreview({
+  item,
+  className,
+  frame = 'masculine',
+}: {
+  item: CosmeticItem
+  className?: string
+  frame?: Figure
+}) {
   const base: Partial<Record<Slot, string | null>> = {
     face: 'face-recruit',
     head: 'head-none',
@@ -1432,5 +1538,13 @@ export function ItemPreview({ item, className }: { item: CosmeticItem; className
     companion: 'companion-none',
     pose: 'pose-ready',
   }
-  return <Warrior equipped={{ ...base, [item.slot]: item.id }} className={className} still title={`Preview of ${item.name}`} />
+  return (
+    <Warrior
+      equipped={{ ...base, [item.slot]: item.id }}
+      className={className}
+      frame={frame}
+      still
+      title={`Preview of ${item.name}`}
+    />
+  )
 }
