@@ -19,6 +19,7 @@ import { computeConsistency } from '@/engine/consistency'
 import { calculateProteinTarget, proteinForDate } from '@/engine/protein'
 import { newlyUnlockedAchievements } from '@/engine/quests'
 import { generateProgram } from '@/engine/program'
+import { nameFor } from '@/engine/habits'
 import { nativeIncrementKg } from '@/engine/units'
 import { isoDateOf, toIsoDate } from '@/lib/date'
 import { newId } from '@/lib/id'
@@ -41,6 +42,7 @@ import type {
   ProteinEntry,
   RunLog,
   Session,
+  SessionChallenge,
   SessionEntry,
   Settings,
   Slot,
@@ -113,6 +115,18 @@ export interface ForgedStore {
   acceptDeload: (reason: string) => void
   solvePuzzle: (puzzleId: string, theme: string) => void
   strikeAnvil: (roundId: string, coins: number, xp: number, detail: string) => void
+  /**
+   * Record what became of an intensity challenge on one movement.
+   *
+   * Completing one pays, once per challenge; declining and abandoning are
+   * recorded too, because the fatigue budget needs to know what was actually
+   * done and "why is it not offering me one" deserves an answer.
+   */
+  setChallenge: (
+    sessionId: string,
+    entryId: string,
+    challenge: SessionChallenge,
+  ) => void
   declineDeload: (reason: string) => void
   completeDeload: (id: string) => void
 
@@ -564,12 +578,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         mutate((current) => {
           const session = current.sessions.find((s) => s.id === sessionId)
           if (!session || session.status === 'completed') return current
+          // Drop exercises that were never touched so they don't skew volume.
+          const entries = session.entries.filter((e) => e.sets.length > 0)
+          /*
+            Title it by what it turned out to be.
+
+            "Upper A" is the slot a session came out of, not what happened in
+            it — swap two movements or train off-plan and the name is simply
+            wrong. Naming from the logged entries means history reads "Chest &
+            Triceps", which is the thing anybody scrolling back is looking
+            for. The planned name is kept rather than overwritten, so nothing
+            about where the session came from is lost.
+          */
+          const trained = nameFor(
+            entries.map((e) => e.exerciseId),
+            new Map(current.exercises.map((e) => [e.id, e])),
+          )
           const completed: Session = {
             ...session,
             status: 'completed',
             endedAt: Date.now(),
-            // Drop exercises that were never touched so they don't skew volume.
-            entries: session.entries.filter((e) => e.sets.length > 0),
+            entries,
+            plannedTitle: session.plannedTitle ?? session.title,
+            title: trained && entries.length ? trained : session.title,
           }
           const withSession: AppData = {
             ...current,
@@ -858,6 +889,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             owned: current.game.owned.map((o) => (o.itemId === itemId ? { ...o, new: false } : o)),
           },
         }))
+      },
+
+      setChallenge(sessionId, entryId, challenge) {
+        mutate((current) => {
+          const next: AppData = {
+            ...current,
+            sessions: current.sessions.map((session) =>
+              session.id === sessionId
+                ? {
+                    ...session,
+                    entries: session.entries.map((entry) =>
+                      entry.id === entryId ? { ...entry, challenge } : entry,
+                    ),
+                  }
+                : session,
+            ),
+          }
+          if (challenge.status !== 'completed') return next
+          // Idempotent on (session, entry): marking the same challenge done
+          // twice cannot pay twice, and the daily cap holds the rest.
+          return awardInto(
+            next,
+            [
+              simpleGrant(
+                'challenge_completed',
+                `challenge:${sessionId}:${entryId}`,
+                challenge.headline,
+              ),
+            ],
+            pushToast,
+          )
+        })
       },
 
       setFigure(figure) {

@@ -41,11 +41,36 @@ export interface UsualSession {
   /** Movements that show up in most repetitions of this pattern. */
   exercises: UsualExercise[]
   timesDone: number
+  /** The weekday this pattern usually lands on, e.g. "Tuesday". Null when it
+   *  moves around too much for the answer to mean anything. */
+  usualWeekday: string | null
   lastDate: IsoDate
   daysSince: number
   confidence: Confidence
   /** Plain-language justification, shown in the UI rather than hidden. */
   reason: string
+}
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+/**
+ * The weekday a pattern usually lands on, or null if it moves around.
+ *
+ * Null rather than "whichever came top" on purpose: telling somebody their
+ * chest day is Tuesday when it has been Tuesday twice out of five is not a
+ * useful thing to put on a card, and a subtle label that is wrong half the
+ * time is worse than no label.
+ */
+function usualWeekdayOf(dates: IsoDate[]): string | null {
+  if (dates.length < 2) return null
+  const counts = new Map<number, number>()
+  for (const date of dates) {
+    // Parsed as UTC noon so a timezone west of Greenwich cannot shift the day.
+    const day = new Date(`${date}T12:00:00Z`).getUTCDay()
+    counts.set(day, (counts.get(day) ?? 0) + 1)
+  }
+  const [best, n] = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]
+  return n / dates.length >= 0.6 ? WEEKDAYS[best] : null
 }
 
 /** Two sessions belong to the same pattern above this Jaccard similarity. */
@@ -105,7 +130,15 @@ function trainedFrom(session: Session): Trained | null {
  * Falls back to the most common session title, because a name the user chose
  * beats one this file invented.
  */
-function nameFor(exerciseIds: string[], byId: Map<string, Exercise>, titles: string[]): string {
+/**
+ * Name a set of movements by the muscles they actually trained.
+ *
+ * "Chest & Triceps" tells you what you did; "Upper A" tells you which slot of
+ * a template it came out of, which stops being useful the moment you swap a
+ * movement or train off-plan. Exported so a completed session can be titled
+ * by what it turned out to be rather than by what was planned.
+ */
+export function nameFor(exerciseIds: string[], byId: Map<string, Exercise>, titles: string[] = []): string {
   const totals = new Map<MuscleKey, number>()
   for (const id of exerciseIds) {
     const exercise = byId.get(id)
@@ -200,6 +233,7 @@ export function findUsualSessions(input: {
         name: nameFor(ids, byId, members.map((m) => m.title)),
         exercises: coreExercises,
         timesDone: members.length,
+        usualWeekday: usualWeekdayOf(members.map((m) => m.date)),
         lastDate,
         daysSince,
         confidence: members.length >= 4 ? 'high' : members.length >= 3 ? 'medium' : 'low',

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { MovementPattern, MuscleKey } from '@/types'
 import { EXERCISE_LIBRARY, searchExercises } from '@/data/exercises'
 
 /**
@@ -84,5 +85,72 @@ describe('exercise search', () => {
         expect(ids.has(id), `${exercise.id} → ${id}`).toBe(true)
       }
     }
+  })
+})
+
+describe('training at home with nothing', () => {
+  /** What somebody with no equipment at all can actually do. */
+  const HOME = EXERCISE_LIBRARY.filter((e) => e.equipment.every((k) => k === 'bodyweight'))
+
+  it('can load every movement pattern', () => {
+    // Asserted as coverage of the whole set rather than "does a push-up
+    // exist". The library used to pass any per-movement check while leaving a
+    // bedroom lifter with no squat, no row, no hinge and no vertical press.
+    // Vertical pull is deliberately not on this list. With genuinely nothing
+    // to hang from there is no honest bodyweight vertical pull, and inventing
+    // one to make a test go green would be lying to somebody about their
+    // training. It is covered separately below, by the one cheap purchase
+    // that unlocks it.
+    const patterns: MovementPattern[] = [
+      'horizontal_push',
+      'vertical_push',
+      'horizontal_pull',
+      'squat',
+      'hinge',
+      'lunge',
+      'core',
+    ]
+    const missing = patterns.filter((p) => !HOME.some((e) => e.pattern === p))
+    expect(missing, `no bodyweight option for: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('can train every major muscle directly', () => {
+    const majors: MuscleKey[] = [
+      'chest',
+      'front_delts',
+      'lats',
+      'upper_back',
+      'biceps',
+      'triceps',
+      'quads',
+      'hamstrings',
+      'glutes',
+      'calves',
+      'abs',
+    ]
+    const missing = majors.filter(
+      (m) => !HOME.some((e) => (e.contributions[m] ?? 0) >= 1),
+    )
+    expect(missing, `no direct bodyweight work for: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('offers enough of them to build a week from', () => {
+    expect(HOME.length).toBeGreaterThanOrEqual(15)
+  })
+
+  it('reaches the vertical pull as soon as there is a bar to hang from', () => {
+    const withBar = EXERCISE_LIBRARY.filter((e) =>
+      e.equipment.every((k) => k === 'bodyweight' || k === 'pullup_bar'),
+    )
+    expect(withBar.some((e) => e.pattern === 'vertical_pull')).toBe(true)
+  })
+
+  it('does not need a pull-up bar for a horizontal pull', () => {
+    // The one pattern people most often have no way to train at home. An
+    // inverted row under a table needs nothing, and without it the whole
+    // upper back is unreachable for anyone without a bar.
+    const rows = HOME.filter((e) => e.pattern === 'horizontal_pull')
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.some((e) => !e.equipment.includes('pullup_bar'))).toBe(true)
   })
 })

@@ -69,6 +69,19 @@ export const ECONOMY = {
      */
     anvil_round: { xp: 5, coins: 50 },
     /**
+     * Taking an intensity challenge and finishing it.
+     *
+     * Paid noticeably better per unit of effort than anything else here,
+     * because unlike a mini-game this IS training — a set past failure at the
+     * end of an exercise, on a movement where the volume was genuinely short.
+     * Capped at the same two per session the fatigue budget allows, so the
+     * incentive can never argue for a third.
+     *
+     * Deliberately below a whole session: the reward for finishing a workout
+     * must always beat the reward for garnishing one.
+     */
+    challenge_completed: { xp: 12, coins: 20 },
+    /**
      * Crossing a strength percentile band. Paid for the CLIMB, never for the
      * standing: rewarding a percentile outright would hand the biggest prizes
      * to whoever walked in strongest and the smallest to the person the app
@@ -96,6 +109,9 @@ export const ECONOMY = {
       quest_completed: 3,
       puzzle_solved: 5,
       anvil_round: 3,
+      /** Matches RULES.intensity.maxPerSession — the reward cannot outrun the
+       *  fatigue budget, or the economy starts arguing against the coaching. */
+      challenge_completed: 2,
       percentile_band: 3,
       level_up: 99,
       duplicate_refund: 99,

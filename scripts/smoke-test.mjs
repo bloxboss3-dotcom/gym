@@ -357,7 +357,7 @@ const finisherText = await page
 // The number has to be a weight the machine can actually be set to. A 2.5 kg
 // increment converted literally lands on 33.1 lb, which exists on no stack —
 // the fifth time a kilogram constant has reached the UI in this app.
-const dropLb = Number(finisherText.match(/Drop to ([\d.]+) lb/)?.[1])
+const dropLb = Number(finisherText.match(/drop to ([\d.]+) lb/i)?.[1])
 record(
   'offers a drop set once the sets are done and the week is short',
   Number.isFinite(dropLb),
@@ -369,7 +369,7 @@ record(
   `${dropLb} lb`,
 )
 if (finisherText) {
-  await page.locator('button[aria-expanded]:has-text("Drop to")').first().click()
+  await page.locator('button[aria-expanded]').last().click()
   await page.waitForTimeout(250)
   const honest = await page.locator('text=/not a bigger stimulus per set/').count()
   record('says plainly that a drop set is not extra growth', honest > 0)
@@ -377,6 +377,66 @@ if (finisherText) {
   record('cites the drop-set evidence inline', cited > 0, `${cited} links`)
   await noOverflow('finisher')
 }
+
+// The fatigue budget, walked through a whole session.
+//
+// This is the check that was missing when the bug shipped. The engine caps
+// finishers at two a session, the rule was written, and a unit test asserted
+// it — but the screen passed a hardcoded zero, so the cap never fired and a
+// finisher appeared on every movement. Every test in the suite passed the
+// entire time, because they all called the engine directly and none of them
+// ever finished more than one exercise.
+//
+// So: finish every movement in the session and count the challenge cards.
+const challengeCards = () => page.locator('[data-testid="challenge-offer"]')
+const takeIt = () => page.getByRole('button', { name: 'Take it' })
+
+let logged = 0
+for (let round = 0; round < 24; round += 1) {
+  const buttons = page.getByRole('button', { name: 'Log set' })
+  const n = await buttons.count()
+  if (!n) break
+  await buttons.nth(round % n).click()
+  await page.waitForTimeout(90)
+  logged += 1
+}
+record('can finish every movement in a session', logged > 8, `${logged} sets logged`)
+
+// Accept challenges until the app stops offering them.
+if (await challengeCards().count()) {
+  await challengeCards().first().scrollIntoViewIfNeeded()
+  await page.waitForTimeout(200)
+  await challengeCards().first().screenshot({ path: `${SHOTS}/06e-challenge-offer.png` })
+  const asks = await challengeCards().first().innerText()
+  record(
+    'the challenge states the payout and the budget up front',
+    /coins/i.test(asks) && /of 2/i.test(asks),
+    asks.replace(/\n/g, ' / ').slice(0, 120),
+  )
+}
+let accepted = 0
+for (let guard = 0; guard < 6; guard += 1) {
+  if (!(await takeIt().count())) break
+  await takeIt().first().click()
+  await page.waitForTimeout(250)
+  accepted += 1
+  const done = page.getByRole('button', { name: 'Done' })
+  if (await done.count()) {
+    await done.first().click()
+    await page.waitForTimeout(250)
+  }
+}
+record(
+  'stops offering challenges once the fatigue budget is spent',
+  accepted > 0 && accepted <= 2,
+  `${accepted} accepted, cap is 2`,
+)
+const stillOffering = await challengeCards().count()
+record('no challenge is offered past the cap', stillOffering === 0, `${stillOffering} still on screen`)
+const paid = await page.locator('text=/Challenge done/').count()
+record('a finished challenge is recorded as done', paid > 0, `${paid} marked done`)
+await noOverflow('challenges')
+await shot('06e-challenges')
 await page.evaluate(() => window.scrollTo(0, 0))
 await page.waitForTimeout(150)
 
@@ -436,8 +496,13 @@ await shot('08-summary')
 await noOverflow('summary')
 const hasRecommendation = await page.getByText(/Next session target/).first().isVisible()
 record('summary produces a next-session recommendation', hasRecommendation)
-const rewarded = await page.getByText(/Rewards earned|Session saved/).first().isVisible().catch(() => false)
-record('summary shows reward outcome', rewarded)
+// Either it paid, or it says why it did not. Silence is the failure.
+const rewarded = await page
+  .getByText(/Rewards earned|Session saved|No rewards for this one/)
+  .first()
+  .isVisible()
+  .catch(() => false)
+record('summary always accounts for the reward, paid or not', rewarded)
 
 // ---------------------------------------------------------------- nutrition
 // The old /progress/protein path must still land somewhere sensible.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EXERCISE_LIBRARY } from '@/data/exercises'
-import { findUsualSessions, mostOverdue, toProgramDay } from '@/engine/habits'
+import { findUsualSessions, mostOverdue, nameFor, toProgramDay } from '@/engine/habits'
 import { addDays, toIsoDate } from '@/lib/date'
 import type { LoggedSet, Session, SessionEntry } from '@/types'
 
@@ -269,5 +269,77 @@ describe('against the demo dataset', () => {
       expect(usual.name.length).toBeGreaterThan(0)
     }
     expect(mostOverdue(usuals)).not.toBeNull()
+  })
+})
+
+describe('naming a session by what was in it', () => {
+  const byId = new Map(EXERCISE_LIBRARY.map((e) => [e.id, e]))
+
+  it('names it after the muscles it actually trained', () => {
+    const name = nameFor(['barbell-bench-press', 'dumbbell-curl', 'barbell-curl'], byId)
+    expect(name).toMatch(/chest/i)
+    expect(name).toMatch(/biceps/i)
+  })
+
+  it('is a description, not a template slot', () => {
+    // The whole point: "Upper A" is where a session came from, not what
+    // happened in it, and it stops being true the moment a movement is
+    // swapped. The name must never fall back to one when it has movements.
+    const name = nameFor(['back-squat', 'romanian-deadlift'], byId, ['Lower B'])
+    expect(name).not.toMatch(/Lower B/)
+    expect(name.length).toBeGreaterThan(0)
+  })
+
+  it('falls back to the recorded title only when it knows nothing', () => {
+    expect(nameFor(['not-a-real-exercise'], byId, ['Upper A'])).toBe('Upper A')
+  })
+})
+
+describe('the day a pattern lands on', () => {
+  const sessionOn = (date: string, ids: string[]): Session => ({
+    id: `s-${date}`,
+    date,
+    programId: null,
+    programDayId: null,
+    title: 'Session',
+    status: 'completed',
+    startedAt: 0,
+    endedAt: 1,
+    entries: ids.map((id, i) => ({
+      id: `e${i}`,
+      exerciseId: id,
+      plannedSets: 3,
+      repMin: 6,
+      repMax: 10,
+      targetRIR: 2,
+      restSec: 120,
+      incrementKg: 2.5,
+      sets: [{ id: `set${i}`, weightKg: 50, reps: 8, rir: 2, warmup: false, completedAt: 1 }],
+      pain: 0,
+      technique: 'clean' as const,
+    })),
+  })
+
+  const IDS = ['barbell-bench-press', 'dumbbell-curl']
+
+  it('reports the weekday when the pattern actually keeps to one', () => {
+    // 2026-08-04, -11, -18 are all Tuesdays.
+    const usuals = findUsualSessions({
+      sessions: [sessionOn('2026-08-04', IDS), sessionOn('2026-08-11', IDS), sessionOn('2026-08-18', IDS)],
+      exercises: EXERCISE_LIBRARY,
+      today: '2026-08-20',
+    })
+    expect(usuals[0]?.usualWeekday).toBe('Tuesday')
+  })
+
+  it('says nothing when the day moves around', () => {
+    // Telling somebody their chest day is Tuesday when it has been Tuesday
+    // once in three is worse than staying quiet.
+    const usuals = findUsualSessions({
+      sessions: [sessionOn('2026-08-04', IDS), sessionOn('2026-08-13', IDS), sessionOn('2026-08-16', IDS)],
+      exercises: EXERCISE_LIBRARY,
+      today: '2026-08-20',
+    })
+    expect(usuals[0]?.usualWeekday).toBeNull()
   })
 })

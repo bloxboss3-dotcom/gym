@@ -312,6 +312,31 @@ export interface SessionEntry {
   pain: number
   technique: TechniqueRating
   note?: string
+  /**
+   * The intensity finisher offered on this movement, and what became of it.
+   *
+   * Recorded rather than merely displayed, because without a record the
+   * fatigue budget cannot work: the engine has always capped finishers at two
+   * a session, but nothing told it how many had been taken, so it offered one
+   * on every movement and a session could end up carrying five.
+   *
+   * `accepted` and `completed` both spend the budget — you did the work
+   * either way. `declined` does not, but still stops this movement being
+   * asked twice.
+   */
+  challenge?: SessionChallenge
+}
+
+export type ChallengeStatus = 'offered' | 'declined' | 'accepted' | 'completed' | 'abandoned'
+
+export interface SessionChallenge {
+  /** Matches `TechniqueKind` in the intensity engine. */
+  kind: string
+  /** What was actually asked for, frozen at offer time so it stays auditable. */
+  headline: string
+  status: ChallengeStatus
+  /** When the status last changed. */
+  at: Millis
 }
 
 export type SessionStatus = 'active' | 'completed' | 'abandoned'
@@ -321,7 +346,15 @@ export interface Session {
   date: IsoDate
   programId: string | null
   programDayId: string | null
+  /**
+   * What the session is called. Set from the program day when it starts, then
+   * replaced on completion with what was actually trained — "Chest & Triceps"
+   * rather than "Upper A", because the second one stops being true the moment
+   * a movement is swapped.
+   */
   title: string
+  /** The name it started with, kept so the plan it came from is not lost. */
+  plannedTitle?: string
   status: SessionStatus
   entries: SessionEntry[]
   note?: string
@@ -527,6 +560,8 @@ export type RewardReason =
   | 'puzzle_solved'
   /** A round of the Anvil, struck between sets. */
   | 'anvil_round'
+  /** Took an intensity challenge and finished it. */
+  | 'challenge_completed'
   /** Crossed a strength percentile band for the first time. */
   | 'percentile_band'
   | 'level_up'
