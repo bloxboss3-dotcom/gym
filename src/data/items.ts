@@ -221,7 +221,7 @@ const POSES = build('pose', [
   ['pose-rest', 'At Rest', 'rest', 'uncommon', 'ash', 'Between sets, breathing.'],
   ['pose-heroic', 'Heroic', 'heroic', 'rare', 'gold', 'Chest up. Earned it.'],
   ['pose-raised', 'Raised Blade', 'raised', 'epic', 'ember', 'For the session that finally broke the plateau.'],
-  ['pose-braced', 'Braced', 'guard', 'rare', 'jade', 'The stance you take before a set you respect.'],
+  ['pose-braced', 'Braced', 'braced', 'rare', 'jade', 'The stance you take before a set you respect.'],
   ['pose-sheathed', 'Iaido', 'sheathed', 'epic', 'ink', 'Hand on the hilt, nothing drawn yet.'],
   ['pose-ascend', 'Ascendant', 'ascend', 'mythical', 'bloom', 'Both feet still on the floor. Only just.'],
 ])

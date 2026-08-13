@@ -121,10 +121,23 @@ export default function Inventory() {
                       {owned?.new && <span className="text-[10px] text-ember-400">NEW</span>}
                       {equipped && <span className="text-[10px] text-ember-400">EQUIPPED</span>}
                     </span>
-                    <span className="grid place-items-center py-1">
+                    {/* Not earned yet means not spoiled yet.
+                        The grid used to show every unearned item at full
+                        detail — name, artwork, lore — which answers the
+                        question a pack is supposed to answer. What stays
+                        visible is the shape of the thing, its slot and its
+                        rarity: enough to see there is something there and
+                        roughly how good, nothing that tells you what. */}
+                    <span className={cx('grid place-items-center py-1', !owned && 'silhouette')}>
                       <ItemPreview item={item} frame={figure} className="w-16 h-auto" />
                     </span>
-                    <span className="block text-sm text-parchment leading-tight">{item.name}</span>
+                    <span className="block text-sm leading-tight">
+                      {owned ? (
+                        <span className="text-parchment">{item.name}</span>
+                      ) : (
+                        <span className="text-smoke">Not earned yet</span>
+                      )}
+                    </span>
                     <span className="block text-[11px] text-smoke">{SLOT_LABEL[item.slot]}</span>
                     {owned && owned.duplicates > 0 && (
                       <span className="block text-[10px] text-gold-300 mt-1">×{owned.duplicates + 1} owned</span>
@@ -180,10 +193,14 @@ export default function Inventory() {
         </div>
       </Sheet>
 
-      <Sheet open={preview !== null} onClose={() => setPreview(null)} title={preview?.name ?? 'Item'}>
+      <Sheet
+        open={preview !== null}
+        onClose={() => setPreview(null)}
+        title={preview && ownedMap.has(preview.id) ? preview.name : 'Not earned yet'}
+      >
         {preview && (
           <div className="space-y-4">
-            <div className="grid place-items-center">
+            <div className={cx('grid place-items-center', !ownedMap.has(preview.id) && 'silhouette')}>
               <ItemPreview item={preview} frame={figure} className="w-44 h-auto" />
             </div>
             <div className="text-center">
@@ -191,7 +208,14 @@ export default function Inventory() {
                 <span style={{ color: RARITY_META[preview.rarity].color }}>{RARITY_META[preview.rarity].label}</span>
                 <span className="text-smoke"> · {SLOT_LABEL[preview.slot]}</span>
               </Chip>
-              <p className="text-sm text-ash italic leading-relaxed">{preview.lore}</p>
+              {ownedMap.has(preview.id) ? (
+                <p className="text-sm text-ash italic leading-relaxed">{preview.lore}</p>
+              ) : (
+                <p className="text-sm text-smoke leading-relaxed">
+                  You have not pulled this one. Its name and what it looks like are the reward
+                  for finding it, so they stay behind the pack.
+                </p>
+              )}
             </div>
             {ownedMap.has(preview.id) ? (
               <Button

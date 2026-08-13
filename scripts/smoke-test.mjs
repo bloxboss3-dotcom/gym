@@ -150,6 +150,13 @@ await controlsUsable('today')
 // Whatever today resolves to, Train always offers a session to start.
 await page.goto(`${BASE}#/train`, { waitUntil: 'networkidle' })
 await page.waitForSelector('text=/Full Body|Upper|Push|Lower/', { timeout: 10000 })
+// Training off-plan has to be visible without hunting. It was a secondary
+// button in a two-column grid below everything else, which reads as a
+// fallback for when the plan fails rather than an equal way to train.
+const offPlan = await page.getByText('Train off-plan').first().isVisible().catch(() => false)
+record('says out loud that the plans are optional', offPlan)
+const freestyleCta = await page.getByRole('button', { name: 'Start a freestyle session' }).isVisible().catch(() => false)
+record('offers a freestyle session as a primary action', freestyleCta)
 await page.locator('button:has-text("Full Body"), button:has-text("Upper"), button:has-text("Push"), button:has-text("Lower")').first().click()
 await page.waitForSelector('text=Log set', { timeout: 10000 })
 await shot('06-session-player')
@@ -741,6 +748,22 @@ await controlsUsable('inventory')
 for (const band of ['Mythical', '???']) {
   record(`collection lists the ${band} band`, (await page.locator(`text="${band}"`).count()) > 0)
 }
+
+// Nothing you have not earned may show you what it is. The grid used to
+// render every unearned item at full detail — name, artwork, lore — which
+// answers the question a pack exists to answer.
+const lockedNamed = await page.locator('text=/^Not earned yet$/').count()
+record('locked items are not named', lockedNamed > 0, `${lockedNamed} withheld`)
+const silhouettes = await page.locator('.silhouette').count()
+record('locked items are reduced to a silhouette', silhouettes > 0, `${silhouettes} silhouetted`)
+const flattened = await page.evaluate(() => {
+  const el = document.querySelector('.silhouette')
+  return el ? getComputedStyle(el.querySelector('svg')).filter : 'none'
+})
+record('the silhouette is actually applied, not just classed', /brightness\(0\)/.test(flattened), flattened)
+// Black on a near-black background is not a silhouette, it is a hole — the
+// first version rendered the shapes perfectly and showed nothing on screen.
+record('the silhouette is visible against the background', /invert\(1\)/.test(flattened), flattened)
 
 // A secret is only secret if the collection refuses to count them for you.
 const secretTile = await page.locator('[data-testid="secret-tile"]').count()
