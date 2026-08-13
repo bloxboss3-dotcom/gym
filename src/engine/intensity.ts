@@ -184,6 +184,10 @@ export function suggestFinisher(ctx: FinisherContext): FinisherResult {
         headline: `Drop to ${dropped.label} and go again`,
         steps: [
           `Move the pin to about ${dropped.label} — roughly ${Math.round(cfg.dropLoadPct * 100)}% lighter.`,
+          // The target is a landmark, not a requirement. Machines have the
+          // pins they have, and somebody standing at a stack should not be
+          // wondering whether the nearest hole counts.
+          `The nearest pin either side is fine — anywhere from ${dropped.rangeLabel} does the job. The number is a landmark, not a rule.`,
           'Go straight back to work with no rest, and take it to the point where the next rep would break down.',
           `One drop is enough. ${shortByPhrase(shortBy)}`,
         ],
@@ -246,11 +250,35 @@ function shortByPhrase(shortBy: number): string {
   return `You are about ${sets} hard ${sets === 1 ? 'set' : 'sets'} short of this muscle's weekly range.`
 }
 
+/**
+ * Where to drop to, and the band around it that is just as good.
+ *
+ * A stack has the pins it has, a rack of dumbbells jumps in fives, and the
+ * research behind drop sets says nothing whatsoever about hitting a specific
+ * number — the useful property is "meaningfully lighter, immediately". So the
+ * band is published alongside the target, because a precise-looking figure on
+ * its own reads as a requirement, and somebody standing in front of a machine
+ * should not be wondering whether the nearest hole counts.
+ */
 function dropTarget(weightKg: number, incrementKg: number, units: Units) {
   const target = weightKg * (1 - RULES.intensity.dropLoadPct)
   const rounded = roundToIncrement(target, incrementKg, units)
-  const display = toDisplay(rounded, units)
-  return { kg: rounded, label: `${Number(display.toFixed(1))} ${units}` }
+  const show = (kg: number) => Number(toDisplay(kg, units).toFixed(1))
+  const band = RULES.intensity.dropTolerancePct
+  // Clamped below the working weight: a "drop" that is not lighter is a
+  // second straight set with extra steps.
+  const low = roundToIncrement(target * (1 - band), incrementKg, units)
+  const high = Math.min(
+    roundToIncrement(target * (1 + band), incrementKg, units),
+    roundToIncrement(weightKg * 0.9, incrementKg, units),
+  )
+  return {
+    kg: rounded,
+    label: `${show(rounded)} ${units}`,
+    lowKg: low,
+    highKg: high,
+    rangeLabel: `${show(low)} to ${show(Math.max(high, rounded))} ${units}`,
+  }
 }
 
 export const BLOCK_EXPLANATION: Record<FinisherBlock, string> = {

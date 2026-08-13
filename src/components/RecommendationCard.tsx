@@ -95,6 +95,16 @@ export function RecommendationCard({
         <Chip tone={chipTone[tone]}>{ACTION_LABEL[recommendation.action]}</Chip>
       </div>
 
+      {/* Which weight this is about. Shown inline rather than behind the
+          "data gaps" disclosure, because it is not a gap — it is a decision
+          the engine made, and hiding it is what makes an app look like it did
+          not notice you lifted two different weights. */}
+      {recommendation.judgedOn && (
+        <p className="mt-3 rounded-lg border border-cool/35 bg-cool/[0.08] px-3 py-2 text-xs text-ash leading-relaxed">
+          {recommendation.judgedOn}
+        </p>
+      )}
+
       <div className="mt-3 rounded-lg bg-coal/80 border border-slate/70 px-3 py-2.5">
         <p className="text-[11px] uppercase tracking-wider text-smoke">Next session target</p>
         <p className="text-sm text-parchment mt-0.5 leading-snug">{recommendation.target.description}</p>

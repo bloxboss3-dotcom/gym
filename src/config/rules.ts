@@ -44,6 +44,39 @@ export const RULES = {
     lowerBodyStepPct: { min: 0.05, max: 0.1 },
     /** Reps to add when staying inside the range (total across all sets). */
     repIncrementTarget: 1,
+    /**
+     * Working sets this far below the heaviest one are a different weight, not
+     * the same weight done badly.
+     *
+     * Reps only mean something next to the load they were done at. Judging
+     * 25 lb × 12 and 45 lb × 10 as one block of "working sets" let a light
+     * set count as having reached the top of the range, which held a load
+     * that should have gone up — and said nothing about the two weights.
+     */
+    mixedLoadFraction: 0.1,
+    /**
+     * Reps past the top of the range before the smallest jump is the wrong
+     * answer.
+     *
+     * Twelve reps against a cap of twelve is the top of the range. Eighteen
+     * is not "the top of the range" at all, and calling it that while adding
+     * the minimum increment leaves someone several sessions from a load that
+     * actually challenges them.
+     */
+    repsPastTopForBigJump: 3,
+    /**
+     * Roughly how much load one rep is worth, as a fraction.
+     *
+     * A rule of thumb (~2–3% per rep in the 5–15 range), used only to size a
+     * jump for somebody who is far past their rep range, and deliberately NOT
+     * the Epley estimate the rest of the engine uses. Epley saturates at
+     * fifteen effective reps, so on an eighteen-rep set — precisely the case
+     * this exists for — it returns the smallest increment and the problem
+     * stays exactly where it was.
+     */
+    loadPerExtraRepPct: 0.03,
+    /** However far past the range, never leap more than this in one session. */
+    maxSingleJumpPct: 0.2,
   },
 
   /** ------------------------------------------------------------------
@@ -146,6 +179,16 @@ export const RULES = {
     painBlock: 3,
     /** Drop set: cut this fraction of the load, then go to failure again. */
     dropLoadPct: 0.25,
+    /**
+     * How far either side of that target is just as good.
+     *
+     * The evidence behind drop sets says nothing about hitting a specific
+     * number — the useful property is "meaningfully lighter, immediately".
+     * Stacks and dumbbell racks have the jumps they have, and a target
+     * printed to one decimal place reads as a requirement unless the band
+     * around it is printed too.
+     */
+    dropTolerancePct: 0.2,
     dropCount: 1,
     /** Rest-pause: rest this long, then squeeze out another mini-set. */
     restPauseSec: 20,

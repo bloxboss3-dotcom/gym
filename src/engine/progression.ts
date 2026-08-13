@@ -42,6 +42,15 @@ export interface NextTarget {
 
 export interface Recommendation {
   action: RecommendationAction
+  /**
+   * What the recommendation is looking at, when that is not obvious.
+   *
+   * Set when last session used more than one weight. Which of two loads is
+   * being judged is a decision the engine made, not a gap in the data, and
+   * burying it behind a disclosure headed "data gaps" is how you get an app
+   * that looks like it did not notice you lifted two different weights.
+   */
+  judgedOn?: string
   /** One-line recommended action, e.g. "Add 2.5 kg". */
   headline: string
   target: NextTarget
@@ -136,14 +145,48 @@ export interface SessionAnalysis {
   bestE1RM: number
   /** True when every working set reached the top of the range. */
   metTopOfRange: boolean
+  /**
+   * The heaviest working load, and how the session's sets sat around it.
+   *
+   * Reps only mean something next to the load they were done at. A session of
+   * 25 lb × 12 and 45 lb × 10 is not "one set at the top of the range and one
+   * below it"; it is two different exercises as far as progression goes, and
+   * the recommendation has to say which one it is talking about.
+   */
+  topLoadKg: number
+  setsAtTopLoad: number
+  lightestLoadKg: number
+  mixedLoads: boolean
+  /** Best reps achieved AT the top load. */
+  bestRepsAtTopLoad: number
+  /** How far that went past repMax. 0 when inside the range. */
+  repsPastTop: number
 }
 
 export function analyseSession(perf: PerformedSession): SessionAnalysis {
   const sets = perf.sets
   const workingSets = sets.length
-  const setsAtTop = sets.filter((s) => s.reps >= perf.repMax).length
-  const setsBelowMin = sets.filter((s) => s.reps < perf.repMin).length
-  const rated = sets.filter((s) => s.rir !== null)
+
+  /*
+    Which sets the rep range is actually judged against.
+
+    Only the ones at the heaviest load. Counting every working set together
+    meant a light set could satisfy "reached the top of the range" on behalf
+    of a heavy one — so 25 lb x 12 followed by 45 lb x 10 read as a half-met
+    range and held a weight that should have moved.
+  */
+  const loads = sets.map((s) => s.weightKg).filter((w) => w > 0)
+  const topLoadKg = loads.length ? Math.max(...loads) : 0
+  const lightestLoadKg = loads.length ? Math.min(...loads) : 0
+  const atTopLoad = sets.filter((s) => Math.abs(s.weightKg - topLoadKg) < 0.01)
+  const mixedLoads =
+    topLoadKg > 0 && lightestLoadKg < topLoadKg * (1 - RULES.progression.mixedLoadFraction)
+  const judged = atTopLoad.length ? atTopLoad : sets
+
+  const setsAtTop = judged.filter((s) => s.reps >= perf.repMax).length
+  const setsBelowMin = judged.filter((s) => s.reps < perf.repMin).length
+  const bestRepsAtTopLoad = judged.reduce((max, s) => Math.max(max, s.reps), 0)
+  const rated = judged.filter((s) => s.rir !== null)
   const averageRir = rated.length
     ? Number((rated.reduce((sum, s) => sum + (s.rir as number), 0) / rated.length).toFixed(2))
     : null
@@ -160,21 +203,29 @@ export function analyseSession(perf: PerformedSession): SessionAnalysis {
     }
   }
   const bestE1RM = sets.reduce((max, s) => Math.max(max, estimateOneRepMax(s.weightKg, s.reps, s.rir)), 0)
-  // Sets that were planned but never logged count against "all sets at the top".
-  const expected = Math.max(workingSets, perf.plannedSets)
+  // Sets that were planned but never logged count against "all sets at the
+  // top". On a mixed-load session only the top-load sets are judged, so the
+  // denominator is how many of those there were.
+  const expected = mixedLoads ? judged.length : Math.max(workingSets, perf.plannedSets)
   return {
     workingSets,
     setsAtTop,
     setsBelowMin,
     topFraction: expected ? setsAtTop / expected : 0,
-    belowFraction: workingSets ? setsBelowMin / workingSets : 0,
+    belowFraction: judged.length ? setsBelowMin / judged.length : 0,
     averageRir,
     ratedSets: rated.length,
-    missingRirFraction: workingSets ? 1 - rated.length / workingSets : 1,
+    missingRirFraction: judged.length ? 1 - rated.length / judged.length : 1,
     totalReps: sets.reduce((sum, s) => sum + s.reps, 0),
     workingLoadKg,
     bestE1RM,
     metTopOfRange: expected > 0 && setsAtTop / expected >= RULES.progression.topOfRangeFraction,
+    topLoadKg,
+    setsAtTopLoad: atTopLoad.length,
+    lightestLoadKg,
+    mixedLoads,
+    bestRepsAtTopLoad,
+    repsPastTop: Math.max(0, bestRepsAtTopLoad - perf.repMax),
   }
 }
 
@@ -320,8 +371,20 @@ export function recommendNextSession(
   const last = history[0]
   const analysis = analyseSession(last)
   const { confidence, missingData } = assessConfidence(history, analysis)
+  const judgedOn = analysis.mixedLoads
+    ? `Last time ran from ${formatKg(analysis.lightestLoadKg, units)} to ${formatKg(analysis.topLoadKg, units)}. Reps only mean something next to the load they were done at, so this reads the ${formatKg(analysis.topLoadKg, units)} ${analysis.setsAtTopLoad === 1 ? 'set' : `sets (${analysis.setsAtTopLoad} of them)`} and leaves the lighter ones out of it.`
+    : undefined
   const plateau = detectPlateau(history)
-  const currentLoad = analysis.workingLoadKg
+  /*
+    The load being advised on.
+
+    On a session where every set was the same weight these are the same
+    number. Where they are not — 25 lb x 12 then 45 lb x 10 — the heaviest is
+    the one the rep range was judged against, so it has to be the one the
+    recommendation is about too. Advising on the light one would be arithmetic
+    about a set that was never the point.
+  */
+  const currentLoad = analysis.topLoadKg > 0 ? analysis.topLoadKg : analysis.workingLoadKg
   const painHistory = history.slice(0, 3).map((h) => h.pain)
   const techniqueHistory = history.slice(0, 3).map((h) => h.technique)
   const repeatedBreakdown = techniqueHistory.filter((t) => t === 'breakdown').length >= 2
@@ -329,6 +392,7 @@ export function recommendNextSession(
   // ---- Rule 5a: significant pain overrides everything ---------------------
   if (last.pain >= RULES.progression.painStopThreshold) {
     return {
+      judgedOn,
       action: 'stop_and_seek_guidance',
       headline: 'Stop this movement and get it looked at',
       target: {
@@ -356,6 +420,7 @@ export function recommendNextSession(
     const persistent = painHistory.filter((p) => p >= RULES.progression.painBlockThreshold).length >= 2
     const shouldSubstitute = persistent || repeatedBreakdown
     return {
+      judgedOn,
       action: shouldSubstitute ? 'substitute_exercise' : 'hold_load',
       headline: shouldSubstitute ? 'Swap this movement out' : 'Hold the load and clean it up',
       target: {
@@ -414,15 +479,46 @@ export function recommendNextSession(
 
     const tooEasy = avgRir !== null && avgRir > RULES.progression.rirWindow.max
     const pct = lowerBody ? RULES.progression.lowerBodyStepPct : RULES.progression.upperBodyStepPct
-    const nextLoad = tooEasy
-      ? increaseWithinPct(currentLoad, incrementKg, pct, units)
-      : stepUp(currentLoad, incrementKg, units)
+
+    /*
+      How far past the range, and what that is worth in load.
+
+      The smallest increment is the right answer for somebody who just reached
+      the top of the range. It is the wrong answer for somebody who sailed
+      past it — eighteen reps against a cap of twelve is not "the top of the
+      range", and adding 2.5 kg to it leaves them several sessions away from a
+      weight that asks anything of them.
+
+      The size of the jump comes from how many reps past the range they went,
+      at roughly three percent of load per rep. Not from the Epley estimate
+      the rest of the engine uses: Epley saturates at fifteen effective reps,
+      so on an eighteen-rep set — exactly the case this exists for — it hands
+      back the smallest increment and nothing changes. Capped, because a rule
+      of thumb applied to a very high-rep set is a rough instrument.
+    */
+    const wayPast = analysis.repsPastTop >= RULES.progression.repsPastTopForBigJump
+    let nextLoad: number
+    if (wayPast && currentLoad > 0) {
+      const wanted =
+        currentLoad * (1 + analysis.repsPastTop * RULES.progression.loadPerExtraRepPct)
+      const ceiling = currentLoad * (1 + RULES.progression.maxSingleJumpPct)
+      nextLoad = roundToIncrement(Math.min(wanted, ceiling), incrementKg, units)
+      // Never go backwards or stand still because of rounding.
+      if (nextLoad <= currentLoad) nextLoad = stepUp(currentLoad, incrementKg, units)
+    } else {
+      nextLoad = tooEasy
+        ? increaseWithinPct(currentLoad, incrementKg, pct, units)
+        : stepUp(currentLoad, incrementKg, units)
+    }
     const delta = Number((nextLoad - currentLoad).toFixed(2))
     const deltaPct = currentLoad > 0 ? (delta / currentLoad) * 100 : 0
 
     return {
+      judgedOn,
       action: 'increase_load',
-      headline: `Add ${formatKg(delta, units)}`,
+      headline: wayPast
+        ? `Jump to ${formatKg(nextLoad, units)} — that was too light`
+        : `Add ${formatKg(delta, units)}`,
       target: {
         loadKg: nextLoad,
         sets,
@@ -432,7 +528,9 @@ export function recommendNextSession(
         totalRepsTarget: null,
         description: `${sets} × ${repMin}–${repMax} at ${formatKg(nextLoad, units)}`,
       },
-      reason: `You hit the top of the range (${repMax} reps) on all ${analysis.setsAtTop} working sets${avgRir !== null ? ` at an average of ${avgRir} reps in reserve` : ''}, technique held up, and pain was ${last.pain}/10. That is the double-progression trigger. Go up by the smallest jump your equipment allows — about ${deltaPct.toFixed(1)}% — and expect the reps to drop back toward ${repMin} for a session or two. That drop is the plan working, not a setback.`,
+      reason: wayPast
+        ? `You did ${analysis.bestRepsAtTopLoad} reps at ${formatKg(currentLoad, units)} against a cap of ${repMax}. That is ${analysis.repsPastTop} reps past the range, not the top of it — the load is well below what you can handle for these reps. Going up by the smallest increment would take several more sessions to reach a weight that asks anything of you, so this jump is sized from what you actually lifted${avgRir !== null ? ` at an average of ${avgRir} reps in reserve` : ''} and capped at ${Math.round(RULES.progression.maxSingleJumpPct * 100)}% in one go. Expect the reps to land near ${repMin}–${repMax}; if they come in under ${repMin}, drop back a step.`
+        : `You hit the top of the range (${repMax} reps) on all ${analysis.setsAtTop} working sets${avgRir !== null ? ` at an average of ${avgRir} reps in reserve` : ''}, technique held up, and pain was ${last.pain}/10. That is the double-progression trigger. Go up by the smallest jump your equipment allows — about ${deltaPct.toFixed(1)}% — and expect the reps to drop back toward ${repMin} for a session or two. That drop is the plan working, not a setback.`,
       rule: `All working sets at ${repMax} reps, average RIR in the ${RULES.progression.rirWindow.min}–${RULES.progression.rirWindow.max} window, pain < ${RULES.progression.painBlockThreshold}/10 → increase by the smallest available increment, capped at ${Math.round(pct.max * 100)}% for ${lowerBody ? 'lower' : 'upper'}-body movements.`,
       citationIds: ['acsm-2009-progression', 'refalo-2023-failure'],
       confidence,
@@ -446,6 +544,7 @@ export function recommendNextSession(
     const reduced = roundToIncrement(currentLoad * (1 - RULES.progression.backoffPct), incrementKg, units)
     const nextLoad = Math.min(reduced, Math.max(0, currentLoad - incrementKg))
     return {
+      judgedOn,
       action: 'reduce_load',
       headline: `Back off to ${formatKg(nextLoad, units)}`,
       target: {
@@ -506,6 +605,7 @@ export function recommendNextSession(
     }
 
     return {
+      judgedOn,
       action: 'hold_and_check_recovery',
       headline: 'Hold the load and look at recovery',
       target: {
@@ -530,6 +630,7 @@ export function recommendNextSession(
   const repsToBeat = analysis.totalReps + RULES.progression.repIncrementTarget
   const remainingTopReps = Math.max(0, analysis.workingSets - analysis.setsAtTop)
   return {
+    judgedOn,
     action: 'add_reps',
     headline: `Same weight — beat ${analysis.totalReps} total reps`,
     target: {
