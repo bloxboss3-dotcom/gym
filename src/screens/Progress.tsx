@@ -21,6 +21,7 @@ import { RULES } from '@/config/rules'
 import { MUSCLE_LABEL, PRIMARY_MUSCLES } from '@/data/muscles'
 import { computeConsistency } from '@/engine/consistency'
 import { assessDeload } from '@/engine/deload'
+import { assessTraining } from '@/engine/coaching'
 import { proteinAdherence, calculateProteinTarget } from '@/engine/protein'
 import { assessAllMuscles, weeklyCompletion } from '@/engine/volume'
 import { LEVEL_LABEL, profileFromHistory } from '@/engine/percentile'
@@ -84,6 +85,11 @@ export default function Progress() {
     [data.sessions, data.checkins, data.deloads, today],
   )
 
+  const verdict = useMemo(
+    () => assessTraining({ sessions: data.sessions, exercises: data.exercises, today }),
+    [data.sessions, data.exercises, today],
+  )
+
   const proteinTarget = calculateProteinTarget(profile)
   const proteinWeek = proteinAdherence(data.proteinEntries, lastNDays(7, today), proteinTarget.targetG)
 
@@ -122,6 +128,68 @@ export default function Progress() {
   return (
     <Screen title="Progress" subtitle="What the data actually says">
       <div className="space-y-4">
+        {/* The verdict ------------------------------------------------------
+            First on the screen, because "am I getting anywhere and am I
+            working hard enough" is the question somebody opens this tab to
+            answer. Everything below it is evidence for this card. */}
+        <Card raised className={cx(verdict.status === 'attention' && 'border-caution/50')}>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wider text-smoke">
+                Last {verdict.windowDays} days
+              </p>
+              <p className="font-display text-xl uppercase leading-tight mt-0.5">
+                {verdict.headline}
+              </p>
+            </div>
+            <Chip tone={verdict.status === 'good' ? 'good' : verdict.status === 'attention' ? 'caution' : 'neutral'}>
+              {verdict.status === 'unknown' ? 'no call' : verdict.status}
+            </Chip>
+          </div>
+          <p className="text-sm text-ash mt-2 leading-relaxed">{verdict.detail}</p>
+
+          {verdict.movements.length > 0 && (
+            <ul className="mt-3 space-y-1.5">
+              {verdict.movements.slice(0, 6).map((m) => (
+                <li key={m.exerciseId} className="rounded-lg border border-slate/70 bg-coal/60 px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm text-parchment truncate">{m.name}</p>
+                    <Chip
+                      tone={
+                        m.trend === 'gaining'
+                          ? 'good'
+                          : m.trend === 'slipping'
+                            ? 'danger'
+                            : m.trend === 'unknown'
+                              ? 'neutral'
+                              : 'caution'
+                      }
+                    >
+                      {m.trend === 'gaining'
+                        ? 'gaining'
+                        : m.trend === 'slipping'
+                          ? 'slipping'
+                          : m.trend === 'unknown'
+                            ? 'too few'
+                            : 'flat'}
+                    </Chip>
+                  </div>
+                  <p className="text-[11px] text-smoke mt-1 leading-relaxed">{m.note}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {verdict.missingData.map((gap) => (
+            <p key={gap} className="text-[11px] text-smoke mt-2 leading-relaxed">
+              {gap}
+            </p>
+          ))}
+          <div className="mt-2">
+            <CitationList ids={verdict.citationIds} />
+          </div>
+        </Card>
+
         {/* Deload assessment ------------------------------------------------ */}
         <Card raised className={cx(deload.suggested && 'border-caution/50')}>
           <div className="flex items-start justify-between gap-2">

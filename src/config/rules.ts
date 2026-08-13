@@ -80,6 +80,30 @@ export const RULES = {
   },
 
   /** ------------------------------------------------------------------
+   * The coaching verdict — am I getting anywhere, and am I working hard
+   * enough to?
+   *
+   * Separate numbers from plateau detection on purpose. That answers "did
+   * this session beat the last one", session to session. This answers "has
+   * the load moved over a month", which is a different question and tolerates
+   * far less noise: a mean-of-halves over four sessions will drift a percent
+   * on rounding alone, and calling that progress would let somebody coast for
+   * months while being congratulated.
+   * ------------------------------------------------------------------ */
+  coaching: {
+    /** How far back a verdict looks. Long enough for load to move. */
+    windowDays: 28,
+    /** Below this many sessions on a movement, a trend is noise. */
+    minSessions: 3,
+    /** Change in estimated 1RM across the window that counts as a direction. */
+    meaningfulTrendPct: 0.02,
+    /** Fraction of judged movements that must be gaining to call it good. */
+    gainingFraction: 0.6,
+    /** Fraction leaving reps in the tank before that becomes the headline. */
+    effortProblemFraction: 0.4,
+  },
+
+  /** ------------------------------------------------------------------
    * Plateau detection.
    * ------------------------------------------------------------------ */
   plateau: {
