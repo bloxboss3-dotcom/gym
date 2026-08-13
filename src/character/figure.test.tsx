@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { Warrior } from '@/character/Warrior'
+import { BodyArt, Warrior } from '@/character/Warrior'
+import { ITEMS } from '@/data/items'
+import { SKIN } from '@/character/palette'
 import type { Figure } from '@/types'
 
 /**
@@ -33,9 +35,18 @@ function draw(frame: Figure, build: number): string {
   return renderToStaticMarkup(<Warrior equipped={LOADOUT} frame={frame} build={build} still />)
 }
 
-/** Every `stroke-width` in the markup, which is how limbs are drawn. */
+/**
+ * Limb thicknesses: arms and legs are the paths stroked in skin.
+ *
+ * Filtered by stroke colour rather than by "every stroke-width in the file",
+ * which is what this used to do and which quietly started counting the four
+ * strokes of the bust shading as limbs the moment that was added.
+ */
 function limbWidths(svg: string): number[] {
-  return [...svg.matchAll(/stroke-width="([\d.]+)"/g)].map((m) => Number(m[1]))
+  return [...svg.matchAll(/<path[^>]*>/g)]
+    .map((m) => m[0])
+    .filter((tag) => tag.includes(`stroke="${SKIN}"`))
+    .map((tag) => Number(tag.match(/stroke-width="([\d.]+)"/)?.[1] ?? 0))
 }
 
 /** The deltoid caps: the two ellipses parked at the shoulder line. */
@@ -142,6 +153,71 @@ describe('the figures are actually different', () => {
       const torso = svg.match(/<path d="M([\d.]+) 88 Q100 82/)
       expect(torso, `${frame} torso`).toBeTruthy()
       expect(Number(torso![1]), `${frame} torso left edge`).toBeGreaterThanOrEqual(76)
+    }
+  })
+})
+
+describe('the wardrobe fits both figures', () => {
+  const BODY_ITEMS = ITEMS.filter((i) => i.slot === 'body')
+  const ART_OF = Object.fromEntries(ITEMS.map((i) => [i.id, i.art]))
+
+  it('has body armour to test with', () => {
+    expect(BODY_ITEMS.length).toBeGreaterThanOrEqual(12)
+  })
+
+  /**
+   * The shapes one piece of armour is actually made of.
+   *
+   * Returns the path data, not the markup. Comparing markup does not work:
+   * the feminine render carries an extra <g> for the clip, so the two strings
+   * differ no matter what the armour does — which is how the first two
+   * versions of this test managed to pass against code where the celestial
+   * robe and the haori both ignored the frame entirely.
+   */
+  const armourShapes = (art: string, frame: Figure) => {
+    const svg = renderToStaticMarkup(
+      <svg>
+        <BodyArt art={art} p={{ base: '#888', accent: '#ccc' }} animate={false} frame={frame} />
+      </svg>,
+    )
+      .replace(/<defs>.*?<\/defs>/gs, '')
+      .replace(/<g[^>]*class="bust-shading"[^>]*>.*?<\/g>/gs, '')
+    return [...svg.matchAll(/\sd="([^"]+)"/g)].map((m) => m[1]).join('|')
+  }
+
+  it('cuts every piece of body armour differently for each figure', () => {
+    // Two of the sixteen carried their own silhouette instead of the shared
+    // one, so they came out identically shaped on both frames — a woman in
+    // the celestial robe was wearing a man's robe with a different head.
+    const same = BODY_ITEMS.filter(
+      (item) =>
+        armourShapes(ART_OF[item.id], 'feminine') === armourShapes(ART_OF[item.id], 'masculine'),
+    ).map((i) => i.id)
+    expect(same, `these ignore the figure: ${same.join(', ')}`).toEqual([])
+  })
+
+  it('clips armour trim to the waist it is worn on', () => {
+    // Belts and bands are full-width bars at fixed coordinates, drawn for a
+    // torso that goes straight down. Against a waist that comes in they hung
+    // off the sides as floating tabs. Asserted on the clip being APPLIED —
+    // checking the markup merely contains the string "clipPath" passes even
+    // when the definition is emitted and then never referenced.
+    for (const item of BODY_ITEMS) {
+      const svg = renderToStaticMarkup(
+        <Warrior equipped={{ ...LOADOUT, body: item.id }} frame="feminine" build={0.5} still />,
+      )
+      expect(svg, item.id).toMatch(/clip-path="url\(#[^)]+\)"/)
+    }
+  })
+
+  it('leaves the masculine figure entirely alone', () => {
+    // No clip, no bust shading, no new nodes — the frame that already shipped
+    // must render exactly as it did.
+    for (const item of BODY_ITEMS.slice(0, 4)) {
+      const svg = renderToStaticMarkup(
+        <Warrior equipped={{ ...LOADOUT, body: item.id }} frame="masculine" build={0.5} still />,
+      )
+      expect(svg, item.id).not.toContain('clipPath')
     }
   })
 })
