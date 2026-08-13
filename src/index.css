@@ -253,6 +253,15 @@
    * origin resolves against the whole viewBox and a 2° sway becomes a
    * limb swinging across the canvas.
    * ------------------------------------------------------------------- */
+  /* An unearned item, reduced to its outline.
+     brightness(0) flattens every colour in the SVG in one declaration,
+     whatever palette the item carries — the alternative is a parallel set of
+     colourless art, which is a second thing to keep in sync for no gain.
+     Then invert, because black-on-near-black is not a silhouette, it is a
+     hole: the first version of this rendered the shapes perfectly and showed
+     nothing at all on screen. */
+  .silhouette svg { filter: brightness(0) invert(1); opacity: 0.2; }
+
   .idle-anim {
     transform-box: fill-box;
     will-change: transform;

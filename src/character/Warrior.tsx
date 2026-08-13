@@ -2840,14 +2840,36 @@ function LegacyCompanionArt({
 // Poses
 // ---------------------------------------------------------------------------
 
+/**
+ * Stance.
+ *
+ * These used to be two-degree rotations and four-pixel nudges in a 280-unit
+ * canvas — present in the markup, invisible on a phone. Somebody could pull a
+ * mythical pose and see nothing change, which makes the whole slot feel like
+ * a lie. They are now rotations and shifts you can actually see at thumbnail
+ * size, anchored at the feet (y = 252) so nobody floats off the floor.
+ *
+ * Still whole-figure transforms rather than repositioned limbs. That is a
+ * real limit and worth naming: a proper guard stance would move the arms, and
+ * the arms are drawn inside the body with the gloves and the weapon aligned
+ * to them, so posing them means posing all four together. Bigger job.
+ */
 const POSE_TRANSFORM: Record<string, string> = {
   ready: "",
-  guard: "rotate(-2 100 140)",
-  rest: "translate(0 4) rotate(1 100 140)",
-  heroic: "translate(0 -2) scale(1.03) translate(-3 -4)",
-  raised: "rotate(-4 100 150)",
-  sheathed: "rotate(2 100 150) translate(-2 0)",
-  ascend: "translate(0 -6) scale(1.02)",
+  // Squared up and settled, weight down.
+  guard: "translate(0 3) rotate(-6 100 252) scale(0.99)",
+  // Slouched off one hip.
+  rest: "translate(-4 6) rotate(4 100 252) scale(0.985)",
+  // Tall, chest up, leaning back into it.
+  heroic: "translate(0 -5) rotate(-3 100 252) scale(1.05)",
+  // Turned into a raised blade.
+  raised: "translate(3 -3) rotate(-11 100 252) scale(1.02)",
+  // Braced low and wide, ready to take a hit.
+  braced: "translate(0 5) rotate(3 100 252) scale(1.03)",
+  // Side-on, hand at the hilt.
+  sheathed: "translate(-5 1) rotate(9 100 252) scale(0.98)",
+  // Rising, barely on the floor.
+  ascend: "translate(0 -12) rotate(-2 100 252) scale(1.06)",
 };
 
 // ---------------------------------------------------------------------------

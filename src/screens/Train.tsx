@@ -172,14 +172,35 @@ export default function Train() {
           </>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
-          <Button full onClick={() => beginDay(null)}>
-            Freestyle session
+        {/* Freestyle.
+            Was a secondary button in a two-column grid below everything else,
+            which reads as a fallback for when the plan fails rather than an
+            equal way to train. Plenty of people already know what they are
+            doing when they walk in; the generated plans are there for people
+            who do not, and nothing on the screen said so. */}
+        <Card>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-display text-xl uppercase tracking-wide leading-tight">
+                Train off-plan
+              </p>
+              <p className="text-xs text-ash mt-1 leading-relaxed">
+                You do not have to follow the plans above. Start empty and add movements as you
+                go — it logs, progresses and counts toward your weekly volume exactly the same.
+              </p>
+            </div>
+            <span aria-hidden className="text-2xl shrink-0 text-ember-400">
+              ✦
+            </span>
+          </div>
+          <Button variant="primary" full className="mt-3" onClick={() => beginDay(null)}>
+            Start a freestyle session
           </Button>
-          <Link to="/train/run" className="contents">
-            <Button full>Log a run</Button>
-          </Link>
-        </div>
+        </Card>
+
+        <Link to="/train/run" className="contents">
+          <Button full>Log a run</Button>
+        </Link>
 
         <div>
           <SectionHeading
