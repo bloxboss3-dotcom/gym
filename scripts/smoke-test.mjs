@@ -566,6 +566,24 @@ record('progress dashboard renders from saved data', consistency)
 const consistencyMsg = await page.locator('text=/planned day/').first().innerText().catch(() => '')
 record('new account is not blamed for days before signup', !/1[0-9] planned days missed/.test(consistencyMsg), consistencyMsg.slice(0, 90))
 
+// The training verdict. The point of the card is that it will say
+// unwelcome things, so the check has to prove it can — a card that only
+// ever congratulates is not an analysis. The demo account has six weeks of
+// realistic training, so there is something real to judge.
+const verdictHeadline = await page
+  .locator('text=/Last \\d+ days/')
+  .first()
+  .locator('xpath=following-sibling::*[1]')
+  .innerText()
+  .catch(() => '')
+record('leads with a verdict on the training itself', verdictHeadline.length > 0, verdictHeadline)
+const perMovement = await page.locator('text=/gaining|flat|slipping|too few/').count()
+record('judges movement by movement, not just in aggregate', perMovement > 0, `${perMovement} verdicts`)
+const named = await page.locator('text=/reps in reserve|hard set|not enough to call a trend/').count()
+record('says what is behind each verdict', named > 0, `${named} explanations`)
+await noOverflow('verdict')
+await shot('11b-verdict')
+
 // Strength percentile. The comparison group has to be stated on screen — a
 // bare percentile is silently read as "against everyone", which it is not.
 const standing = await page.locator('text="Where you stand"').count()
