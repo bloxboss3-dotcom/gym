@@ -147,3 +147,40 @@ describe('gym-native increments', () => {
     expect(kgToLb(rounded)).toBeCloseTo(40, 4)
   })
 })
+
+describe('a step up is always a step you could load', () => {
+  it('never returns a jump that rounds away to nothing on the display', () => {
+    // The bug: snapping to the pound grid could land a hundredth of a kilo
+    // above the current weight, and the screen printed "Add 0 lb" — a
+    // recommendation to do nothing, in the same voice as a real one.
+    for (const increment of [1, 2, 2.5, 5]) {
+      for (let lb = 5; lb <= 405; lb += 1) {
+        const kg = lb / 2.2046226218
+        const next = stepUp(kg, increment, 'lb')
+        const deltaLb = (next - kg) * 2.2046226218
+        expect(
+          Number(deltaLb.toFixed(1)),
+          `${lb} lb with a ${increment} kg increment gained ${deltaLb.toFixed(3)} lb`,
+        ).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('is the same in kilograms', () => {
+    for (const increment of [1, 2, 2.5, 5]) {
+      for (let kg = 2.5; kg <= 200; kg += 0.5) {
+        const delta = stepUp(kg, increment, 'kg') - kg
+        expect(Number(delta.toFixed(1)), `${kg} kg / ${increment}`).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('still only ever goes up', () => {
+    for (const increment of [1, 2.5, 5]) {
+      for (let kg = 1; kg <= 200; kg += 1) {
+        expect(stepUp(kg, increment, 'lb')).toBeGreaterThan(kg)
+        expect(stepUp(kg, increment, 'kg')).toBeGreaterThan(kg)
+      }
+    }
+  })
+})

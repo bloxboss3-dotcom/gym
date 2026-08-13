@@ -20,6 +20,7 @@ import {
 import { citationsFor } from '@/data/citations'
 import { EXERCISE_BY_ID, searchExercises } from '@/data/exercises'
 import { RULES } from '@/config/rules'
+import { ECONOMY } from '@/config/economy'
 import { historyFor, recommendNextSession } from '@/engine/progression'
 import { BLOCK_EXPLANATION, primaryMuscle, suggestFinisher } from '@/engine/intensity'
 import { startingVolumeRange, weeklyMuscleVolume } from '@/engine/volume'
@@ -94,6 +95,11 @@ export default function SessionPlayer() {
   const totalSets = session.entries.reduce((n, e) => n + e.sets.filter((s) => !s.warmup).length, 0)
   const plannedSets = session.entries.reduce((n, e) => n + e.plannedSets, 0)
   const readOnly = session.status !== 'active'
+  // Accepted and completed both spend the fatigue budget — you did the work
+  // either way. Declining does not.
+  const challengesTaken = session.entries.filter(
+    (e) => e.challenge?.status === 'accepted' || e.challenge?.status === 'completed',
+  ).length
 
   return (
     <div className="min-h-dvh flex flex-col bg-void">
@@ -188,6 +194,7 @@ export default function SessionPlayer() {
             index={index}
             sessionId={session.id}
             readOnly={readOnly}
+            challengesTaken={challengesTaken}
             onRest={startRest}
             onSubstitute={() => setSubstituteFor(entry.id)}
           />
@@ -315,6 +322,7 @@ function ExerciseBlock({
   index,
   sessionId,
   readOnly,
+  challengesTaken,
   onRest,
   onSubstitute,
 }: {
@@ -322,6 +330,8 @@ function ExerciseBlock({
   index: number
   sessionId: string
   readOnly: boolean
+  /** Challenges already accepted or finished elsewhere in this session. */
+  challengesTaken: number
   onRest: (seconds: number) => void
   onSubstitute: () => void
 }) {
@@ -391,6 +401,15 @@ function ExerciseBlock({
 
   const workingSets = entry.sets.filter((s) => !s.warmup)
   const done = workingSets.length >= entry.plannedSets
+  const challenge = entry.challenge ?? null
+  /*
+    The budget counts challenges taken on OTHER movements.
+    Counting this one's own would make the engine withdraw the offer the
+    instant it was accepted, taking the steps off the screen of the person
+    who just agreed to follow them.
+  */
+  const ownTaken = challenge?.status === 'accepted' || challenge?.status === 'completed' ? 1 : 0
+  const takenElsewhere = challengesTaken - ownTaken
 
   // Should this movement earn a finisher? The answer depends on how short the
   // week is for the muscle it trains, so the weekly tally has to be computed
@@ -408,11 +427,17 @@ function ExerciseBlock({
       entry,
       weeklySets: volume[muscle]?.hardSets ?? 0,
       weeklyRange: startingVolumeRange(data.profile?.experience ?? 'beginner'),
-      finishersUsedThisSession: 0,
+      // Count what was actually taken, not zero.
+      //
+      // This was hardcoded to 0, which quietly disabled the fatigue budget:
+      // the engine caps finishers at two a session and the rule was written,
+      // tested and never consulted, so a finisher was offered on every single
+      // movement and a session could end up carrying five of them.
+      finishersUsedThisSession: takenElsewhere,
       deloadActive: data.deloads.some((d) => d.status === 'accepted' && d.endDate === null),
       units,
     })
-  }, [exercise, entry, data.sessions, data.exercises, data.profile, data.deloads, units, readOnly])
+  }, [exercise, entry, data.sessions, data.exercises, data.profile, data.deloads, units, readOnly, takenElsewhere])
 
   // Total reps this session vs last, which is exactly what double progression
   // is comparing. Only sets at a comparable load count toward "to beat" —
@@ -546,21 +571,96 @@ function ExerciseBlock({
         />
       </Disclosure>
 
-      {/* Finisher ----------------------------------------------------------
-          Only after the planned sets are done, and only when the week is
-          actually short on volume for this muscle. It is deliberately a
-          disclosure rather than a banner: the honest version of this feature
-          is an option you can take, not a target you have failed to hit. */}
-      {done && finisher.technique && (
-        <div className="mt-3 rounded-lg border border-ember-500/35 bg-ember-500/[0.07] px-3 py-2.5">
-          <Disclosure
-            summary={
-              <span className="flex items-center gap-2 flex-wrap">
-                <Chip tone="ember">Optional</Chip>
-                <span className="text-ember-300 font-medium text-sm">{finisher.technique.headline}</span>
-                <span className="text-xs text-smoke">— how &amp; why?</span>
+      {/* The challenge ----------------------------------------------------
+          Offered only after the planned sets are done, only when the week is
+          genuinely short on volume for this muscle, and only twice a session.
+
+          Framed as something to take or leave rather than a footnote to
+          scroll past. The old version was a collapsed disclosure headed
+          "Optional", which is so quiet it reads as decoration — and because
+          the fatigue budget was never wired up, it appeared on every single
+          movement, so the one thing it did communicate was "do this five
+          times". Both halves of that are fixed here: it asks once, plainly,
+          and it stops asking. */}
+      {done && challenge && (
+        <div
+          className={cx(
+            'mt-3 rounded-xl border px-3 py-3',
+            challenge.status === 'completed'
+              ? 'border-vital/45 bg-vital/[0.08]'
+              : challenge.status === 'accepted'
+                ? 'border-ember-500/60 bg-ember-500/[0.12]'
+                : 'border-slate bg-coal/60',
+          )}
+        >
+          {challenge.status === 'completed' ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Chip tone="good">Challenge done</Chip>
+              <span className="text-sm text-parchment">{challenge.headline}</span>
+              <span className="text-xs text-vital">
+                +{ECONOMY.rewards.challenge_completed.coins} coins · +
+                {ECONOMY.rewards.challenge_completed.xp} XP
               </span>
-            }
+            </div>
+          ) : challenge.status === 'declined' || challenge.status === 'abandoned' ? (
+            <p className="text-xs text-smoke leading-relaxed">
+              {challenge.status === 'declined' ? 'Passed on' : 'Called off'}: {challenge.headline}.
+              Nothing lost — it was never part of the plan.
+            </p>
+          ) : null}
+        </div>
+      )}
+
+      {done && finisher.technique && !challenge && (
+        <div
+          data-testid="challenge-offer"
+          className="mt-3 rounded-xl border border-ember-500/50 bg-ember-500/[0.1] px-3 py-3"
+        >
+          <div className="flex items-center gap-2 flex-wrap">
+            <Chip tone="ember">Challenge</Chip>
+            <span className="text-[11px] text-smoke tabular">
+              {takenElsewhere + 1} of {RULES.intensity.maxPerSession} today
+            </span>
+          </div>
+          <p className="font-display text-lg uppercase tracking-wide text-ember-200 mt-1.5 leading-tight">
+            {finisher.technique.headline}
+          </p>
+          <p className="text-xs text-ash mt-1 leading-relaxed">{finisher.technique.reason}</p>
+          <p className="text-xs text-gold-300 mt-2">
+            Finish it: +{ECONOMY.rewards.challenge_completed.coins} coins, +
+            {ECONOMY.rewards.challenge_completed.xp} XP
+          </p>
+          {!readOnly && (
+            <div className="grid grid-cols-2 gap-2 mt-2.5">
+              <Button
+                variant="primary"
+                onClick={() =>
+                  store.setChallenge(sessionId, entry.id, {
+                    kind: finisher.technique!.kind,
+                    headline: finisher.technique!.headline,
+                    status: 'accepted',
+                    at: Date.now(),
+                  })
+                }
+              >
+                Take it
+              </Button>
+              <Button
+                onClick={() =>
+                  store.setChallenge(sessionId, entry.id, {
+                    kind: finisher.technique!.kind,
+                    headline: finisher.technique!.headline,
+                    status: 'declined',
+                    at: Date.now(),
+                  })
+                }
+              >
+                Not today
+              </Button>
+            </div>
+          )}
+          <Disclosure
+            summary={<span className="text-xs text-smoke">How, and what the evidence actually says</span>}
             tone="quiet"
           >
             <p className="text-[11px] uppercase tracking-wider text-smoke mt-2">
@@ -574,7 +674,6 @@ function ExerciseBlock({
                 </li>
               ))}
             </ol>
-            <p className="text-xs text-ash mt-2.5 leading-relaxed">{finisher.technique.reason}</p>
             {finisher.technique.missingData.map((gap) => (
               <p key={gap} className="text-[11px] text-smoke mt-1.5 leading-relaxed">
                 Missing: {gap}
@@ -598,6 +697,52 @@ function ExerciseBlock({
               ))}
             </div>
           </Disclosure>
+        </div>
+      )}
+
+      {done && challenge?.status === 'accepted' && (
+        <div className="mt-2 rounded-xl border border-ember-500/60 bg-ember-500/[0.12] px-3 py-3">
+          <Chip tone="ember">Challenge accepted</Chip>
+          <p className="font-display text-lg uppercase tracking-wide text-ember-200 mt-1.5 leading-tight">
+            {challenge.headline}
+          </p>
+          {(finisher.technique?.steps ?? []).length > 0 && (
+            <ol className="mt-2 space-y-1.5">
+              {(finisher.technique?.steps ?? []).map((step: string, i: number) => (
+                <li key={i} className="text-sm text-parchment flex gap-2">
+                  <span className="shrink-0 text-smoke tabular">{i + 1}.</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+          {!readOnly && (
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <Button
+                variant="primary"
+                onClick={() =>
+                  store.setChallenge(sessionId, entry.id, {
+                    ...challenge,
+                    status: 'completed',
+                    at: Date.now(),
+                  })
+                }
+              >
+                Done
+              </Button>
+              <Button
+                onClick={() =>
+                  store.setChallenge(sessionId, entry.id, {
+                    ...challenge,
+                    status: 'abandoned',
+                    at: Date.now(),
+                  })
+                }
+              >
+                Couldn’t finish
+              </Button>
+            </div>
+          )}
         </div>
       )}
       {done && !finisher.technique && finisher.blockedBy && finisher.blockedBy !== 'sets_incomplete' && (

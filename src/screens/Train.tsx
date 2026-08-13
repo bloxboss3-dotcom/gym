@@ -338,6 +338,14 @@ function UsualSessions() {
                 <div className="min-w-0">
                   <p className="font-display text-xl uppercase tracking-wide leading-tight truncate">
                     {usual.name}
+                    {/* The day it usually lands on, kept small and only shown
+                        when it is actually consistent — a subtle label that is
+                        wrong half the time is worse than no label. */}
+                    {usual.usualWeekday && (
+                      <span className="ml-1.5 font-sans text-xs normal-case tracking-normal text-smoke">
+                        ({usual.usualWeekday}s)
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs text-ash mt-0.5 tabular">
                     {usual.exercises.length} movements · done {usual.timesDone}×

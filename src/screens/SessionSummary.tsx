@@ -8,6 +8,7 @@ import { historyFor, recommendNextSession } from '@/engine/progression'
 import { personalRecords, sessionVolumeLoad, rirQuality } from '@/engine/stats'
 import { formatWeight } from '@/engine/units'
 import { formatDateLabel, formatDuration } from '@/lib/date'
+import { ECONOMY } from '@/config/economy'
 import { useStore } from '@/state/store'
 
 /**
@@ -97,6 +98,26 @@ export default function SessionSummary() {
             </p>
           )}
         </Card>
+
+        {/*
+          Always shown, including when it paid nothing.
+          Hiding the card when the payout was zero meant a long session could
+          finish in silence, which reads as the app failing to notice rather
+          than as a rule being applied — and this app explains its refusals
+          everywhere else.
+        */}
+        {totalXp === 0 && totalCoins === 0 && (
+          <Card>
+            <p className="font-display text-lg uppercase tracking-wide text-smoke">No rewards for this one</p>
+            <p className="text-xs text-ash mt-1.5 leading-relaxed">
+              {workingSets.length < ECONOMY.limits.minWorkingSetsForReward
+                ? `Sessions need at least ${ECONOMY.limits.minWorkingSetsForReward} working sets to pay out. This one is saved either way and still counts toward your weekly volume.`
+                : duration / 60 < ECONOMY.limits.minSessionMinutes
+                  ? `Sessions need to run at least ${ECONOMY.limits.minSessionMinutes} minutes to pay out. The training is saved either way.`
+                  : `You have already hit today's ceiling of ${ECONOMY.limits.dailyXpCap} XP and ${ECONOMY.limits.dailyCoinCap} coins. The session counts for everything else — volume, progression, your streak — it just cannot print more currency today.`}
+            </p>
+          </Card>
+        )}
 
         {(totalXp > 0 || totalCoins > 0) && (
           <Card className="border-gold-500/40">

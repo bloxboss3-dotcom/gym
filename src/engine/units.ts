@@ -56,7 +56,19 @@ export function roundToIncrement(kg: number, incrementKg: number, units: Units =
 /** Round up to the next increment (never returns the same value). */
 export function stepUp(kg: number, incrementKg: number, units: Units = 'kg'): number {
   const rounded = roundToIncrement(kg, incrementKg, units)
-  if (rounded > kg + 1e-6) return rounded
+  /*
+    The jump has to be one you could actually load, not a rounding artefact.
+
+    Snapping to the pound grid can land a hair above the current weight — a
+    hundredth of a kilo — which cleared the old `> kg + 1e-6` test and was
+    returned as the next load. The screen then said "Add 0 lb", which is a
+    recommendation to do nothing, printed in the same place and the same voice
+    as a real one. Requiring half an increment of daylight makes a step a step.
+  */
+  const meaningful = kg + incrementKg / 2
+  if (rounded > meaningful) return rounded
+  const next = roundToIncrement(kg + incrementKg, incrementKg, units)
+  if (next > meaningful) return next
   return clean(rounded + incrementKg, 4)
 }
 

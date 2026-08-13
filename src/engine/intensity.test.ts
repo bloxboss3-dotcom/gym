@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { RULES } from '@/config/rules'
+import { ECONOMY } from '@/config/economy'
 import { CITATION_BY_ID } from '@/data/citations'
 import { EXERCISE_BY_ID } from '@/data/exercises'
 import {
@@ -7,6 +8,7 @@ import {
   collectAuditInput,
   loadsLongLengths,
   primaryMuscle,
+  BLOCK_EXPLANATION,
   suggestFinisher,
   type FinisherContext,
 } from '@/engine/intensity'
@@ -408,5 +410,81 @@ describe('hypertrophy audit', () => {
       expect(lever.citationIds.length).toBeGreaterThan(0)
       for (const id of lever.citationIds) expect(CITATION_BY_ID[id], id).toBeDefined()
     }
+  })
+})
+
+describe('the fatigue budget, as the session player actually uses it', () => {
+  /**
+   * The bug this exists for.
+   *
+   * The engine has always capped finishers per session, the rule was written,
+   * and a test asserted it — but the caller passed a hardcoded 0, so the cap
+   * never fired. A finisher was offered on every movement in the workout, and
+   * a session could end up carrying five of them. Every check in the suite
+   * passed the whole time, because they all called the engine directly.
+   *
+   * So this walks a whole session the way the screen does: offer, accept,
+   * feed the real count back in, offer again.
+   */
+  const walkSession = (movements: number) => {
+    const taken: string[] = []
+    const offered: boolean[] = []
+    for (let i = 0; i < movements; i += 1) {
+      const result = suggestFinisher(context({ finishersUsedThisSession: taken.length }))
+      offered.push(result.technique !== null)
+      if (result.technique) taken.push(result.technique.kind)
+    }
+    return { offered, taken }
+  }
+
+  it('stops offering once the budget is spent', () => {
+    const { taken } = walkSession(6)
+    expect(taken.length).toBe(RULES.intensity.maxPerSession)
+  })
+
+  it('never offers a third on a six-movement session', () => {
+    const { offered } = walkSession(6)
+    expect(offered.slice(RULES.intensity.maxPerSession).every((o) => o === false)).toBe(true)
+  })
+
+  it('keeps the budget small enough to be a garnish', () => {
+    // Two is a fatigue budget. Five is a second workout, which is what
+    // happens when nothing counts them.
+    expect(RULES.intensity.maxPerSession).toBeLessThanOrEqual(3)
+    expect(RULES.intensity.maxPerSession).toBeGreaterThanOrEqual(1)
+  })
+
+  it('explains the refusal rather than going quiet', () => {
+    const spent = suggestFinisher(
+      context({ finishersUsedThisSession: RULES.intensity.maxPerSession }),
+    )
+    expect(spent.technique).toBeNull()
+    expect(spent.blockedBy).toBe('session_budget')
+    expect(BLOCK_EXPLANATION[spent.blockedBy!]).toMatch(/budget/i)
+  })
+})
+
+describe('what a finished challenge is worth', () => {
+  it('cannot pay for more challenges than the fatigue budget allows', () => {
+    // If the daily reward cap were higher than the per-session cap, the
+    // economy would be quietly arguing for a third one.
+    expect(ECONOMY.limits.perDay.challenge_completed).toBeLessThanOrEqual(
+      RULES.intensity.maxPerSession,
+    )
+  })
+
+  it('pays less for garnishing a session than for finishing one', () => {
+    const day =
+      ECONOMY.rewards.challenge_completed.xp * ECONOMY.limits.perDay.challenge_completed
+    expect(day).toBeLessThan(ECONOMY.rewards.workout_completed.xp)
+  })
+
+  it('pays enough to be worth taking', () => {
+    // The whole point is that effort beyond the plan is recognised. A reward
+    // smaller than a rest-timer puzzle would say the opposite.
+    expect(ECONOMY.rewards.challenge_completed.xp).toBeGreaterThan(ECONOMY.rewards.puzzle_solved.xp)
+    expect(ECONOMY.rewards.challenge_completed.coins).toBeGreaterThan(
+      ECONOMY.rewards.puzzle_solved.coins,
+    )
   })
 })
