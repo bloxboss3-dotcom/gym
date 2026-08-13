@@ -66,6 +66,7 @@ export default function Profile() {
             <Warrior
               equipped={data.game.equipped}
               build={buildFromXp(data.game.xp)}
+              frame={data.game.figure ?? 'masculine'}
               className="w-20 h-auto shrink-0"
               still
             />

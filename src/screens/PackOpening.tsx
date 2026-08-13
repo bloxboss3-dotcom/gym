@@ -198,7 +198,7 @@ export default function PackOpening() {
                 {rarity.label} · {SLOT_LABEL[current.slot]}
               </p>
               <div className="grid place-items-center my-3">
-                <ItemPreview item={current} className="w-40 h-auto" />
+                <ItemPreview item={current} frame={store.data.game.figure ?? 'masculine'} className="w-40 h-auto" />
               </div>
               <h2 className="font-display text-3xl uppercase tracking-wide leading-none">{current.name}</h2>
               <p className="text-sm text-ash mt-2 italic leading-relaxed">{current.lore}</p>

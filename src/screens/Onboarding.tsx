@@ -28,6 +28,7 @@ import type {
   EnduranceGoal,
   EquipmentKey,
   Experience,
+  Figure,
   Goal,
   Priority,
   Profile,
@@ -67,6 +68,7 @@ const STEP_COUNT = 11
 
 export default function Onboarding() {
   const { completeOnboarding, loadDemo, data } = useStore()
+  const [figureChoice, setFigureChoice] = useState<Figure | null>(null)
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [heightFeet, setHeightFeet] = useState(5)
@@ -146,11 +148,14 @@ export default function Onboarding() {
       proteinOverrideG: proteinOverride,
       createdAt: Date.now(),
       onboardedAt: Date.now(),
-    })
+    }, figure)
     navigate('/', { replace: true })
   }
 
   const displayWeight = Number(toDisplay(draft.bodyWeightKg, draft.units).toFixed(1))
+  // Until it is touched, the figure follows the sex answer. Touching it stops
+  // it following — the two are different questions and only one is arithmetic.
+  const figure: Figure = figureChoice ?? (draft.sex === 'female' ? 'feminine' : 'masculine')
 
   return (
     <div className="min-h-dvh flex flex-col bg-void">
@@ -175,7 +180,7 @@ export default function Onboarding() {
         {step === 0 && (
           <div className="space-y-5 animate-rise">
             <div className="grid place-items-center py-2">
-              <Warrior equipped={data.game.equipped} className="w-44 h-auto" />
+              <Warrior equipped={data.game.equipped} frame={data.game.figure ?? 'masculine'} className="w-44 h-auto" />
             </div>
             <h1 className="font-display text-3xl uppercase text-center leading-tight text-balance">
               Real training. Real progress. A warrior that earns it.
@@ -291,7 +296,7 @@ export default function Onboarding() {
             </Field>
             <Field
               label="Biological sex"
-              hint="Used for one thing: the constant in the calorie equation. Skip it and FORGED uses the midpoint and widens the margin it quotes."
+              hint="Used for two things: the constant in the calorie equation, and which published strength standards you are read against. Skip it and FORGED uses the midpoint of both and widens the margin it quotes. It does not decide how your character looks — that is a separate choice, later."
             >
               <SegmentedControl<Sex>
                 label="Biological sex"
@@ -556,6 +561,33 @@ export default function Onboarding() {
 
         {step === 9 && (
           <StepCard title="Choose your archetype" blurb="Purely cosmetic. It sets your starting gear and nothing else — no stat bonuses, ever.">
+            <div
+              role="radiogroup"
+              aria-label="Figure"
+              className="flex gap-2 mb-3"
+            >
+              {(['masculine', 'feminine'] as Figure[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="radio"
+                  aria-checked={figure === key}
+                  onClick={() => setFigureChoice(key)}
+                  className={cx(
+                    'flex-1 touch-target rounded-xl border px-3 text-sm capitalize transition-colors',
+                    figure === key
+                      ? 'border-ember-500 bg-ember-500/12 text-ember-200'
+                      : 'border-slate bg-coal text-ash',
+                  )}
+                >
+                  {key}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-smoke mb-3 leading-relaxed">
+              Just the figure your warrior is drawn as — change it whenever you like, and it costs nothing.
+              Both build muscle at exactly the same rate.
+            </p>
             <div className="space-y-2">
               {ARCHETYPES.map((archetype) => {
                 const active = draft.archetype === archetype.key
@@ -573,6 +605,7 @@ export default function Onboarding() {
                   >
                     <Warrior
                       still
+                      frame={figure}
                       className="w-14 h-auto shrink-0"
                       equipped={{
                         face: archetype.key === 'emberblade' ? 'face-warpaint' : 'face-recruit',

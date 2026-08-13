@@ -1,16 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CITATION_BY_ID } from '@/data/citations'
 import { EXERCISE_BY_ID } from '@/data/exercises'
-import {
-  LEVEL_PERCENTILE,
-  LIFT_STANDARDS,
-  STRENGTH_LEVELS,
-  bandFor,
-  ladderFor,
-  newBandCrossings,
-  percentileForLift,
-  strengthProfile,
-} from '@/engine/percentile'
+import { LEVEL_PERCENTILE, LIFT_STANDARDS, STRENGTH_LEVELS, bandFor, comparisonGroupFor, ladderFor, newBandCrossings, percentileForLift, strengthProfile } from '@/engine/percentile'
 
 const BENCH = LIFT_STANDARDS.find((s) => s.exerciseId === 'barbell-bench-press')!
 
@@ -195,5 +186,39 @@ describe('paying for improvement, not for being strong', () => {
     expect(bandFor(4)).toBeNull()
     expect(bandFor(10)).toBe(10)
     expect(bandFor(99)).toBe(95)
+  })
+})
+
+describe('who the percentile is against', () => {
+  it('names the sex whose standards were used', () => {
+    // A bare percentile is read as "against everyone". It is not — a woman at
+    // the 70th is at the 70th of women, and the screen has to say so or the
+    // number quietly means something else to half the people reading it.
+    expect(comparisonGroupFor('female')).toMatch(/women/i)
+    expect(comparisonGroupFor('male')).toMatch(/men/i)
+    expect(comparisonGroupFor('female')).not.toEqual(comparisonGroupFor('male'))
+  })
+
+  it('admits when it had to average the two', () => {
+    expect(comparisonGroupFor('unspecified')).toMatch(/both|average/i)
+  })
+
+  it('carries the group out on the profile, for every sex', () => {
+    for (const sex of ['male', 'female', 'unspecified'] as const) {
+      const profile = strengthProfile({
+        sex,
+        bodyWeightKg: 75,
+        bestE1rmByExercise: { 'barbell-bench-press': 100 },
+      })
+      expect(profile.comparisonGroup, sex).toBe(comparisonGroupFor(sex))
+      expect(profile.comparisonGroup.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('states the group even when there is nothing to compare yet', () => {
+    // The no-body-weight early return is a separate code path, and an empty
+    // group there would render as "percentile among ".
+    const profile = strengthProfile({ sex: 'female', bodyWeightKg: null, bestE1rmByExercise: {} })
+    expect(profile.comparisonGroup).toMatch(/women/i)
   })
 })

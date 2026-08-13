@@ -28,6 +28,7 @@ import type {
   Checkin,
   DeloadRecord,
   Exercise,
+  Figure,
   FoodItem,
   LoggedSet,
   Meal,
@@ -63,7 +64,7 @@ export interface ForgedStore {
   dismissToast: (id: string) => void
 
   // Profile & settings -------------------------------------------------------
-  completeOnboarding: (profile: Profile) => void
+  completeOnboarding: (profile: Profile, figure?: Figure) => void
   updateProfile: (patch: Partial<Profile>) => void
   updateSettings: (patch: Partial<Settings>) => void
 
@@ -119,6 +120,8 @@ export interface ForgedStore {
   openPack: (packId: string) => string[]
   buyPack: (kind: PackKind) => string | null
   equipItem: (slot: Slot, itemId: string) => void
+  /** Which figure the character is drawn as. Free, and reversible at any time. */
+  setFigure: (figure: Figure) => void
   markItemSeen: (itemId: string) => void
   claimQuest: (questId: string, periodKey: string) => void
 
@@ -343,7 +346,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       pushToast,
       dismissToast,
 
-      completeOnboarding(profile) {
+      completeOnboarding(profile, figure) {
         mutate((current) => {
           const program = generateProgram(profile, current.exercises)
           return {
@@ -355,6 +358,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               { id: newId('bw'), date: toIsoDate(), weightKg: profile.bodyWeightKg },
               ...current.bodyWeights,
             ],
+            // Whatever was picked on the archetype step. If that step was
+            // skipped it falls back to the one question already asked — a
+            // guess, and only a guess: the character screen owns this from
+            // here, and changing it there never touches the profile.
+            game: {
+              ...current.game,
+              figure: figure ?? (profile.sex === 'female' ? 'feminine' : 'masculine'),
+            },
             settings: { ...current.settings, mealsPerDay: current.settings.mealsPerDay },
           }
         })
@@ -847,6 +858,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             owned: current.game.owned.map((o) => (o.itemId === itemId ? { ...o, new: false } : o)),
           },
         }))
+      },
+
+      setFigure(figure) {
+        mutate((current) => ({ ...current, game: { ...current.game, figure } }))
       },
 
       markItemSeen(itemId) {

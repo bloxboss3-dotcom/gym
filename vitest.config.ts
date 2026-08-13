@@ -9,7 +9,9 @@ export default defineConfig({
     // jsdom + fake-indexeddb lets the persistence layer be tested alongside the
     // pure engine functions without a browser.
     environment: 'jsdom',
-    include: ['src/**/*.test.ts'],
+    // .tsx too: the character renderer is asserted by rendering it and
+    // measuring the SVG it emits, which needs JSX.
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     setupFiles: ['./src/test/setup.ts'],
   },
 })

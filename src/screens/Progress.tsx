@@ -282,7 +282,7 @@ export default function Progress() {
                   <span className="text-xl text-ash">th</span>
                 </p>
                 <p className="text-xs text-ash leading-snug pb-1">
-                  percentile among people who log lifts
+                  percentile among {strength.comparisonGroup}
                   <br />
                   <span className="text-smoke">confidence: {strength.confidence}</span>
                 </p>

@@ -5,8 +5,13 @@ import { ItemPreview, Warrior } from '@/character/Warrior'
 import { Button, Card, Chip, EmptyState, ProgressBar, cx } from '@/components/ui'
 import { ITEMS_BY_SLOT, ITEM_BY_ID, RARITY_META, SLOT_LABEL, SLOT_ORDER } from '@/data/items'
 import { useStore } from '@/state/store'
-import type { Slot } from '@/types'
+import type { Figure, Slot } from '@/types'
 import { ECONOMY, buildFromXp, levelFromXp } from '@/config/economy'
+
+const FIGURES: { key: Figure; label: string }[] = [
+  { key: 'masculine', label: 'Masculine' },
+  { key: 'feminine', label: 'Feminine' },
+]
 
 /**
  * Character customisation.
@@ -18,6 +23,7 @@ export default function CharacterCustomize() {
   const store = useStore()
   const { data } = store
   const [slot, setSlot] = useState<Slot>('weapon')
+  const figure = data.game.figure ?? 'masculine'
 
   const owned = useMemo(() => new Set(data.game.owned.map((o) => o.itemId)), [data.game.owned])
   const options = useMemo(
@@ -33,7 +39,39 @@ export default function CharacterCustomize() {
       <div className="space-y-4">
         <Card raised>
           <div className="grid place-items-center">
-            <Warrior equipped={data.game.equipped} build={build} className="w-56 h-auto" />
+            <Warrior
+              equipped={data.game.equipped}
+              build={build}
+              frame={figure}
+              className="w-56 h-auto"
+            />
+          </div>
+
+          {/* Figure. Not an item, not a purchase, and not locked to anything
+              in the profile — it is simply the character you want to look at,
+              and you can change your mind whenever. */}
+          <div
+            role="radiogroup"
+            aria-label="Figure"
+            className="flex gap-2 mt-2 justify-center"
+          >
+            {FIGURES.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                role="radio"
+                aria-checked={figure === key}
+                onClick={() => store.setFigure(key)}
+                className={cx(
+                  'touch-target rounded-full border px-4 text-sm transition-colors',
+                  figure === key
+                    ? 'border-ember-500 bg-ember-500/15 text-ember-200'
+                    : 'border-slate bg-coal text-ash',
+                )}
+              >
+                {label}
+              </button>
+            ))}
           </div>
           <p className="text-center font-display text-2xl uppercase tracking-wide mt-1">{data.profile?.name}</p>
           {equippedTitle && <p className="text-center text-sm text-gold-300">{equippedTitle.name}</p>}
@@ -112,7 +150,7 @@ export default function CharacterCustomize() {
                       </span>
                     ) : (
                       <span className="grid place-items-center">
-                        <ItemPreview item={item} className="w-12 h-auto" />
+                        <ItemPreview item={item} frame={figure} className="w-12 h-auto" />
                       </span>
                     )}
                     <span className="block text-[11px] text-parchment leading-tight mt-1">{item.name}</span>
