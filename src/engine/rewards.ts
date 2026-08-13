@@ -170,14 +170,15 @@ export function evaluateSessionReward(session: Session): SessionRewardResult {
       ECONOMY.limits.minWorkingSetsForReward,
   )
   const bonusXp = extraSets * ECONOMY.limits.xpPerExtraSet
+  const bonusCoins = extraSets * ECONOMY.limits.coinsPerExtraSet
 
   const grants: RewardGrant[] = [
     {
       reason: 'workout_completed',
       sourceId: session.id,
       xp: base.xp + bonusXp,
-      coins: base.coins,
-      detail: `${workingSets.length} working sets across ${session.entries.length} exercises${bonusXp ? ` (+${bonusXp} XP volume bonus)` : ''}.`,
+      coins: base.coins + bonusCoins,
+      detail: `${workingSets.length} working sets across ${session.entries.length} exercises${bonusXp ? ` (+${bonusXp} XP, +${bonusCoins} coins for the volume)` : ''}.`,
     },
   ]
 

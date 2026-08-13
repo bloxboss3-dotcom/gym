@@ -112,6 +112,53 @@ await page.getByRole('radio', { name: /Pounds/ }).click()
 // strength standards, the figure — then runs the path that used to be the
 // one nobody checked.
 await page.getByRole('radio', { name: 'Female', exact: true }).click()
+
+// Typing a number, one key at a time, into a field with a minimum.
+//
+// The stepper clamped on every keystroke: reaching for 70 with a minimum of
+// 30, the "7" became 30 before the 0 arrived and the next key landed on the
+// end of THAT. Clearing it was worse — an empty field parses to 0, which is
+// finite, so it snapped to the minimum and you could never start again. The
+// only way to enter a number was to paste one.
+//
+// page.fill() cannot catch this. It sets the value in one shot and never
+// passes through the half-typed states where the clamp fired.
+const ageField = page.getByRole('spinbutton', { name: 'Age' })
+await ageField.click()
+await page.keyboard.press('Control+A')
+await page.keyboard.press('Backspace')
+const afterClear = await ageField.inputValue()
+record('clearing a number field leaves it empty', afterClear === '', `value="${afterClear}"`)
+for (const key of ['4', '2']) {
+  await page.keyboard.press(key)
+  await page.waitForTimeout(60)
+}
+const typedAge = await ageField.inputValue()
+record(
+  'typing a number one key at a time gives that number',
+  typedAge === '42',
+  `typed 4 then 2, got "${typedAge}"`,
+)
+await ageField.blur()
+await page.waitForTimeout(120)
+record('the value survives leaving the field', (await ageField.inputValue()) === '42')
+
+// And a value below the minimum still gets corrected, on commit rather than
+// mid-word.
+await ageField.click()
+await page.keyboard.press('Control+A')
+await page.keyboard.press('Backspace')
+await page.keyboard.press('1')
+await ageField.blur()
+await page.waitForTimeout(120)
+const clamped = Number(await ageField.inputValue())
+record('out-of-range input is corrected when you finish, not while typing', clamped >= 13, `${clamped}`)
+await ageField.click()
+await page.keyboard.press('Control+A')
+await page.keyboard.press('Backspace')
+for (const key of ['2', '8']) await page.keyboard.press(key)
+await ageField.blur()
+
 await shot('02-about-you')
 await page.getByRole('button', { name: 'Continue' }).click() // experience
 await page.getByRole('radio', { name: /New or returning/ }).click()

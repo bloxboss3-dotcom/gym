@@ -422,12 +422,43 @@ export function NumberStepper({
 }) {
   const id = useId()
   const clamp = (n: number) => Math.max(min, Math.min(max, Number(n.toFixed(decimals + 2))))
+
+  /*
+    What you are typing, while you are typing it.
+
+    The field used to clamp on every keystroke. Reaching for 70 with a
+    minimum of 30, the "7" became 30 before the 0 arrived, and the next
+    keystroke landed on the end of THAT — so the only way to enter a number
+    was to paste one. Clearing the field was worse: an empty input parses to
+    0, which is finite, so it clamped straight to the minimum and you could
+    never start again.
+
+    So a draft string is held while the field has focus and the value is only
+    clamped when editing finishes. Half-typed input is passed up when it
+    happens to be in range, so live previews still track, and left alone when
+    it is not, because "30" is not a helpful reading of somebody who has so
+    far typed "7".
+  */
+  const [draft, setDraft] = useState<string | null>(null)
+
+  const commit = () => {
+    if (draft === null) return
+    const parsed = Number(draft)
+    // An empty or nonsense field reverts to what was there before rather
+    // than snapping to a boundary the user never chose.
+    onChange(draft.trim() === '' || !Number.isFinite(parsed) ? clamp(value) : clamp(parsed))
+    setDraft(null)
+  }
+
   return (
     <div className={cx('flex items-stretch gap-1', className)}>
       <button
         type="button"
         aria-label={`Decrease ${label}`}
-        onClick={() => onChange(clamp(value - step))}
+        onClick={() => {
+          setDraft(null)
+          onChange(clamp(value - step))
+        }}
         className="touch-target w-12 shrink-0 rounded-l-xl bg-steel border border-slate border-r-0 text-xl text-ash active:bg-slate disabled:opacity-40"
         disabled={value <= min}
       >
@@ -440,13 +471,25 @@ export function NumberStepper({
           type="number"
           inputMode="decimal"
           aria-label={label}
-          value={Number.isFinite(value) ? Number(value.toFixed(decimals)) : ''}
+          value={draft ?? (Number.isFinite(value) ? String(Number(value.toFixed(decimals))) : '')}
           step={step}
           min={min}
           max={max}
           onChange={(e) => {
-            const next = Number(e.target.value)
-            if (Number.isFinite(next)) onChange(clamp(next))
+            const text = e.target.value
+            setDraft(text)
+            const next = Number(text)
+            if (text.trim() !== '' && Number.isFinite(next) && next >= min && next <= max) {
+              onChange(clamp(next))
+            }
+          }}
+          onFocus={(e) => e.currentTarget.select()}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              commit()
+              e.currentTarget.blur()
+            }
           }}
           className="w-full h-12 bg-coal border-y border-slate text-center text-lg font-semibold tabular text-parchment focus:border-ember-500"
         />
@@ -459,7 +502,10 @@ export function NumberStepper({
       <button
         type="button"
         aria-label={`Increase ${label}`}
-        onClick={() => onChange(clamp(value + step))}
+        onClick={() => {
+          setDraft(null)
+          onChange(clamp(value + step))
+        }}
         className="touch-target w-12 shrink-0 rounded-r-xl bg-steel border border-slate border-l-0 text-xl text-ash active:bg-slate disabled:opacity-40"
         disabled={value >= max}
       >

@@ -37,11 +37,19 @@ export const ANVIL = {
   perfectHalf: 0.028,
   /** Keeps a zone off the very edges, where the hammer turns around. */
   edgeMargin: 0.16,
-  /** Coins per strike. */
-  coinsPerfect: 8,
-  coinsGood: 4,
+  /**
+   * Coins per strike.
+   *
+   * Cut when a finished session went from 25 coins to 120. At the old rates
+   * three rounds of tapping out-earned a workout, which is the wrong way
+   * round however good the mini-game is: the training has to be the best use
+   * of the time, always. A full day of the anvil is now comfortably less
+   * than one session.
+   */
+  coinsPerfect: 5,
+  coinsGood: 2,
   /** Bonus for a flawless round. */
-  flawlessBonus: 10,
+  flawlessBonus: 5,
   /**
    * XP is deliberately tiny, and only perfect strikes pay any at all — this is
    * a coin faucet, not a levelling route. A full day of flawless rounds is

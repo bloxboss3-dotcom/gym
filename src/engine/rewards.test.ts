@@ -309,3 +309,48 @@ describe('applying rewards to game state', () => {
     })
   })
 })
+
+describe('a session is worth a pack', () => {
+  it('pays at least the cheapest pack for any session that qualifies', () => {
+    // The promise: finish a real session, open something. At 25 coins a
+    // workout against a 150-coin pack it took six sessions to open anything,
+    // which puts the reward a fortnight away from the training that earned
+    // it. This is the guarantee, so it is asserted rather than assumed.
+    expect(ECONOMY.rewards.workout_completed.coins).toBeGreaterThanOrEqual(
+      ECONOMY.packs.recruit.cost,
+    )
+  })
+
+  it('pays more for a harder session', () => {
+    expect(ECONOMY.limits.coinsPerExtraSet).toBeGreaterThan(0)
+  })
+
+  it('does not let the daily ceiling swallow a session that already qualified', () => {
+    // A single workout plus the honesty bonus must fit under the cap with
+    // room left, or the mini-games pay nothing on exactly the days somebody
+    // trained properly — which punishes the training.
+    const bigSession =
+      ECONOMY.rewards.workout_completed.coins +
+      (ECONOMY.limits.volumeBonusSetCap - ECONOMY.limits.minWorkingSetsForReward) *
+        ECONOMY.limits.coinsPerExtraSet +
+      ECONOMY.rewards.rir_logged.coins
+    expect(bigSession).toBeLessThan(ECONOMY.limits.dailyCoinCap)
+  })
+
+  it('still only pays for one workout a day', () => {
+    // The anti-farming design has to survive the raise. Per-reason caps are
+    // what stop abuse, not the size of the payout.
+    expect(ECONOMY.limits.perDay.workout_completed).toBe(1)
+  })
+
+  it('keeps the deeper packs out of reach of a single session', () => {
+    // One session buys the cheapest pack. It must not buy the relic vault,
+    // or the rarity ladder stops meaning anything.
+    const bigSession =
+      ECONOMY.rewards.workout_completed.coins +
+      (ECONOMY.limits.volumeBonusSetCap - ECONOMY.limits.minWorkingSetsForReward) *
+        ECONOMY.limits.coinsPerExtraSet
+    expect(bigSession).toBeLessThan(ECONOMY.packs.ember.cost)
+    expect(bigSession).toBeLessThan(ECONOMY.packs.relic.cost)
+  })
+})
