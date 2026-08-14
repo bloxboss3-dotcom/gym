@@ -16,6 +16,7 @@ import { activeDeload } from '@/engine/deload'
 import { findUsualSessions, mostOverdue, toProgramDay, type UsualSession } from '@/engine/habits'
 import { estimateSessionMinutes } from '@/engine/program'
 import { resolveToday } from '@/engine/schedule'
+import { useT } from '@/i18n/useT'
 import { formatDateLabel, toIsoDate, weekdayName } from '@/lib/date'
 import { useStore } from '@/state/store'
 
@@ -25,6 +26,7 @@ import { useStore } from '@/state/store'
  */
 export default function Train() {
   const { data, startSession } = useStore()
+  const { t } = useT()
   const navigate = useNavigate()
   const today = toIsoDate()
   const [pickDay, setPickDay] = useState(false)
@@ -50,13 +52,15 @@ export default function Train() {
   }
 
   return (
-    <Screen title="Train" subtitle={program ? program.name : 'No program yet'}>
+    <Screen title={t('Train')} subtitle={program ? program.name : t('No program yet')}>
       <div className="space-y-4">
         {plan.kind === 'resume' && plan.activeSessionId && (
           <Card raised className="border-ember-500/50">
-            <p className="text-[11px] uppercase tracking-wider text-ember-400">Unfinished session</p>
+            <p className="text-[11px] uppercase tracking-wider text-ember-400">{t('Unfinished session')}</p>
             <p className="font-display text-2xl uppercase mt-0.5">{plan.title}</p>
-            <p className="text-sm text-ash mt-1">Everything you logged is saved. Pick up where you stopped.</p>
+            <p className="text-sm text-ash mt-1">
+              {t('Everything you logged is saved. Pick up where you stopped.')}
+            </p>
             <Button
               variant="primary"
               size="lg"
@@ -64,26 +68,29 @@ export default function Train() {
               className="mt-3"
               onClick={() => navigate(`/train/session/${plan.activeSessionId}`)}
             >
-              Resume
+              {t('Resume')}
             </Button>
           </Card>
         )}
 
         {deload && (
-          <Alert tone="info" title="Deload week in progress">
-            Sessions start at roughly 60% load with fewer sets. Completing them counts exactly like a normal session
-            — that is the point.
+          <Alert tone="info" title={t('Deload week in progress')}>
+            {t(
+              'Sessions start at roughly 60% load with fewer sets. Completing them counts exactly like a normal session — that is the point.',
+            )}
           </Alert>
         )}
 
         {!program ? (
           <EmptyState
             icon="⚒"
-            title="No program yet"
-            body="FORGED needs a plan before it can progress anything for you. Generate one from your profile, or build a custom routine."
+            title={t('No program yet')}
+            body={t(
+              'FORGED needs a plan before it can progress anything for you. Generate one from your profile, or build a custom routine.',
+            )}
             action={
               <Link to="/profile">
-                <Button variant="primary">Generate from profile</Button>
+                <Button variant="primary">{t('Generate from profile')}</Button>
               </Link>
             }
           />
@@ -91,7 +98,7 @@ export default function Train() {
           <>
             {plan.kind !== 'resume' && (
               <Card raised>
-                <p className="text-[11px] uppercase tracking-wider text-ember-400">Today</p>
+                <p className="text-[11px] uppercase tracking-wider text-ember-400">{t('Today')}</p>
                 <p className="font-display text-2xl uppercase mt-0.5">{plan.title}</p>
                 <p className="text-sm text-ash mt-1">{plan.subtitle}</p>
                 <div className="grid grid-cols-2 gap-2 mt-3">
@@ -103,10 +110,10 @@ export default function Train() {
                       plan.programDay ? beginDay(plan.programDay.id) : setPickDay(true)
                     }
                   >
-                    {plan.programDay ? 'Start' : 'Choose a day'}
+                    {plan.programDay ? t('Start') : t('Choose a day')}
                   </Button>
                   <Button full onClick={() => setPickDay(true)}>
-                    Different day
+                    {t('Different day')}
                   </Button>
                 </div>
               </Card>
@@ -123,7 +130,7 @@ export default function Train() {
                     to={`/train/program/${program.id}`}
                     className="text-sm text-ember-400 touch-target flex items-center"
                   >
-                    Edit
+                    {t('Edit')}
                   </Link>
                 }
               />
@@ -146,18 +153,22 @@ export default function Train() {
                           <span className="flex items-center gap-2">
                             <span className="font-display text-lg uppercase tracking-wide">{day.name}</span>
                             {day.weekday !== null && (
-                              <Chip tone="neutral">{weekdayName(day.weekday, true)}</Chip>
+                              <Chip tone="neutral">{t(weekdayName(day.weekday, true))}</Chip>
                             )}
-                            {completedToday && <Chip tone="good">Done today</Chip>}
+                            {completedToday && <Chip tone="good">{t('Done today')}</Chip>}
                           </span>
                           <span className="block text-xs text-smoke mt-0.5 truncate">
                             {day.slots
                               .map((slot) => data.exercises.find((e) => e.id === slot.exerciseId)?.name)
-                              .filter(Boolean)
+                              .filter((name): name is string => Boolean(name))
+                              .map((name) => t(name))
                               .join(' · ')}
                           </span>
                           <span className="block text-[11px] text-smoke mt-1">
-                            {day.slots.reduce((n, s) => n + s.sets, 0)} sets · ~{estimateSessionMinutes(day)} min
+                            {t('{sets} sets · ~{minutes} min', {
+                              sets: day.slots.reduce((n, s) => n + s.sets, 0),
+                              minutes: estimateSessionMinutes(day),
+                            })}
                           </span>
                         </span>
                         <span aria-hidden className="text-ember-400 text-lg shrink-0">
@@ -182,11 +193,12 @@ export default function Train() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="font-display text-xl uppercase tracking-wide leading-tight">
-                Train off-plan
+                {t('Train off-plan')}
               </p>
               <p className="text-xs text-ash mt-1 leading-relaxed">
-                You do not have to follow the plans above. Start empty and add movements as you
-                go — it logs, progresses and counts toward your weekly volume exactly the same.
+                {t(
+                  'You do not have to follow the plans above. Start empty and add movements as you go — it logs, progresses and counts toward your weekly volume exactly the same.',
+                )}
               </p>
             </div>
             <span aria-hidden className="text-2xl shrink-0 text-ember-400">
@@ -194,44 +206,47 @@ export default function Train() {
             </span>
           </div>
           <Button variant="primary" full className="mt-3" onClick={() => beginDay(null)}>
-            Start a freestyle session
+            {t('Start a freestyle session')}
           </Button>
         </Card>
 
         <Link to="/train/run" className="contents">
-          <Button full>Log a run</Button>
+          <Button full>{t('Log a run')}</Button>
         </Link>
 
         <div>
           <SectionHeading
-            title="Exercise library"
-            hint={`${data.exercises.length} movements with transparent muscle mapping`}
+            title={t('Exercise library')}
+            hint={t('{count} movements with transparent muscle mapping', {
+              count: data.exercises.length,
+            })}
             action={
               <button
                 type="button"
                 onClick={() => setLibraryOpen(true)}
                 className="text-sm text-ember-400 touch-target flex items-center"
               >
-                Browse
+                {t('Browse')}
               </button>
             }
           />
           <Card>
             <p className="text-sm text-ash leading-relaxed">
-              Every exercise declares how much it contributes to each muscle. Those numbers are what the weekly
-              volume dashboard adds up — nothing is hidden in a black box.
+              {t(
+                'Every exercise declares how much it contributes to each muscle. Those numbers are what the weekly volume dashboard adds up — nothing is hidden in a black box.',
+              )}
             </p>
             <Link
               to="/progress/volume"
               className="mt-2 inline-flex text-sm text-ember-400 font-medium touch-target items-center"
             >
-              See weekly volume →
+              {t('See weekly volume →')}
             </Link>
           </Card>
         </div>
 
         <div>
-          <SectionHeading title="History" />
+          <SectionHeading title={t('History')} />
           {recentSessions.length ? (
             <ul className="space-y-2">
               {recentSessions.map((session) => (
@@ -243,11 +258,18 @@ export default function Train() {
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm text-parchment truncate">{session.title}</span>
                       <span className="block text-xs text-smoke">
-                        {session.entries.reduce((n, e) => n + e.sets.filter((s) => !s.warmup).length, 0)} sets ·{' '}
-                        {session.status}
+                        {t('{count} sets · {status}', {
+                          count: session.entries.reduce(
+                            (n, e) => n + e.sets.filter((s) => !s.warmup).length,
+                            0,
+                          ),
+                          status: t(session.status),
+                        })}
                       </span>
                     </span>
-                    <span className="text-xs text-smoke shrink-0">{formatDateLabel(session.date, today)}</span>
+                    <span className="text-xs text-smoke shrink-0">
+                      {t(formatDateLabel(session.date, today))}
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -255,14 +277,16 @@ export default function Train() {
           ) : (
             <EmptyState
               icon="◷"
-              title="No sessions yet"
-              body="Once you complete a session, it shows up here with its full set-by-set record."
+              title={t('No sessions yet')}
+              body={t(
+                'Once you complete a session, it shows up here with its full set-by-set record.',
+              )}
             />
           )}
         </div>
       </div>
 
-      <Sheet open={pickDay} onClose={() => setPickDay(false)} title="Start a session">
+      <Sheet open={pickDay} onClose={() => setPickDay(false)} title={t('Start a session')}>
         <ul className="space-y-2">
           {(program?.days ?? []).map((day) => (
             <li key={day.id}>
@@ -276,7 +300,10 @@ export default function Train() {
               >
                 <span className="block font-medium text-parchment">{day.name}</span>
                 <span className="block text-xs text-smoke mt-0.5">
-                  {day.slots.length} movements · {day.slots.reduce((n, s) => n + s.sets, 0)} sets
+                  {t('{movements} movements · {sets} sets', {
+                    movements: day.slots.length,
+                    sets: day.slots.reduce((n, s) => n + s.sets, 0),
+                  })}
                 </span>
               </button>
             </li>
@@ -290,8 +317,10 @@ export default function Train() {
               }}
               className="w-full text-left rounded-xl border border-slate bg-coal px-3.5 py-3 touch-target"
             >
-              <span className="block font-medium text-parchment">Freestyle</span>
-              <span className="block text-xs text-smoke mt-0.5">Build the session as you go</span>
+              <span className="block font-medium text-parchment">{t('Freestyle')}</span>
+              <span className="block text-xs text-smoke mt-0.5">
+                {t('Build the session as you go')}
+              </span>
             </button>
           </li>
         </ul>
@@ -299,8 +328,10 @@ export default function Train() {
 
       <ExercisePicker
         open={libraryOpen}
-        title="Exercise library"
-        note="Tap any movement to see your full history, estimated 1RM trend and its muscle contributions."
+        title={t('Exercise library')}
+        note={t(
+          'Tap any movement to see your full history, estimated 1RM trend and its muscle contributions.',
+        )}
         onClose={() => setLibraryOpen(false)}
         onPick={(id) => {
           setLibraryOpen(false)
@@ -325,6 +356,7 @@ export default function Train() {
  */
 function UsualSessions() {
   const { data, startSession } = useStore()
+  const { t } = useT()
   const navigate = useNavigate()
   const today = toIsoDate()
 
@@ -348,8 +380,8 @@ function UsualSessions() {
   return (
     <div>
       <SectionHeading
-        title="Your usual sessions"
-        hint="Learned from what you actually log — not from the plan"
+        title={t('Your usual sessions')}
+        hint={t('Learned from what you actually log — not from the plan')}
       />
       <ul className="space-y-2">
         {usuals.slice(0, 4).map((usual) => (
@@ -364,21 +396,24 @@ function UsualSessions() {
                         wrong half the time is worse than no label. */}
                     {usual.usualWeekday && (
                       <span className="ml-1.5 font-sans text-xs normal-case tracking-normal text-smoke">
-                        ({usual.usualWeekday}s)
+                        {t('({weekday}s)', { weekday: t(usual.usualWeekday) })}
                       </span>
                     )}
                   </p>
                   <p className="text-xs text-ash mt-0.5 tabular">
-                    {usual.exercises.length} movements · done {usual.timesDone}×
+                    {t('{count} movements · done {times}×', {
+                      count: usual.exercises.length,
+                      times: usual.timesDone,
+                    })}
                     {' · '}
                     {usual.daysSince === 0
-                      ? 'today'
+                      ? t('today')
                       : usual.daysSince === 1
-                        ? 'yesterday'
-                        : `${usual.daysSince} days ago`}
+                        ? t('yesterday')
+                        : t('{days} days ago', { days: usual.daysSince })}
                   </p>
                 </div>
-                {overdue?.id === usual.id && <Chip tone="ember">Longest since</Chip>}
+                {overdue?.id === usual.id && <Chip tone="ember">{t('Longest since')}</Chip>}
               </div>
 
               <ul className="mt-2.5 flex flex-wrap gap-1.5">
@@ -389,7 +424,7 @@ function UsualSessions() {
                       key={item.exerciseId}
                       className="rounded-full border border-slate bg-coal px-2.5 py-1 text-[11px] text-ash"
                     >
-                      {exercise?.name ?? item.exerciseId}
+                      {exercise ? t(exercise.name) : item.exerciseId}
                       <span className="text-smoke tabular"> {item.typicalSets}×{item.typicalReps}</span>
                     </li>
                   )
@@ -397,10 +432,13 @@ function UsualSessions() {
               </ul>
 
               <Button variant="primary" full className="mt-3" onClick={() => begin(usual)}>
-                Start this session
+                {t('Start this session')}
               </Button>
               <p className="text-[11px] text-smoke mt-2 leading-relaxed">
-                {usual.reason} Loads come from your progression history for each movement, not from this pattern.
+                {usual.reason}{' '}
+                {t(
+                  'Loads come from your progression history for each movement, not from this pattern.',
+                )}
               </p>
             </Card>
           </li>

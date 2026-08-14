@@ -21,6 +21,7 @@ import { MUSCLES } from '@/data/muscles'
 import { estimateSessionMinutes } from '@/engine/program'
 import { plannedMuscleVolume } from '@/engine/volume'
 import { toDisplay, fromDisplay } from '@/engine/units'
+import { useT } from '@/i18n/useT'
 import { newId } from '@/lib/id'
 import { weekdayName } from '@/lib/date'
 import { useStore } from '@/state/store'
@@ -38,6 +39,7 @@ export default function ProgramEditor() {
   const { programId } = useParams<{ programId: string }>()
   const navigate = useNavigate()
   const store = useStore()
+  const { t } = useT()
   const { data } = store
   const units = data.profile?.units ?? 'kg'
 
@@ -55,8 +57,8 @@ export default function ProgramEditor() {
 
   if (!draft) {
     return (
-      <Screen title="Program" back="/train">
-        <Alert tone="warn">That program no longer exists.</Alert>
+      <Screen title={t('Program')} back="/train">
+        <Alert tone="warn">{t('That program no longer exists.')}</Alert>
       </Screen>
     )
   }
@@ -71,7 +73,12 @@ export default function ProgramEditor() {
 
   const addDay = () =>
     update((p) => {
-      p.days.push({ id: newId('day'), name: `Day ${p.days.length + 1}`, weekday: null, slots: [] })
+      p.days.push({
+        id: newId('day'),
+        name: t('Day {number}', { number: p.days.length + 1 }),
+        weekday: null,
+        slots: [],
+      })
       return p
     })
 
@@ -95,17 +102,20 @@ export default function ProgramEditor() {
 
   return (
     <Screen
-      title="Program editor"
-      subtitle={`${draft.days.length} days · ${draft.days.reduce((n, d) => n + d.slots.reduce((m, s) => m + s.sets, 0), 0)} weekly sets`}
+      title={t('Program editor')}
+      subtitle={t('{days} days · {sets} weekly sets', {
+        days: draft.days.length,
+        sets: draft.days.reduce((n, d) => n + d.slots.reduce((m, s) => m + s.sets, 0), 0),
+      })}
       back="/train"
       action={
         <Button variant="primary" size="sm" onClick={save}>
-          Save
+          {t('Save')}
         </Button>
       }
     >
       <div className="space-y-4">
-        <Field label="Program name" htmlFor="prog-name">
+        <Field label={t('Program name')} htmlFor="prog-name">
           <TextInput
             id="prog-name"
             value={draft.name}
@@ -117,7 +127,7 @@ export default function ProgramEditor() {
           <Card key={day.id}>
             <div className="flex items-center gap-2">
               <TextInput
-                aria-label={`Name for ${day.name}`}
+                aria-label={t('Name for {name}', { name: day.name })}
                 value={day.name}
                 onChange={(e) =>
                   update((p) => {
@@ -128,13 +138,18 @@ export default function ProgramEditor() {
                 }
                 className="flex-1 h-11"
               />
-              <IconButton label={`Delete ${day.name}`} onClick={() => removeDay(day.id)}>
+              <IconButton
+                label={t('Delete {name}', { name: day.name })}
+                onClick={() => removeDay(day.id)}
+              >
                 <span aria-hidden>🗑</span>
               </IconButton>
             </div>
 
             <div className="mt-2.5">
-              <p className="text-[11px] uppercase tracking-wider text-smoke mb-1.5">Scheduled day</p>
+              <p className="text-[11px] uppercase tracking-wider text-smoke mb-1.5">
+                {t('Scheduled day')}
+              </p>
               <div className="grid grid-cols-8 gap-1">
                 {[null, 1, 2, 3, 4, 5, 6, 0].map((weekday, i) => (
                   <button
@@ -155,7 +170,7 @@ export default function ProgramEditor() {
                         : 'border-slate bg-coal text-ash',
                     )}
                   >
-                    {weekday === null ? 'Any' : weekdayName(weekday, true).slice(0, 2)}
+                    {weekday === null ? t('Any') : t(weekdayName(weekday, true)).slice(0, 2)}
                   </button>
                 ))}
               </div>
@@ -169,14 +184,20 @@ export default function ProgramEditor() {
                     <div className="flex items-center gap-2">
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm text-parchment truncate">
-                          {exercise?.name ?? slot.exerciseId}
+                          {exercise ? t(exercise.name) : slot.exerciseId}
                         </span>
                         <span className="block text-xs text-smoke">
-                          {slot.sets} × {slot.repMin}–{slot.repMax} · {slot.targetRIR} RIR · {slot.restSec}s rest
+                          {t('{sets} × {repMin}–{repMax} · {rir} RIR · {rest}s rest', {
+                            sets: slot.sets,
+                            repMin: slot.repMin,
+                            repMax: slot.repMax,
+                            rir: slot.targetRIR,
+                            rest: slot.restSec,
+                          })}
                         </span>
                       </span>
                       <IconButton
-                        label="Move up"
+                        label={t('Move up')}
                         className="size-9 min-h-9 min-w-9"
                         disabled={index === 0}
                         onClick={() => moveSlot(day.id, slot.id, -1)}
@@ -184,7 +205,7 @@ export default function ProgramEditor() {
                         <span aria-hidden>↑</span>
                       </IconButton>
                       <IconButton
-                        label="Move down"
+                        label={t('Move down')}
                         className="size-9 min-h-9 min-w-9"
                         disabled={index === day.slots.length - 1}
                         onClick={() => moveSlot(day.id, slot.id, 1)}
@@ -192,14 +213,18 @@ export default function ProgramEditor() {
                         <span aria-hidden>↓</span>
                       </IconButton>
                       <IconButton
-                        label={`Edit ${exercise?.name ?? 'exercise'}`}
+                        label={t('Edit {name}', {
+                          name: exercise ? t(exercise.name) : t('exercise'),
+                        })}
                         className="size-9 min-h-9 min-w-9"
                         onClick={() => setEditingSlot({ dayId: day.id, slot })}
                       >
                         <span aria-hidden>✎</span>
                       </IconButton>
                       <IconButton
-                        label={`Remove ${exercise?.name ?? 'exercise'}`}
+                        label={t('Remove {name}', {
+                          name: exercise ? t(exercise.name) : t('exercise'),
+                        })}
                         className="size-9 min-h-9 min-w-9"
                         onClick={() =>
                           update((p) => {
@@ -219,49 +244,54 @@ export default function ProgramEditor() {
 
             <div className="flex items-center justify-between gap-2 mt-3">
               <Button size="sm" onClick={() => setPickerDay(day.id)}>
-                Add exercise
+                {t('Add exercise')}
               </Button>
-              <span className="text-[11px] text-smoke">~{estimateSessionMinutes(day)} min</span>
+              <span className="text-[11px] text-smoke">
+                {t('~{minutes} min', { minutes: estimateSessionMinutes(day) })}
+              </span>
             </div>
           </Card>
         ))}
 
         <div className="grid grid-cols-2 gap-2">
           <Button full onClick={addDay}>
-            Add day
+            {t('Add day')}
           </Button>
           <Button full onClick={() => setNewExerciseOpen(true)}>
-            New exercise
+            {t('New exercise')}
           </Button>
         </div>
 
         {planned && (
           <div>
-            <SectionHeading title="Planned weekly sets" hint="What this program schedules per muscle, before you train it." />
+            <SectionHeading
+              title={t('Planned weekly sets')}
+              hint={t('What this program schedules per muscle, before you train it.')}
+            />
             <Card>
               <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                 {MUSCLES.filter((m) => (planned[m.key] ?? 0) > 0).map((muscle) => (
                   <li key={muscle.key} className="flex justify-between text-sm">
-                    <span className="text-ash truncate">{muscle.label}</span>
+                    <span className="text-ash truncate">{t(muscle.label)}</span>
                     <span className="tabular text-parchment">{planned[muscle.key]}</span>
                   </li>
                 ))}
               </ul>
               {!MUSCLES.some((m) => (planned[m.key] ?? 0) > 0) && (
-                <p className="text-sm text-ash">Add some exercises to see planned volume.</p>
+                <p className="text-sm text-ash">{t('Add some exercises to see planned volume.')}</p>
               )}
             </Card>
           </div>
         )}
 
         <Button variant="ghost" full onClick={() => setConfirmDelete(true)}>
-          Delete this program
+          {t('Delete this program')}
         </Button>
       </div>
 
       <ExercisePicker
         open={pickerDay !== null}
-        title="Add exercise"
+        title={t('Add exercise')}
         onClose={() => setPickerDay(null)}
         onPick={(exerciseId) => {
           const exercise = data.exercises.find((e) => e.id === exerciseId)
@@ -288,7 +318,10 @@ export default function ProgramEditor() {
       <Sheet
         open={editingSlot !== null}
         onClose={() => setEditingSlot(null)}
-        title={data.exercises.find((e) => e.id === editingSlot?.slot.exerciseId)?.name ?? 'Exercise'}
+        title={(() => {
+          const editing = data.exercises.find((e) => e.id === editingSlot?.slot.exerciseId)
+          return editing ? t(editing.name) : t('Exercise')
+        })()}
       >
         {editingSlot && (
           <SlotEditor
@@ -307,7 +340,11 @@ export default function ProgramEditor() {
         )}
       </Sheet>
 
-      <Sheet open={newExerciseOpen} onClose={() => setNewExerciseOpen(false)} title="Create exercise">
+      <Sheet
+        open={newExerciseOpen}
+        onClose={() => setNewExerciseOpen(false)}
+        title={t('Create exercise')}
+      >
         <CustomExerciseForm
           onSave={(exercise) => {
             store.saveExercise(exercise)
@@ -319,9 +356,11 @@ export default function ProgramEditor() {
       <ConfirmDialog
         open={confirmDelete}
         destructive
-        title="Delete this program?"
-        body="The program and its day structure are removed. Sessions you already completed are kept — your history and recommendations are unaffected."
-        confirmLabel="Delete program"
+        title={t('Delete this program?')}
+        body={t(
+          'The program and its day structure are removed. Sessions you already completed are kept — your history and recommendations are unaffected.',
+        )}
+        confirmLabel={t('Delete program')}
         onCancel={() => setConfirmDelete(false)}
         onConfirm={() => {
           store.deleteProgram(draft.id)
@@ -343,6 +382,7 @@ function SlotEditor({
   onChange: (patch: Partial<ProgramSlot>) => void
   onDone: () => void
 }) {
+  const { t } = useT()
   const [local, setLocal] = useState(slot)
   const apply = (patch: Partial<ProgramSlot>) => {
     const next = { ...local, ...patch }
@@ -351,22 +391,28 @@ function SlotEditor({
   }
   return (
     <div className="space-y-4">
-      <Field label="Working sets">
-        <NumberStepper label="Working sets" value={local.sets} min={1} max={10} onChange={(v) => apply({ sets: v })} />
+      <Field label={t('Working sets')}>
+        <NumberStepper
+          label={t('Working sets')}
+          value={local.sets}
+          min={1}
+          max={10}
+          onChange={(v) => apply({ sets: v })}
+        />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Min reps">
+        <Field label={t('Min reps')}>
           <NumberStepper
-            label="Minimum reps"
+            label={t('Minimum reps')}
             value={local.repMin}
             min={1}
             max={30}
             onChange={(v) => apply({ repMin: Math.min(v, local.repMax) })}
           />
         </Field>
-        <Field label="Max reps">
+        <Field label={t('Max reps')}>
           <NumberStepper
-            label="Maximum reps"
+            label={t('Maximum reps')}
             value={local.repMax}
             min={1}
             max={40}
@@ -374,18 +420,21 @@ function SlotEditor({
           />
         </Field>
       </div>
-      <Field label="Target reps in reserve" hint="1–3 is the usual window for productive working sets.">
+      <Field
+        label={t('Target reps in reserve')}
+        hint={t('1–3 is the usual window for productive working sets.')}
+      >
         <SegmentedControl
-          label="Target RIR"
+          label={t('Target RIR')}
           columns={5}
           value={String(local.targetRIR)}
           onChange={(v) => apply({ targetRIR: Number(v) })}
           options={[0, 1, 2, 3, 4].map((n) => ({ value: String(n), label: String(n) }))}
         />
       </Field>
-      <Field label="Rest between sets">
+      <Field label={t('Rest between sets')}>
         <NumberStepper
-          label="Rest seconds"
+          label={t('Rest seconds')}
           value={local.restSec}
           min={30}
           max={420}
@@ -395,11 +444,13 @@ function SlotEditor({
         />
       </Field>
       <Field
-        label={`Smallest load increment (${units})`}
-        hint="The smallest jump your plates, dumbbells or stack actually allow. Progression uses this exact number."
+        label={t('Smallest load increment ({units})', { units })}
+        hint={t(
+          'The smallest jump your plates, dumbbells or stack actually allow. Progression uses this exact number.',
+        )}
       >
         <NumberStepper
-          label="Load increment"
+          label={t('Load increment')}
           value={Number(toDisplay(local.incrementKg ?? 2.5, units).toFixed(2))}
           min={0.5}
           max={25}
@@ -410,13 +461,14 @@ function SlotEditor({
         />
       </Field>
       <Button variant="primary" full onClick={onDone}>
-        Done
+        {t('Done')}
       </Button>
     </div>
   )
 }
 
 function CustomExerciseForm({ onSave }: { onSave: (exercise: Exercise) => void }) {
+  const { t } = useT()
   const [name, setName] = useState('')
   const [contributions, setContributions] = useState<Partial<Record<MuscleKey, number>>>({})
   const [increment, setIncrement] = useState(2.5)
@@ -433,17 +485,24 @@ function CustomExerciseForm({ onSave }: { onSave: (exercise: Exercise) => void }
 
   return (
     <div className="space-y-4">
-      <Field label="Exercise name" htmlFor="new-ex-name" required>
-        <TextInput id="new-ex-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Landmine press" />
+      <Field label={t('Exercise name')} htmlFor="new-ex-name" required>
+        <TextInput
+          id="new-ex-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('e.g. Landmine press')}
+        />
       </Field>
       <Field
-        label="Muscle contributions"
-        hint="1.0 = a direct hard set for that muscle, 0.5 = a meaningful assist. These numbers are what the volume dashboard sums."
+        label={t('Muscle contributions')}
+        hint={t(
+          '1.0 = a direct hard set for that muscle, 0.5 = a meaningful assist. These numbers are what the volume dashboard sums.',
+        )}
       >
         <ul className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
           {MUSCLES.map((muscle) => (
             <li key={muscle.key} className="flex items-center justify-between gap-2">
-              <span className="text-sm text-ash">{muscle.label}</span>
+              <span className="text-sm text-ash">{t(muscle.label)}</span>
               <span className="flex gap-1">
                 {[0.5, 1].map((value) => (
                   <button
@@ -467,26 +526,42 @@ function CustomExerciseForm({ onSave }: { onSave: (exercise: Exercise) => void }
         </ul>
       </Field>
       <Field
-        label="How is it loaded?"
-        hint="Decides what the weight box means when you log it."
+        label={t('How is it loaded?')}
+        hint={t('Decides what the weight box means when you log it.')}
       >
         <ChoiceList<LoadingStyle>
-          label="Loading style"
+          label={t('Loading style')}
           value={loading}
           onChange={setLoading}
           options={[
-            { value: 'barbell', label: 'Barbell', hint: 'You log the total on the bar, bar included' },
-            { value: 'dumbbell_pair', label: 'Two dumbbells', hint: 'You log the number on one of them' },
-            { value: 'dumbbell_single', label: 'One dumbbell or kettlebell', hint: 'You log the implement' },
-            { value: 'stack', label: 'Machine or cable', hint: 'You log the pin setting' },
-            { value: 'bodyweight', label: 'Body weight', hint: 'You log any ADDED weight, 0 for none' },
-            { value: 'other', label: 'Something else', hint: 'Bands, sled, odd objects' },
+            {
+              value: 'barbell',
+              label: t('Barbell'),
+              hint: t('You log the total on the bar, bar included'),
+            },
+            {
+              value: 'dumbbell_pair',
+              label: t('Two dumbbells'),
+              hint: t('You log the number on one of them'),
+            },
+            {
+              value: 'dumbbell_single',
+              label: t('One dumbbell or kettlebell'),
+              hint: t('You log the implement'),
+            },
+            { value: 'stack', label: t('Machine or cable'), hint: t('You log the pin setting') },
+            {
+              value: 'bodyweight',
+              label: t('Body weight'),
+              hint: t('You log any ADDED weight, 0 for none'),
+            },
+            { value: 'other', label: t('Something else'), hint: t('Bands, sled, odd objects') },
           ]}
         />
       </Field>
-      <Field label="Smallest load increment (kg)">
+      <Field label={t('Smallest load increment (kg)')}>
         <NumberStepper
-          label="Increment"
+          label={t('Increment')}
           value={increment}
           min={0.5}
           max={20}
@@ -505,10 +580,14 @@ function CustomExerciseForm({ onSave }: { onSave: (exercise: Exercise) => void }
           lowerBody ? 'border-ember-500 bg-ember-500/15 text-ember-200' : 'border-slate bg-coal text-ash',
         )}
       >
-        {lowerBody ? 'Lower-body movement (bigger jumps)' : 'Upper-body movement (smaller jumps)'}
+        {lowerBody
+          ? t('Lower-body movement (bigger jumps)')
+          : t('Upper-body movement (smaller jumps)')}
       </button>
       {Object.keys(contributions).length === 0 && (
-        <Alert tone="warn">Pick at least one muscle so this exercise counts toward your weekly volume.</Alert>
+        <Alert tone="warn">
+          {t('Pick at least one muscle so this exercise counts toward your weekly volume.')}
+        </Alert>
       )}
       <Button
         variant="primary"
@@ -530,7 +609,7 @@ function CustomExerciseForm({ onSave }: { onSave: (exercise: Exercise) => void }
           })
         }
       >
-        Create exercise
+        {t('Create exercise')}
       </Button>
     </div>
   )

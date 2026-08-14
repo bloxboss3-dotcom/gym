@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useT } from '@/i18n/useT'
 import { Link, useParams } from 'react-router-dom'
 import { Screen } from '@/components/AppShell'
 import { LineChart } from '@/components/charts'
@@ -13,6 +14,7 @@ import { useStore } from '@/state/store'
 
 /** Full history for one movement: trend, records, every logged set. */
 export default function ExerciseHistory() {
+  const { t } = useT()
   const { exerciseId } = useParams<{ exerciseId: string }>()
   const { data } = useStore()
   const units = data.profile?.units ?? 'kg'
@@ -61,14 +63,14 @@ export default function ExerciseHistory() {
   }
 
   return (
-    <Screen title={exercise.name} subtitle={exercise.cue} back="/train">
+    <Screen title={t(exercise.name)} subtitle={t(exercise.cue)} back="/train">
       <div className="space-y-4">
         <Card>
           <p className="text-[11px] uppercase tracking-wider text-smoke">Muscle contributions</p>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {Object.entries(exercise.contributions).map(([muscle, value]) => (
               <Chip key={muscle} tone={value === 1 ? 'ember' : 'neutral'}>
-                {MUSCLE_LABEL[muscle as keyof typeof MUSCLE_LABEL]} · {value}
+                {t(MUSCLE_LABEL[muscle as keyof typeof MUSCLE_LABEL])} · {value}
               </Chip>
             ))}
           </div>

@@ -219,3 +219,52 @@ describe('today is not a magic date', () => {
     expect(toIsoDate).toBeTypeOf('function')
   })
 })
+
+describe('the translatable template', () => {
+  const bench = EXERCISE_BY_ID[BENCH]
+
+  it('produces the same English it always did', () => {
+    /*
+      Exact sentences, not a regex.
+
+      The first version of this test asserted that interpolating the template
+      reproduces the note — which is true by construction, because the note is
+      built FROM the template. It could not fail, and a deliberate reword sailed
+      straight through it. What can actually go wrong is the refactor changing
+      the English, so that is what is pinned: these strings shipped, and the
+      browser suite and the user both read them.
+    */
+    const noteFor = (loads: number[], rir: number | null) =>
+      assessMovement(bench, weekly(loads, rir), TODAY)!.note
+
+    expect(noteFor([60, 62.5, 65, 67.5], 2)).toBe(
+      'Going up (+8.2%) and the sets are landing in the right effort window. Leave it alone.',
+    )
+    expect(noteFor([60, 60, 60, 60], 5)).toBe(
+      'Flat (+0.0%), at a median of 5 reps in reserve. That is the likely reason — a set you could have doubled is not a hard set.',
+    )
+    expect(noteFor([60, 60, 60, 60], 0)).toBe(
+      'Flat (+0.0%), and the sets are going to failure or past it. More effort is not the missing ingredient here; recovery or volume might be.',
+    )
+    expect(noteFor([60, 65], 2)).toBe(
+      'Only 2 sessions in the last 28 days — not enough to call a trend yet.',
+    )
+  })
+
+  it('leaves no placeholder unfilled', () => {
+    // A stray {rir} reaching the screen is worse than no translation at all.
+    for (const rir of [0, 2, 5, null]) {
+      for (const loads of [[60, 62.5, 65, 67.5], [60, 60, 60, 60], [70, 67.5, 65, 62.5]]) {
+        const v = assessMovement(bench, weekly(loads, rir), TODAY)
+        expect(v!.note, `rir ${rir}`).not.toMatch(/\{\w+\}/)
+      }
+    }
+  })
+
+  it('keeps the template free of already-interpolated numbers', () => {
+    // If the trend percentage got baked in, the template stops being a key.
+    const v = assessMovement(bench, weekly([60, 62.5, 65, 67.5], 2), TODAY)
+    expect(v!.noteTemplate).toContain('{pct}')
+    expect(v!.noteTemplate).not.toMatch(/\+\d+\.\d%/)
+  })
+})

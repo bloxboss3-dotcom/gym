@@ -19,6 +19,7 @@ export function defaultSettings(): Settings {
     mealsPerDay: 4,
     finalMealTime: '21:00',
     avoidFoods: [],
+    language: 'en',
     reducedMotion: false,
     soundEnabled: false,
     hapticsEnabled: true,

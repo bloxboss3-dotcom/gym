@@ -3,6 +3,7 @@ import { useMemo, type ReactNode } from 'react'
 import { useStore } from '@/state/store'
 import { resolveToday } from '@/engine/schedule'
 import { cx, IconButton } from '@/components/ui'
+import { useT } from '@/i18n/useT'
 
 /**
  * App shell: header, scrolling content region, and the bottom navigation.
@@ -65,6 +66,10 @@ function NavIcon({ name, active }: { name: string; active: boolean }) {
  * app is for, and burying it two taps deep inside Progress made it feel like an
  * afterthought. Train stays the raised centre-ish button — the single most
  * important action in the app should never be more than one thumb away.
+ *
+ * `label` is the English source string, which is also the translation key.
+ * The lookup happens at render, inside the component, because `useT` is a hook
+ * and this table is module scope.
  */
 const TABS = [
   { to: '/', label: 'Today', icon: 'today', end: true },
@@ -77,6 +82,7 @@ const TABS = [
 
 export function BottomNav() {
   const { data } = useStore()
+  const { t } = useT()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -93,7 +99,7 @@ export function BottomNav() {
 
   return (
     <nav
-      aria-label="Primary"
+      aria-label={t('Primary')}
       className="fixed bottom-0 inset-x-0 z-40 bg-coal/95 backdrop-blur border-t border-slate safe-x"
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
@@ -115,7 +121,7 @@ export function BottomNav() {
                 >
                   <NavIcon name="train" active />
                   <span className="text-[10px] font-bold uppercase tracking-wide">
-                    {plan.kind === 'resume' ? 'Resume' : 'Train'}
+                    {plan.kind === 'resume' ? t('Resume') : t('Train')}
                   </span>
                 </button>
               </li>
@@ -136,7 +142,7 @@ export function BottomNav() {
                 {({ isActive }) => (
                   <>
                     <NavIcon name={tab.icon} active={isActive} />
-                    <span className="text-[10px] font-medium">{tab.label}</span>
+                    <span className="text-[10px] font-medium">{t(tab.label)}</span>
                   </>
                 )}
               </NavLink>
@@ -164,6 +170,7 @@ export function Screen({
   wide?: boolean
 }) {
   const navigate = useNavigate()
+  const { t } = useT()
   return (
     <div className="min-h-dvh flex flex-col">
       <header
@@ -173,7 +180,7 @@ export function Screen({
         <div className={cx('mx-auto flex items-center gap-2 px-4 py-3', wide ? 'max-w-3xl' : 'max-w-lg')}>
           {back && (
             <IconButton
-              label="Go back"
+              label={t('Go back')}
               className="-ml-2 shrink-0"
               onClick={() => (typeof back === 'string' ? navigate(back) : back())}
             >

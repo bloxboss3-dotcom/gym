@@ -24,6 +24,8 @@ import { calculateProteinTarget } from '@/engine/protein'
 import { formatHeight, fromDisplay, toDisplay } from '@/engine/units'
 import { PLATE_LADDER, barKgFor, platesFor } from '@/engine/plates'
 import { useStore } from '@/state/store'
+import { LANGUAGES, type Lang } from '@/i18n'
+import { useT } from '@/i18n/useT'
 import type {
   ActivityLevel,
   Diet,
@@ -41,6 +43,7 @@ export default function Profile() {
   const { data } = store
   const profile = data.profile!
   const units = profile.units
+  const { lang } = useT()
 
   const [editOpen, setEditOpen] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
@@ -129,6 +132,18 @@ export default function Profile() {
           <SectionHeading title="Settings" />
           <Card>
             <div className="space-y-4">
+              {/* Language first in the list, because somebody who cannot
+                  read the rest of this screen needs to find it without
+                  reading the rest of this screen. Each option is written in
+                  its own language for the same reason. */}
+              <Field label="Language · Idioma">
+                <SegmentedControl<Lang>
+                  label="Language"
+                  value={lang}
+                  onChange={(v) => store.updateSettings({ language: v })}
+                  options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
+                />
+              </Field>
               <Field label="Units">
                 <SegmentedControl<Units>
                   label="Unit preference"

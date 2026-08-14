@@ -10,6 +10,7 @@ import {
   type AnvilResult,
   type Verdict,
 } from '@/engine/anvil'
+import { useT } from '@/i18n/useT'
 import { useStore } from '@/state/store'
 
 /**
@@ -24,6 +25,7 @@ import { useStore } from '@/state/store'
 export function AnvilGame({ seed, onClose }: { seed: number; onClose: () => void }) {
   const { strikeAnvil } = useStore()
   const reduced = useReducedMotion()
+  const { t } = useT()
 
   const [round] = useState(() => createRound(seed))
   const [strike, setStrike] = useState(0)
@@ -80,12 +82,14 @@ export function AnvilGame({ seed, onClose }: { seed: number; onClose: () => void
   const zone = round.zones[Math.min(strike, ANVIL.strikes - 1)]
 
   return (
+    // The section's aria-label stays English: the browser suite finds the game
+    // with `section[aria-label="The Anvil"]`, so it is test API, not prose.
     <section
       aria-label="The Anvil"
       className="rounded-xl border border-ember-500/35 bg-coal/85 p-3"
     >
       <div className="flex items-center justify-between gap-2 mb-2">
-        <p className="font-display text-lg uppercase tracking-wide text-ember-300">The Anvil</p>
+        <p className="font-display text-lg uppercase tracking-wide text-ember-300">{t('The Anvil')}</p>
         <div className="flex items-center gap-1.5">
           <Chip tone="neutral">
             {Math.min(verdicts.length + (done ? 0 : 1), ANVIL.strikes)}/{ANVIL.strikes}
@@ -95,7 +99,7 @@ export function AnvilGame({ seed, onClose }: { seed: number; onClose: () => void
             onClick={onClose}
             className="text-xs text-ember-200 underline underline-offset-2 touch-target px-2"
           >
-            Close
+            {t('Close')}
           </button>
         </div>
       </div>
@@ -106,15 +110,19 @@ export function AnvilGame({ seed, onClose }: { seed: number; onClose: () => void
           <div className="flex flex-wrap gap-1.5 mt-2">
             <Chip tone="gold">◈ {result.coins}</Chip>
             {result.xp > 0 && <Chip tone="ember">{result.xp} XP</Chip>}
-            <Chip tone="good">{result.perfects} perfect</Chip>
-            {result.misses > 0 && <Chip tone="caution">{result.misses} missed</Chip>}
+            <Chip tone="good">{t('{count} perfect', { count: result.perfects })}</Chip>
+            {result.misses > 0 && (
+              <Chip tone="caution">{t('{count} missed', { count: result.misses })}</Chip>
+            )}
           </div>
           <p className="text-xs text-smoke mt-2 leading-relaxed">
-            Banked. Coins from the anvil are capped at {ANVIL.strikes === 5 ? 'three' : 'a few'} rounds a day — it is
-            here to make the rest interval worth something, not to replace training.
+            {t(
+              'Banked. Coins from the anvil are capped at {rounds} rounds a day — it is here to make the rest interval worth something, not to replace training.',
+              { rounds: ANVIL.strikes === 5 ? t('three') : t('a few') },
+            )}
           </p>
           <Button full className="mt-3" onClick={onClose}>
-            Back to the set
+            {t('Back to the set')}
           </Button>
         </div>
       ) : (
@@ -145,7 +153,7 @@ export function AnvilGame({ seed, onClose }: { seed: number; onClose: () => void
                   flash === 'miss' && 'text-caution',
                 )}
               >
-                {flash === 'perfect' ? 'Perfect' : flash === 'good' ? 'Solid' : 'Missed'}
+                {flash === 'perfect' ? t('Perfect') : flash === 'good' ? t('Solid') : t('Missed')}
               </div>
             )}
           </div>
@@ -166,14 +174,16 @@ export function AnvilGame({ seed, onClose }: { seed: number; onClose: () => void
           </div>
 
           <Button variant="primary" full className="mt-2.5" onClick={hit}>
-            Strike
+            {t('Strike')}
           </Button>
           <p className="text-[11px] text-smoke mt-1.5 leading-relaxed">
             {reduced
-              ? 'Reduced motion is on, so the hammer still moves but nothing flashes. Tap Strike as it crosses the hot metal.'
-              : `Tap as the hammer crosses the hot metal. Each strike is faster than the last — ${Math.round(
-                  sweepMsFor(strike) / 100,
-                ) / 10}s a pass now.`}
+              ? t(
+                  'Reduced motion is on, so the hammer still moves but nothing flashes. Tap Strike as it crosses the hot metal.',
+                )
+              : t('Tap as the hammer crosses the hot metal. Each strike is faster than the last — {seconds}s a pass now.', {
+                  seconds: Math.round(sweepMsFor(strike) / 100) / 10,
+                })}
           </p>
         </>
       )}

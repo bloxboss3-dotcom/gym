@@ -1017,6 +1017,85 @@ const unlabelled = await page.evaluate(() => {
 })
 record('no unlabelled interactive controls on Today', unlabelled.length === 0, unlabelled.join(' | '))
 
+// ------------------------------------------------------------------ spanish
+//
+// Asserted on properties, not on specific translated strings. Which sentences
+// are in the catalogue will keep changing; what must never change is that
+// switching the language actually changes the app, that nothing crashes in
+// the other language, and that switching back restores the English exactly —
+// because the English IS the lookup key, so a bug in the fallback path is a
+// bug that shows a Spanish speaker nothing at all.
+await page.goto(`${BASE}#/profile`, { waitUntil: 'networkidle' })
+await page.waitForTimeout(600)
+
+const langControl = page.getByRole('radio', { name: 'Español' })
+const langOffered = await langControl.isVisible().catch(() => false)
+record('the language can be changed from the profile', langOffered)
+
+if (langOffered) {
+  const englishNav = await page.locator('nav').first().innerText()
+  await langControl.click()
+  await page.waitForTimeout(500)
+  const spanishNav = await page.locator('nav').first().innerText()
+  record(
+    'switching to Spanish changes the navigation',
+    spanishNav !== englishNav && spanishNav.length > 0,
+    `"${englishNav.replace(/\n/g, '/')}" → "${spanishNav.replace(/\n/g, '/')}"`,
+  )
+  record('the navigation is actually Spanish', /Hoy/.test(spanishNav), spanishNav.replace(/\n/g, '/'))
+
+  // Every main screen has to survive the other language. A missing
+  // translation is fine — it renders English — but a crash is not.
+  const SCREENS = ['/', '/train', '/nutrition', '/progress', '/forge', '/profile']
+  let translatedScreens = 0
+  for (const route of SCREENS) {
+    await page.goto(`${BASE}#${route}`, { waitUntil: 'networkidle' })
+    await page.waitForTimeout(450)
+    const body = await page.locator('body').innerText()
+    if (body.trim().length < 40) {
+      record(`Spanish ${route} renders`, false, 'screen came back empty')
+      continue
+    }
+    // Spanish-only characters, or a handful of words that only appear
+    // translated. Crude on purpose: it is checking that translation reached
+    // the screen at all, not grading the prose.
+    if (/[áéíóúñ¿¡]|\b(sesión|entrenamiento|series|repeticiones|descanso|peso|comida|progreso)\b/i.test(body)) {
+      translatedScreens += 1
+    }
+    await noOverflow(`spanish ${route}`)
+  }
+  record(
+    'Spanish reaches every main screen',
+    translatedScreens === SCREENS.length,
+    `${translatedScreens}/${SCREENS.length} screens showing Spanish`,
+  )
+  await page.goto(`${BASE}#/`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(400)
+  await shot('18-spanish-today')
+
+  // The setting has to survive a reload, or it is not a setting.
+  await page.reload({ waitUntil: 'networkidle' })
+  await page.waitForTimeout(600)
+  record(
+    'the language survives a reload',
+    /Hoy/.test(await page.locator('nav').first().innerText()),
+  )
+
+  // And back. The English is the key, so this path must be exact.
+  await page.goto(`${BASE}#/profile`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(500)
+  await page.getByRole('radio', { name: 'English' }).click()
+  await page.waitForTimeout(500)
+  await page.goto(`${BASE}#/`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(400)
+  const restored = await page.locator('nav').first().innerText()
+  record(
+    'switching back restores the English exactly',
+    restored === englishNav,
+    `"${restored.replace(/\n/g, '/')}"`,
+  )
+}
+
 // ----------------------------------------------------------------------- end
 await browser.close()
 

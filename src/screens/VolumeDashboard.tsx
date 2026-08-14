@@ -10,6 +10,7 @@ import { assessAllMuscles, weeklyCompletion, suggestVolumeProgression } from '@/
 import { LOAD_RANGE_NOTE, auditHypertrophy, collectAuditInput } from '@/engine/intensity'
 import { addDays, startOfWeek, toIsoDate } from '@/lib/date'
 import { useStore } from '@/state/store'
+import { useT } from '@/i18n/useT'
 import type { MuscleKey } from '@/types'
 
 /**
@@ -20,6 +21,7 @@ import type { MuscleKey } from '@/types'
  * experience level, not a target to chase past.
  */
 export default function VolumeDashboard() {
+  const { t } = useT()
   const { data } = useStore()
   const profile = data.profile!
   const today = toIsoDate()
@@ -126,15 +128,15 @@ export default function VolumeDashboard() {
             {levers.map((lever) => (
               <li key={lever.key} className="rounded-lg border border-slate/70 bg-coal/60 px-3 py-2.5">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium text-parchment">{lever.label}</p>
+                  <p className="text-sm font-medium text-parchment">{t(lever.label)}</p>
                   <Chip
                     tone={lever.status === 'good' ? 'good' : lever.status === 'attention' ? 'caution' : 'neutral'}
                   >
                     {lever.status === 'good' ? 'On track' : lever.status === 'attention' ? 'Worth a look' : 'No data yet'}
                   </Chip>
                 </div>
-                {lever.finding && <p className="text-xs text-ash mt-1 leading-relaxed">{lever.finding}</p>}
-                <p className="text-xs text-smoke mt-1 leading-relaxed">{lever.advice}</p>
+                {lever.finding && <p className="text-xs text-ash mt-1 leading-relaxed">{t(lever.finding)}</p>}
+                <p className="text-xs text-smoke mt-1 leading-relaxed">{t(lever.advice)}</p>
                 <div className="mt-1.5">
                   <CitationList ids={lever.citationIds} />
                 </div>
@@ -151,7 +153,7 @@ export default function VolumeDashboard() {
               {suggestions.map((s) => (
                 <li key={s.muscle} className="text-sm">
                   <span className="text-parchment font-medium">
-                    {MUSCLE_LABEL[s.muscle]} — add up to {s.addSets} set{s.addSets === 1 ? '' : 's'}
+                    {t(MUSCLE_LABEL[s.muscle])} — add up to {s.addSets} set{s.addSets === 1 ? '' : 's'}
                   </span>
                   <span className="block text-xs text-ash mt-0.5 leading-snug">{s.reason}</span>
                 </li>
@@ -205,6 +207,7 @@ function MuscleRow({
 }) {
   const { data } = useStore()
   const [open, setOpen] = useState(false)
+  const { t } = useT()
   const tone =
     assessment.status === 'high'
       ? 'danger'
@@ -217,7 +220,7 @@ function MuscleRow({
   return (
     <Card>
       <TargetBar
-        label={MUSCLE_LABEL[assessment.muscle as MuscleKey]}
+        label={t(MUSCLE_LABEL[assessment.muscle as MuscleKey])}
         value={assessment.hardSets}
         target={assessment.range}
         ceiling={RULES.volume.autoCeiling}
