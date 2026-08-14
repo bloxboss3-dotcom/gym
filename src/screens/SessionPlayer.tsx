@@ -22,7 +22,7 @@ import { EXERCISE_BY_ID, searchExercises } from '@/data/exercises'
 import { RULES } from '@/config/rules'
 import { ECONOMY } from '@/config/economy'
 import { historyFor, recommendNextSession } from '@/engine/progression'
-import { BLOCK_EXPLANATION, primaryMuscle, suggestFinisher } from '@/engine/intensity'
+import { BLOCK_EXPLANATION, detectDropSet, primaryMuscle, suggestFinisher } from '@/engine/intensity'
 import { startingVolumeRange, weeklyMuscleVolume } from '@/engine/volume'
 import { fromDisplay, formatWeight, roundToIncrement, toDisplay } from '@/engine/units'
 import {
@@ -99,11 +99,6 @@ export default function SessionPlayer() {
   const totalSets = session.entries.reduce((n, e) => n + e.sets.filter((s) => !s.warmup).length, 0)
   const plannedSets = session.entries.reduce((n, e) => n + e.plannedSets, 0)
   const readOnly = session.status !== 'active'
-  // Accepted and completed both spend the fatigue budget — you did the work
-  // either way. Declining does not.
-  const challengesTaken = session.entries.filter(
-    (e) => e.challenge?.status === 'accepted' || e.challenge?.status === 'completed',
-  ).length
 
   return (
     <div className="min-h-dvh flex flex-col bg-void">
@@ -204,7 +199,6 @@ export default function SessionPlayer() {
             index={index}
             sessionId={session.id}
             readOnly={readOnly}
-            challengesTaken={challengesTaken}
             onRest={startRest}
             onSubstitute={() => setSubstituteFor(entry.id)}
           />
@@ -343,7 +337,6 @@ function ExerciseBlock({
   index,
   sessionId,
   readOnly,
-  challengesTaken,
   onRest,
   onSubstitute,
 }: {
@@ -351,8 +344,6 @@ function ExerciseBlock({
   index: number
   sessionId: string
   readOnly: boolean
-  /** Challenges already accepted or finished elsewhere in this session. */
-  challengesTaken: number
   onRest: (seconds: number) => void
   onSubstitute: () => void
 }) {
@@ -424,14 +415,6 @@ function ExerciseBlock({
   const workingSets = entry.sets.filter((s) => !s.warmup)
   const done = workingSets.length >= entry.plannedSets
   const challenge = entry.challenge ?? null
-  /*
-    The budget counts challenges taken on OTHER movements.
-    Counting this one's own would make the engine withdraw the offer the
-    instant it was accepted, taking the steps off the screen of the person
-    who just agreed to follow them.
-  */
-  const ownTaken = challenge?.status === 'accepted' || challenge?.status === 'completed' ? 1 : 0
-  const takenElsewhere = challengesTaken - ownTaken
 
   // Should this movement earn a finisher? The answer depends on how short the
   // week is for the muscle it trains, so the weekly tally has to be computed
@@ -449,17 +432,45 @@ function ExerciseBlock({
       entry,
       weeklySets: volume[muscle]?.hardSets ?? 0,
       weeklyRange: startingVolumeRange(data.profile?.experience ?? 'beginner'),
-      // Count what was actually taken, not zero.
-      //
-      // This was hardcoded to 0, which quietly disabled the fatigue budget:
-      // the engine caps finishers at two a session and the rule was written,
-      // tested and never consulted, so a finisher was offered on every single
-      // movement and a session could end up carrying five of them.
-      finishersUsedThisSession: takenElsewhere,
       deloadActive: data.deloads.some((d) => d.status === 'accepted' && d.endDate === null),
       units,
     })
-  }, [exercise, entry, data.sessions, data.exercises, data.profile, data.deloads, units, readOnly, takenElsewhere])
+  }, [exercise, entry, data.sessions, data.exercises, data.profile, data.deloads, units, readOnly])
+
+  /*
+    Did you just do the drop set?
+
+    Not "did you say you would" — did you. The load coming down and the next
+    set starting straight away IS a drop set, and it is already in the log, so
+    the app reads it rather than asking. That turns three taps (take it, do it,
+    confirm it) into none.
+
+    Two guards keep this from crediting work nobody did. It only fires where a
+    drop set was the thing on offer for this movement, so it confirms a
+    prescription rather than inventing one; and `detectDropSet` insists the
+    drops came after the planned sets, were a real cut, and followed without a
+    rest. `store.setChallenge` is idempotent on (session, entry), so a re-render
+    or an edited set cannot pay twice.
+
+    Only drop sets. Rest-pause and partials leave nothing behind in the weight
+    column — same load, or no extra sets at all — so those still need the tap,
+    and pretending otherwise would mean guessing.
+  */
+  const detectedDrop = useMemo(() => detectDropSet(entry), [entry])
+  const offeredKind = challenge?.kind ?? finisher.technique?.kind ?? null
+  const offeredHeadline = challenge?.headline ?? finisher.technique?.headline ?? ''
+  useEffect(() => {
+    if (readOnly || !detectedDrop) return
+    if (offeredKind !== 'drop_set') return
+    if (challenge?.status === 'completed') return
+    store.setChallenge(sessionId, entry.id, {
+      kind: 'drop_set',
+      headline: offeredHeadline,
+      status: 'completed',
+      at: Date.now(),
+      detected: true,
+    })
+  }, [detectedDrop, offeredKind, offeredHeadline, challenge?.status, readOnly, sessionId, entry.id, store])
 
   // Total reps this session vs last, which is exactly what double progression
   // is comparing. Only sets at a comparable load count toward "to beat" —
@@ -495,7 +506,11 @@ function ExerciseBlock({
   }
 
   return (
-    <Card className={cx(done && 'border-vital/35')}>
+    <Card
+      className={cx(done && 'border-vital/35')}
+      data-testid="exercise-block"
+      data-exercise-id={entry.exerciseId}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-wider text-smoke">
@@ -626,15 +641,29 @@ function ExerciseBlock({
           )}
         >
           {challenge.status === 'completed' ? (
-            <div className="flex items-center gap-2 flex-wrap">
-              <Chip tone="good">{t('Challenge done')}</Chip>
-              <span className="text-sm text-parchment">{challenge.headline}</span>
-              <span className="text-xs text-vital">
-                {t('+{coins} coins · +{xp} XP', {
-                  coins: ECONOMY.rewards.challenge_completed.coins,
-                  xp: ECONOMY.rewards.challenge_completed.xp,
-                })}
-              </span>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Chip tone="good">{t('Challenge done')}</Chip>
+                <span className="text-sm text-parchment">{challenge.headline}</span>
+                <span className="text-xs text-vital">
+                  {t('+{coins} coins · +{xp} XP', {
+                    coins: ECONOMY.rewards.challenge_completed.coins,
+                    xp: ECONOMY.rewards.challenge_completed.xp,
+                  })}
+                </span>
+              </div>
+              {/* Say what was seen, not just that something was. A silent
+                  tick invites "why did that happen"; the weights answer it. */}
+              {challenge.detected && detectedDrop && (
+                <p className="text-xs text-ash mt-1.5 leading-relaxed" data-testid="drop-detected">
+                  {t('Counted from your sets: {from} down to {ladder}, no rest in between.', {
+                    from: formatWeight(detectedDrop.fromKg, units),
+                    ladder: detectedDrop.drops
+                      .map((d) => formatWeight(d.weightKg, units))
+                      .join(' → '),
+                  })}
+                </p>
+              )}
             </div>
           ) : challenge.status === 'declined' || challenge.status === 'abandoned' ? (
             <p className="text-xs text-smoke leading-relaxed">
@@ -668,6 +697,13 @@ function ExerciseBlock({
               xp: ECONOMY.rewards.challenge_completed.xp,
             })}
           </p>
+          {/* The buttons are the slow path. Say so, or nobody finds the fast
+              one — and the fast one is just training and logging it. */}
+          {finisher.technique.kind === 'drop_set' && (
+            <p className="text-xs text-ash mt-1 leading-relaxed">
+              {t('No need to tap anything: drop the weight, log the set, and this ticks itself.')}
+            </p>
+          )}
           {!readOnly && (
             <div className="grid grid-cols-2 gap-2 mt-2.5">
               <Button

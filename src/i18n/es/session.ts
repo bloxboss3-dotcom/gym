@@ -169,6 +169,12 @@ export const SESSION: Dict = {
   'Working set': 'Serie de trabajo',
   'Save changes': 'Guardar cambios',
 
+  // --- Reading a drop set out of the log ------------------------------------
+  'Counted from your sets: {from} down to {ladder}, no rest in between.':
+    'Contado a partir de tus series: de {from} a {ladder}, sin descanso entre medias.',
+  'No need to tap anything: drop the weight, log the set, and this ticks itself.':
+    'No hace falta pulsar nada: baja el peso, registra la serie y esto se marca solo.',
+
   // --- Searching for a movement --------------------------------------------
   'Search exercises': 'Buscar ejercicios',
   'Suggested swaps': 'Cambios sugeridos',

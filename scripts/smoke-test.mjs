@@ -443,18 +443,65 @@ if (finisherText) {
   await noOverflow('finisher')
 }
 
-// The fatigue budget, walked through a whole session.
+// Challenges across a whole session.
 //
-// This is the check that was missing when the bug shipped. The engine caps
-// finishers at two a session, the rule was written, and a unit test asserted
-// it — but the screen passed a hardcoded zero, so the cap never fired and a
-// finisher appeared on every movement. Every test in the suite passed the
-// entire time, because they all called the engine directly and none of them
-// ever finished more than one exercise.
-//
-// So: finish every movement in the session and count the challenge cards.
+// A whole-session walk is the check that was missing when the last bug in
+// this area shipped: every unit test called the engine directly, and none of
+// them ever finished more than one exercise, so a rule that only misbehaved
+// on the second movement went unnoticed through a green suite.
 const challengeCards = () => page.locator('[data-testid="challenge-offer"]')
 const takeIt = () => page.getByRole('button', { name: 'Take it' })
+
+// --- A drop set the app works out for itself -------------------------------
+//
+// The point of this one is that NOTHING is tapped except Log set. If the
+// detector regresses, the challenge stays on offer and this fails; if it goes
+// the other way and credits ordinary sets, the "no rest in between" line
+// appears on work that was not a drop set.
+const dropOffer = () =>
+  page
+    .locator('[data-testid="exercise-block"]')
+    .filter({ has: page.locator('[data-testid="challenge-offer"]') })
+    // Only a drop set leaves a signature in the weight column. Rest-pause is
+    // the same load and partials are no extra sets at all, so those still
+    // need the tap and must NOT be credited by this path.
+    .filter({ hasText: /Drop \d+×|Drop to /i })
+if (await dropOffer().count()) {
+  // Pin the block by its exercise before touching anything. A locator defined
+  // as "the block showing an offer" stops matching the moment the offer is
+  // replaced by the finished card — which is the thing being tested, so the
+  // assertions would evaluate against nothing and pass.
+  const exerciseId = await dropOffer().first().getAttribute('data-exercise-id')
+  const block = page.locator(`[data-exercise-id="${exerciseId}"]`)
+  const weightBox = block.getByRole('spinbutton').first()
+  const before = Number(await weightBox.inputValue())
+  // A quarter off, rounded to something a stack actually has.
+  const dropped = Math.max(5, Math.round((before * 0.75) / 5) * 5)
+  await weightBox.fill(String(dropped))
+  await weightBox.blur()
+  await page.waitForTimeout(150)
+  await block.getByRole('button', { name: 'Log set' }).click()
+  await page.waitForTimeout(400)
+
+  const detected = block.locator('[data-testid="drop-detected"]')
+  record(
+    'logging a lighter set is enough — the drop set records itself',
+    (await detected.count()) > 0,
+    `${before} lb → ${dropped} lb, nothing tapped`,
+  )
+  if (await detected.count()) {
+    const said = await detected.first().innerText()
+    record(
+      'and it says which sets it read that from',
+      /\d/.test(said) && /lb/i.test(said),
+      said.replace(/\n/g, ' ').slice(0, 90),
+    )
+  }
+  record(
+    'the offer is replaced by the finished card, not left asking',
+    (await block.locator('[data-testid="challenge-offer"]').count()) === 0,
+  )
+}
 
 let logged = 0
 for (let round = 0; round < 24; round += 1) {
@@ -491,15 +538,18 @@ for (let guard = 0; guard < 6; guard += 1) {
     await page.waitForTimeout(250)
   }
 }
-// No session cap any more. What must hold is that a challenge is offered on
+// No session cap any more. What must hold is that a finisher is offered on
 // every movement where the evidence-based conditions are satisfied, rather
 // than being refused on a count of how many have already been taken.
+//
+// Counted as finished rather than as tapped, because one of them is now
+// finished without a tap — the drop set above recorded itself.
+const paid = await page.locator('text=/Challenge done/').count()
 record(
   'keeps offering challenges across the session',
-  accepted >= 2,
-  `${accepted} accepted with no session cap`,
+  paid >= 2,
+  `${paid} finished on different movements, ${accepted} of them tapped`,
 )
-const paid = await page.locator('text=/Challenge done/').count()
 record('a finished challenge is recorded as done', paid > 0, `${paid} marked done`)
 await noOverflow('challenges')
 await shot('06e-challenges')

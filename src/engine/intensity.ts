@@ -67,8 +67,6 @@ export interface FinisherContext {
    */
   weeklySets: number | null
   weeklyRange: { min: number; max: number } | null
-  /** Finishers already suggested-and-accepted this session. */
-  finishersUsedThisSession: number
   /** A deload week is a deliberate reduction. Do not undermine it. */
   deloadActive: boolean
   units: Units
@@ -297,6 +295,84 @@ function dropLadder(weightKg: number, incrementKg: number, units: Units, drops: 
     if (capped <= 0) break
   }
   return rungs
+}
+
+// ---------------------------------------------------------------------------
+// Reading a drop set back out of the log
+// ---------------------------------------------------------------------------
+
+export interface DropSetEvidence {
+  /** The load the drops came off, in kilograms. */
+  fromKg: number
+  /** Index of that set within the entry's working sets. */
+  fromIndex: number
+  /** Each drop that was actually logged, heaviest first. */
+  drops: { weightKg: number; reps: number }[]
+  /** Total reps performed across the drops. */
+  dropReps: number
+}
+
+/**
+ * Recognise a drop set from the sets that were logged.
+ *
+ * The point of this function is that a drop set is not an opinion. It is a
+ * shape in the data: a working set, then immediately another set at a
+ * meaningfully lighter load, with no rest in between. Everything the app
+ * needed to know was already typed in, and asking somebody to accept a
+ * challenge, perform it, and then confirm it was three taps to record a thing
+ * the log already said.
+ *
+ * Deliberately conservative in three ways, because crediting work that was not
+ * done is worse than missing work that was:
+ *
+ *  • The drops must come AFTER the planned sets are complete. Without that, a
+ *    descending pyramid — 100, 80, 60 as the plan — reads as a drop set, and
+ *    the whole session becomes one.
+ *  • Each drop must be a real cut and a bounded one, `detectMinDropPct` to
+ *    `detectMaxDropPct` off the set before it.
+ *  • The set must follow within `detectWindowSec`. That is what separates a
+ *    drop from a back-off set taken after a full rest, and it is the property
+ *    that makes a drop set a drop set in the first place.
+ *
+ * Only the load is examined, never the exercise's loading style, because
+ * somebody who strips a barbell has still done a drop set — the app declines
+ * to *suggest* one there, which is a different question from refusing to
+ * believe it happened.
+ *
+ * Returns null when the log does not show one. Never throws, never guesses.
+ */
+export function detectDropSet(entry: SessionEntry): DropSetEvidence | null {
+  const cfg = RULES.intensity
+  const working = entry.sets.filter((s) => !s.warmup)
+  if (working.length < 2) return null
+
+  const windowMs = cfg.detectWindowSec * 1000
+  const isDrop = (from: SessionEntry['sets'][number], to: SessionEntry['sets'][number]) => {
+    if (to.reps < 1 || from.weightKg <= 0) return false
+    const cut = 1 - to.weightKg / from.weightKg
+    if (cut < cfg.detectMinDropPct || cut > cfg.detectMaxDropPct) return false
+    // A negative gap means the sets were logged out of order or edited after
+    // the fact; that is not evidence of a rest, so it stays inside the window.
+    return to.completedAt - from.completedAt <= windowMs
+  }
+
+  // Walk back from the last set for as long as each one is a drop off the one
+  // before it. What is left standing is the set the ladder came off.
+  let from = working.length - 1
+  while (from > 0 && isDrop(working[from - 1], working[from])) from -= 1
+  const drops = working.slice(from + 1)
+  if (drops.length === 0) return null
+
+  // The planned work has to be finished first, counting the set the drops came
+  // off as the last of it.
+  if (from + 1 < entry.plannedSets) return null
+
+  return {
+    fromKg: working[from].weightKg,
+    fromIndex: from,
+    drops: drops.map((s) => ({ weightKg: s.weightKg, reps: s.reps })),
+    dropReps: drops.reduce((n, s) => n + s.reps, 0),
+  }
 }
 
 export const BLOCK_EXPLANATION: Record<FinisherBlock, string> = {
