@@ -23,8 +23,12 @@ import { evaluateQuests } from '@/engine/quests'
 import { recommendRunning } from '@/engine/running'
 import { resolveToday, weekAhead } from '@/engine/schedule'
 import { unopenedPacks } from '@/engine/packs'
+import { useT } from '@/i18n/useT'
 import { formatDateLabel, formatDuration, isoDateOf, toIsoDate, weekdayName } from '@/lib/date'
 import { useStore } from '@/state/store'
+
+/** The translator, as handed out by `useT`. */
+type T = (english: string, vars?: Record<string, string | number>) => string
 
 /**
  * Today.
@@ -34,6 +38,7 @@ import { useStore } from '@/state/store'
  */
 export default function Today() {
   const { data, startSession } = useStore()
+  const { t } = useT()
   const navigate = useNavigate()
   const today = toIsoDate()
   const [showWhy, setShowWhy] = useState(false)
@@ -122,18 +127,18 @@ export default function Today() {
 
   const startLabel =
     plan.kind === 'resume'
-      ? 'Resume session'
+      ? t('Resume session')
       : plan.kind === 'run'
-        ? 'Log this run'
+        ? t('Log this run')
         : plan.kind === 'rest'
-          ? 'Log recovery check-in'
+          ? t('Log recovery check-in')
           : plan.kind === 'setup'
-            ? 'Build my plan'
-            : 'Start session'
+            ? t('Build my plan')
+            : t('Start session')
 
   return (
     <Screen
-      title={greeting(profile.name)}
+      title={greeting(t, profile.name)}
       subtitle={`${formatDateLabel(today)} · ${weekdayName(new Date().getDay())}`}
       action={
         <Link
@@ -153,19 +158,25 @@ export default function Today() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-[0.18em] text-ember-400">
-                {plan.kind === 'rest' ? 'Prescribed recovery' : plan.kind === 'run' ? 'Today’s run' : 'Today’s session'}
+                {plan.kind === 'rest'
+                  ? t('Prescribed recovery')
+                  : plan.kind === 'run'
+                    ? t('Today’s run')
+                    : t('Today’s session')}
               </p>
               <h2 className="font-display text-3xl uppercase leading-none mt-1 text-balance">{plan.title}</h2>
               <p className="text-sm text-ash mt-1">{plan.subtitle}</p>
             </div>
             <Chip tone="ember" className="shrink-0">
-              ~{plan.estimatedMinutes} min
+              {t('~{minutes} min', { minutes: plan.estimatedMinutes })}
             </Chip>
           </div>
 
           {plan.rescheduledFrom && (
             <p className="mt-2 text-xs text-caution">
-              Moved from {formatDateLabel(plan.rescheduledFrom, today)} — nothing was stacked on top of another day.
+              {t('Moved from {date} — nothing was stacked on top of another day.', {
+                date: formatDateLabel(plan.rescheduledFrom, today),
+              })}
             </p>
           )}
 
@@ -176,7 +187,7 @@ export default function Today() {
               aria-expanded={showWhy}
               className="w-full flex items-center justify-between gap-2 text-left touch-target"
             >
-              <span className="text-[11px] uppercase tracking-wider text-smoke">Why this, today?</span>
+              <span className="text-[11px] uppercase tracking-wider text-smoke">{t('Why this, today?')}</span>
               <span aria-hidden className={cx('text-ash transition-transform', showWhy && 'rotate-180')}>
                 ▾
               </span>
@@ -191,8 +202,15 @@ export default function Today() {
 
           {plan.kind !== 'rest' && plan.kind !== 'setup' && (
             <p className="text-center text-[11px] text-smoke mt-2">
-              Earns up to {ECONOMY.rewards.workout_completed.xp} XP and {ECONOMY.rewards.workout_completed.coins} coins
-              {plan.kind === 'run' ? ' for a completed run' : ' for a completed session'}
+              {plan.kind === 'run'
+                ? t('Earns up to {xp} XP and {coins} coins for a completed run', {
+                    xp: ECONOMY.rewards.workout_completed.xp,
+                    coins: ECONOMY.rewards.workout_completed.coins,
+                  })
+                : t('Earns up to {xp} XP and {coins} coins for a completed session', {
+                    xp: ECONOMY.rewards.workout_completed.xp,
+                    coins: ECONOMY.rewards.workout_completed.coins,
+                  })}
             </p>
           )}
         </Card>
@@ -201,13 +219,13 @@ export default function Today() {
         {/* Deload prompt                                                     */}
         {/* ---------------------------------------------------------------- */}
         {deload.suggested && (
-          <Alert tone="warn" title="Deload worth considering">
+          <Alert tone="warn" title={t('Deload worth considering')}>
             <p className="leading-relaxed">{deload.reason}</p>
             <Link
               to="/progress"
               className="mt-2 inline-flex text-sm font-medium text-caution underline underline-offset-2 touch-target items-center"
             >
-              Review the signals →
+              {t('Review the signals →')}
             </Link>
           </Alert>
         )}
@@ -218,18 +236,21 @@ export default function Today() {
         <div className="grid grid-cols-2 gap-3">
           <Link to="/progress/checkin" className="block">
             <Card className="h-full">
-              <p className="text-[11px] uppercase tracking-wider text-smoke">Readiness</p>
+              <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Readiness')}</p>
               {checkinToday ? (
                 <>
                   <p className="font-display text-3xl text-ember-400 mt-0.5 tabular">{checkinToday.readiness}/5</p>
                   <p className="text-xs text-ash mt-0.5">
-                    Sleep {checkinToday.sleepHours}h · soreness {checkinToday.soreness}/5
+                    {t('Sleep {hours}h · soreness {soreness}/5', {
+                      hours: checkinToday.sleepHours,
+                      soreness: checkinToday.soreness,
+                    })}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="font-display text-2xl text-ash mt-0.5">Not logged</p>
-                  <p className="text-xs text-ember-400 mt-0.5">Takes 15 seconds →</p>
+                  <p className="font-display text-2xl text-ash mt-0.5">{t('Not logged')}</p>
+                  <p className="text-xs text-ember-400 mt-0.5">{t('Takes 15 seconds →')}</p>
                 </>
               )}
             </Card>
@@ -238,7 +259,7 @@ export default function Today() {
           <Link to="/nutrition" className="block">
             <Card className="h-full">
               <p className="text-[11px] uppercase tracking-wider text-smoke">
-                {fullNutrition ? 'Calories left' : 'Protein'}
+                {fullNutrition ? t('Calories left') : t('Protein')}
               </p>
               {fullNutrition ? (
                 <>
@@ -249,11 +270,14 @@ export default function Today() {
                   <ProgressBar
                     value={nutritionToday.kcal}
                     max={macroPlan.targets.kcal}
-                    ariaLabel="Calories eaten today"
+                    ariaLabel={t('Calories eaten today')}
                     className="mt-2"
                   />
                   <p className="text-xs text-ash mt-1 tabular">
-                    {Math.round(nutritionToday.proteinG)}/{macroPlan.targets.proteinG} g protein
+                    {t('{eaten}/{target} g protein', {
+                      eaten: Math.round(nutritionToday.proteinG),
+                      target: macroPlan.targets.proteinG,
+                    })}
                   </p>
                 </>
               ) : (
@@ -265,11 +289,11 @@ export default function Today() {
                   <ProgressBar
                     value={proteinToday}
                     max={proteinTarget.targetG}
-                    ariaLabel="Protein eaten today"
+                    ariaLabel={t('Protein eaten today')}
                     className="mt-2"
                   />
                   <p className="text-xs text-ash mt-1">
-                    {proteinRemaining(proteinTarget.targetG, proteinToday)} g to go
+                    {t('{grams} g to go', { grams: proteinRemaining(proteinTarget.targetG, proteinToday) })}
                   </p>
                 </>
               )}
@@ -282,7 +306,7 @@ export default function Today() {
         {/* ---------------------------------------------------------------- */}
         <Card>
           <div className="flex gap-4">
-            <Link to="/forge/character" className="shrink-0" aria-label="Customise your warrior">
+            <Link to="/forge/character" className="shrink-0" aria-label={t('Customise your warrior')}>
               <Warrior
                 equipped={data.game.equipped}
                 build={buildFromXp(data.game.xp)}
@@ -295,7 +319,7 @@ export default function Today() {
               {title && <p className="text-xs text-gold-300 mt-0.5">{title.name}</p>}
               <div className="mt-2">
                 <div className="flex justify-between text-xs text-ash mb-1">
-                  <span>Level {level.level}</span>
+                  <span>{t('Level {level}', { level: level.level })}</span>
                   <span className="tabular">
                     {level.intoLevel}/{level.neededForNext} XP
                   </span>
@@ -303,9 +327,17 @@ export default function Today() {
                 <ProgressBar value={level.progress} max={1} tone="gold" />
               </div>
               <div className="flex flex-wrap gap-1.5 mt-2.5">
-                <Chip tone="ember">{consistency.streakDays}-day streak</Chip>
-                <Chip tone="gold">{Math.round(consistency.score * 100)}% consistency</Chip>
-                {packs.length > 0 && <Chip tone="cool">{packs.length} unopened pack{packs.length === 1 ? '' : 's'}</Chip>}
+                <Chip tone="ember">{t('{days}-day streak', { days: consistency.streakDays })}</Chip>
+                <Chip tone="gold">
+                  {t('{percent}% consistency', { percent: Math.round(consistency.score * 100) })}
+                </Chip>
+                {packs.length > 0 && (
+                  <Chip tone="cool">
+                    {packs.length === 1
+                      ? t('{count} unopened pack', { count: packs.length })
+                      : t('{count} unopened packs', { count: packs.length })}
+                  </Chip>
+                )}
               </div>
             </div>
           </div>
@@ -323,13 +355,13 @@ export default function Today() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[11px] uppercase tracking-wider text-smoke">
-                    {activeQuest.def.period === 'daily' ? 'Daily quest' : 'Weekly quest'}
+                    {activeQuest.def.period === 'daily' ? t('Daily quest') : t('Weekly quest')}
                   </p>
                   <p className="font-medium text-parchment mt-0.5">{activeQuest.def.title}</p>
                   <p className="text-xs text-ash mt-0.5 leading-snug">{activeQuest.def.description}</p>
                 </div>
                 {activeQuest.complete && !activeQuest.claimed ? (
-                  <Chip tone="gold">Claim →</Chip>
+                  <Chip tone="gold">{t('Claim →')}</Chip>
                 ) : (
                   <Chip tone="neutral" className="tabular">
                     {activeQuest.progress}/{activeQuest.target}
@@ -350,7 +382,7 @@ export default function Today() {
         {/* Week ahead + consistency                                          */}
         {/* ---------------------------------------------------------------- */}
         <div>
-          <SectionHeading title="The week ahead" hint="Missed days are rescheduled, not punished." />
+          <SectionHeading title={t('The week ahead')} hint={t('Missed days are rescheduled, not punished.')} />
           <Card>
             <ul className="grid grid-cols-7 gap-1">
               {ahead.map((day) => (
@@ -372,7 +404,7 @@ export default function Today() {
               ))}
             </ul>
             <div className="mt-4">
-              <p className="text-[11px] uppercase tracking-wider text-smoke mb-1.5">Last 28 days</p>
+              <p className="text-[11px] uppercase tracking-wider text-smoke mb-1.5">{t('Last 28 days')}</p>
               <ConsistencyStrip days={consistency.days} />
               <p className="text-xs text-ash mt-2 leading-relaxed">{consistency.message}</p>
             </div>
@@ -385,10 +417,10 @@ export default function Today() {
         {profile.enduranceGoal !== 'none' && (
           <div>
             <SectionHeading
-              title="Running"
+              title={t('Running')}
               action={
                 <Link to="/train/run" className="text-sm text-ember-400 touch-target flex items-center">
-                  Log a run
+                  {t('Log a run')}
                 </Link>
               }
             />
@@ -402,7 +434,7 @@ export default function Today() {
                 {running.sessions.map((session, i) => (
                   <li key={i} className="flex items-start gap-2 text-xs">
                     <span className="mt-0.5 shrink-0 rounded bg-steel px-1.5 py-0.5 text-[10px] uppercase text-ash">
-                      {session.type.replace('_', '/')}
+                      {t(session.type.replace('_', '/'))}
                     </span>
                     <span className="text-ash leading-snug">
                       {session.distanceKm ? `${session.distanceKm} km — ` : session.durationMin ? `${session.durationMin} min — ` : ''}
@@ -419,7 +451,7 @@ export default function Today() {
         {/* Recent activity                                                   */}
         {/* ---------------------------------------------------------------- */}
         <div>
-          <SectionHeading title="Recent" />
+          <SectionHeading title={t('Recent')} />
           <RecentActivity />
         </div>
       </div>
@@ -429,6 +461,7 @@ export default function Today() {
 
 function RecentActivity() {
   const { data } = useStore()
+  const { t } = useT()
   const items = useMemo(() => {
     const sessions = data.sessions
       .filter((s) => s.status === 'completed')
@@ -436,26 +469,28 @@ function RecentActivity() {
         id: s.id,
         date: s.date,
         label: s.title,
-        detail: `${s.entries.reduce((n, e) => n + e.sets.filter((x) => !x.warmup).length, 0)} working sets`,
+        detail: t('{count} working sets', {
+          count: s.entries.reduce((n, e) => n + e.sets.filter((x) => !x.warmup).length, 0),
+        }),
         href: `/train/summary/${s.id}`,
         icon: '⚒',
       }))
     const runs = data.runs.map((r) => ({
       id: r.id,
       date: r.date,
-      label: `${r.type.replace('_', '/')} run`,
+      label: t('{type} run', { type: t(r.type.replace('_', '/')) }),
       detail: `${r.distanceKm.toFixed(2)} km · ${formatDuration(r.durationSec)}`,
       href: '/train/run',
       icon: '🏃',
     }))
     return [...sessions, ...runs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
-  }, [data.sessions, data.runs])
+  }, [data.sessions, data.runs, t])
 
   if (!items.length) {
     return (
       <Card>
         <p className="text-sm text-ash text-center py-2">
-          Nothing logged yet. Your first completed session unlocks the recommendation engine.
+          {t('Nothing logged yet. Your first completed session unlocks the recommendation engine.')}
         </p>
       </Card>
     )
@@ -484,10 +519,20 @@ function RecentActivity() {
   )
 }
 
-function greeting(name: string): string {
+function greeting(t: T, name: string): string {
+  // The whole greeting is one key rather than a time-of-day word glued to a
+  // name, because Spanish greets in the plural ("Buenos días") and the join is
+  // not the same sentence in every language.
   const hour = new Date().getHours()
-  const part = hour < 5 ? 'Late night' : hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening'
-  return `${part}, ${name.split(' ')[0]}`
+  const key =
+    hour < 5
+      ? 'Late night, {name}'
+      : hour < 12
+        ? 'Morning, {name}'
+        : hour < 17
+          ? 'Afternoon, {name}'
+          : 'Evening, {name}'
+  return t(key, { name: name.split(' ')[0] })
 }
 
 /** Used by Progress to reuse the same stat treatment. */

@@ -36,6 +36,7 @@ import {
   type PlateGroup,
 } from '@/engine/plates'
 import { addDays, formatClock, formatDateLabel, startOfWeek, toIsoDate } from '@/lib/date'
+import { useT } from '@/i18n/useT'
 import { useStore } from '@/state/store'
 import type { LoadingStyle, LoggedSet, SessionEntry, TechniqueRating, Units } from '@/types'
 
@@ -50,6 +51,7 @@ export default function SessionPlayer() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
   const store = useStore()
+  const { t } = useT()
   const { data } = store
   const session = data.sessions.find((s) => s.id === sessionId)
 
@@ -80,10 +82,12 @@ export default function SessionPlayer() {
     return (
       <div className="min-h-dvh grid place-items-center p-6 text-center">
         <div>
-          <p className="font-display text-2xl uppercase">Session not found</p>
-          <p className="text-sm text-ash mt-2">It may have been deleted or restored from a different backup.</p>
+          <p className="font-display text-2xl uppercase">{t('Session not found')}</p>
+          <p className="text-sm text-ash mt-2">
+            {t('It may have been deleted or restored from a different backup.')}
+          </p>
           <Button variant="primary" className="mt-4" onClick={() => navigate('/train')}>
-            Back to Train
+            {t('Back to Train')}
           </Button>
         </div>
       </div>
@@ -108,7 +112,7 @@ export default function SessionPlayer() {
         style={{ paddingTop: 'var(--safe-top)' }}
       >
         <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center gap-2">
-          <IconButton label="Back" className="-ml-2" onClick={() => navigate('/train')}>
+          <IconButton label={t('Back')} className="-ml-2" onClick={() => navigate('/train')}>
             <span aria-hidden className="text-lg">
               ✕
             </span>
@@ -116,40 +120,44 @@ export default function SessionPlayer() {
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-xl uppercase tracking-wide leading-none truncate">{session.title}</h1>
             <p className="text-[11px] text-smoke mt-0.5 tabular">
-              {formatClock(elapsed)} · {totalSets}/{plannedSets} working sets
+              {t('{clock} · {done}/{planned} working sets', {
+                clock: formatClock(elapsed),
+                done: totalSets,
+                planned: plannedSets,
+              })}
             </p>
           </div>
           {!readOnly && (
             <Button variant="primary" size="sm" onClick={() => setConfirmFinish(true)}>
-              Finish
+              {t('Finish')}
             </Button>
           )}
         </div>
         {restLeft > 0 && (
           <div className="bg-ember-500/15 border-t border-ember-500/30">
             <div className="max-w-lg mx-auto px-4 py-1.5 flex items-center justify-between gap-3">
-              <span className="text-xs text-ember-200">Rest</span>
+              <span className="text-xs text-ember-200">{t('Rest')}</span>
               <span className="font-display text-lg text-ember-300 tabular">{formatClock(restLeft)}</span>
               <button
                 type="button"
                 onClick={() => setRestGame((v) => (v === 'anvil' ? 'none' : 'anvil'))}
                 className="text-xs text-ember-200 underline underline-offset-2 touch-target px-2"
               >
-                {restGame === 'anvil' ? 'Hide anvil' : 'Anvil'}
+                {restGame === 'anvil' ? t('Hide anvil') : t('Anvil')}
               </button>
               <button
                 type="button"
                 onClick={() => setRestGame((v) => (v === 'puzzle' ? 'none' : 'puzzle'))}
                 className="text-xs text-ember-200 underline underline-offset-2 touch-target px-2"
               >
-                {restGame === 'puzzle' ? 'Hide puzzle' : 'Puzzle'}
+                {restGame === 'puzzle' ? t('Hide puzzle') : t('Puzzle')}
               </button>
               <button
                 type="button"
                 onClick={() => setRestEndsAt(null)}
                 className="text-xs text-ember-200 underline underline-offset-2 touch-target px-2"
               >
-                Skip
+                {t('Skip')}
               </button>
             </div>
           </div>
@@ -176,14 +184,16 @@ export default function SessionPlayer() {
         )}
 
         {readOnly && (
-          <Alert tone="info" title="This session is closed">
-            You are viewing a {session.status} session. Start a new one from Train to keep logging.
+          <Alert tone="info" title={t('This session is closed')}>
+            {t('You are viewing a {status} session. Start a new one from Train to keep logging.', {
+              status: t(session.status),
+            })}
           </Alert>
         )}
 
         {session.entries.length === 0 && (
           <Alert tone="warn">
-            No exercises in this session yet. Add one below to start logging.
+            {t('No exercises in this session yet. Add one below to start logging.')}
           </Alert>
         )}
 
@@ -203,24 +213,24 @@ export default function SessionPlayer() {
         {!readOnly && (
           <div className="grid grid-cols-2 gap-2">
             <Button full onClick={() => setAddOpen(true)}>
-              Add exercise
+              {t('Add exercise')}
             </Button>
             <Button full onClick={() => setNotesOpen(true)}>
-              Session notes
+              {t('Session notes')}
             </Button>
           </div>
         )}
 
         {session.note && (
           <Card>
-            <p className="text-[11px] uppercase tracking-wider text-smoke">Notes</p>
+            <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Notes')}</p>
             <p className="text-sm text-ash mt-1 whitespace-pre-wrap">{session.note}</p>
           </Card>
         )}
 
         {!readOnly && (
           <Button variant="ghost" full onClick={() => setConfirmAbandon(true)}>
-            Abandon session
+            {t('Abandon session')}
           </Button>
         )}
       </main>
@@ -232,7 +242,7 @@ export default function SessionPlayer() {
         >
           <div className="max-w-lg mx-auto px-4 pt-3">
             <Button variant="primary" size="lg" full onClick={() => setConfirmFinish(true)}>
-              Finish session · {totalSets} sets logged
+              {t('Finish session · {count} sets logged', { count: totalSets })}
             </Button>
           </div>
         </div>
@@ -240,13 +250,18 @@ export default function SessionPlayer() {
 
       <ConfirmDialog
         open={confirmFinish}
-        title="Finish this session?"
+        title={t('Finish this session?')}
         body={
           totalSets === 0
-            ? 'You have not logged any working sets. Finishing now saves an empty session and will not earn rewards.'
-            : `${totalSets} working sets will be saved, your next-session recommendations will update, and rewards will be calculated.`
+            ? t(
+                'You have not logged any working sets. Finishing now saves an empty session and will not earn rewards.',
+              )
+            : t(
+                '{count} working sets will be saved, your next-session recommendations will update, and rewards will be calculated.',
+                { count: totalSets },
+              )
         }
-        confirmLabel="Finish"
+        confirmLabel={t('Finish')}
         onCancel={() => setConfirmFinish(false)}
         onConfirm={() => {
           setConfirmFinish(false)
@@ -258,9 +273,11 @@ export default function SessionPlayer() {
       <ConfirmDialog
         open={confirmAbandon}
         destructive
-        title="Abandon this session?"
-        body="Sets you already logged are kept for your records, but the session will not count toward your consistency or rewards. This cannot be undone."
-        confirmLabel="Abandon"
+        title={t('Abandon this session?')}
+        body={t(
+          'Sets you already logged are kept for your records, but the session will not count toward your consistency or rewards. This cannot be undone.',
+        )}
+        confirmLabel={t('Abandon')}
         onCancel={() => setConfirmAbandon(false)}
         onConfirm={() => {
           setConfirmAbandon(false)
@@ -269,20 +286,22 @@ export default function SessionPlayer() {
         }}
       />
 
-      <Sheet open={notesOpen} onClose={() => setNotesOpen(false)} title="Session notes">
+      <Sheet open={notesOpen} onClose={() => setNotesOpen(false)} title={t('Session notes')}>
         <TextArea
           value={session.note ?? ''}
-          placeholder="Anything worth remembering — the gym was packed, sleep was bad, a cue that clicked…"
+          placeholder={t(
+            'Anything worth remembering — the gym was packed, sleep was bad, a cue that clicked…',
+          )}
           onChange={(e) => store.setSessionNote(session.id, e.target.value)}
         />
         <Button variant="primary" full className="mt-4" onClick={() => setNotesOpen(false)}>
-          Done
+          {t('Done')}
         </Button>
       </Sheet>
 
       <ExercisePicker
         open={addOpen}
-        title="Add an exercise"
+        title={t('Add an exercise')}
         onClose={() => setAddOpen(false)}
         onPick={(id) => {
           store.addEntryToSession(session.id, id)
@@ -292,8 +311,10 @@ export default function SessionPlayer() {
 
       <ExercisePicker
         open={substituteFor !== null}
-        title="Substitute exercise"
-        note="Sets already logged for this slot will be cleared, and the substitution is recorded so your history stays honest."
+        title={t('Substitute exercise')}
+        note={t(
+          'Sets already logged for this slot will be cleared, and the substitution is recorded so your history stays honest.',
+        )}
         suggestions={
           substituteFor
             ? (EXERCISE_BY_ID[session.entries.find((e) => e.id === substituteFor)?.exerciseId ?? '']?.alternatives ?? [])
@@ -307,7 +328,7 @@ export default function SessionPlayer() {
       />
 
       <span className="sr-only" aria-live="polite">
-        {restLeft > 0 ? `Rest ${restLeft} seconds remaining` : ''}
+        {restLeft > 0 ? t('Rest {seconds} seconds remaining', { seconds: restLeft }) : ''}
       </span>
     </div>
   )
@@ -336,6 +357,7 @@ function ExerciseBlock({
   onSubstitute: () => void
 }) {
   const store = useStore()
+  const { t } = useT()
   const { data } = store
   const units = data.profile?.units ?? 'kg'
   const exercise = data.exercises.find((e) => e.id === entry.exerciseId) ?? EXERCISE_BY_ID[entry.exerciseId]
@@ -477,18 +499,23 @@ function ExerciseBlock({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-wider text-smoke">
-            Exercise {index + 1}
-            {entry.substitutedFromId && ' · substituted'}
+            {t('Exercise {number}', { number: index + 1 })}
+            {entry.substitutedFromId && ` · ${t('substituted')}`}
           </p>
           <h2 className="font-display text-xl uppercase tracking-wide leading-tight">
             {exercise?.name ?? entry.exerciseId}
           </h2>
           <p className="text-xs text-ash mt-0.5">
-            {entry.plannedSets} × {entry.repMin}–{entry.repMax} · rest {Math.round(entry.restSec / 60)} min · target{' '}
-            {entry.targetRIR} RIR
+            {t('{sets} × {repMin}–{repMax} · rest {minutes} min · target {rir} RIR', {
+              sets: entry.plannedSets,
+              repMin: entry.repMin,
+              repMax: entry.repMax,
+              minutes: Math.round(entry.restSec / 60),
+              rir: entry.targetRIR,
+            })}
           </p>
         </div>
-        {done && <Chip tone="good">Done</Chip>}
+        {done && <Chip tone="good">{t('Done')}</Chip>}
       </div>
 
       {exercise?.cue && <p className="text-xs text-smoke mt-2 italic">{exercise.cue}</p>}
@@ -503,11 +530,11 @@ function ExerciseBlock({
       */}
       <div className="mt-3 grid grid-cols-3 gap-2">
         <div className="rounded-lg bg-coal/70 border border-slate/70 px-2.5 py-2 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-smoke">Reps so far</p>
+          <p className="text-[10px] uppercase tracking-wider text-smoke">{t('Reps so far')}</p>
           <p className="font-display text-2xl text-parchment tabular leading-none mt-0.5">{repsThisSession}</p>
         </div>
         <div className="rounded-lg bg-coal/70 border border-slate/70 px-2.5 py-2 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-smoke">Last time</p>
+          <p className="text-[10px] uppercase tracking-wider text-smoke">{t('Last time')}</p>
           <p className="font-display text-2xl text-ash tabular leading-none mt-0.5">
             {previousReps || '—'}
           </p>
@@ -521,7 +548,7 @@ function ExerciseBlock({
           {/* "Reps left", not "to beat": the number shown is the gap, and a
               label that names the target while showing the gap is the kind of
               small lie that makes people distrust the whole screen. */}
-          <p className="text-[10px] uppercase tracking-wider text-smoke">Reps left</p>
+          <p className="text-[10px] uppercase tracking-wider text-smoke">{t('Reps left')}</p>
           <p
             className={cx(
               'font-display text-2xl tabular leading-none mt-0.5',
@@ -535,14 +562,19 @@ function ExerciseBlock({
       {repsToBeat > 0 && (
         <p className="text-[11px] text-smoke mt-1.5 leading-relaxed">
           {beatenTarget
-            ? `${repsThisSession} total reps beats the ${repsToBeat} you managed last time at this load.`
-            : `${repsToBeat + 1 - repsThisSession} more total reps at this load beats last session.`}
+            ? t('{done} total reps beats the {target} you managed last time at this load.', {
+                done: repsThisSession,
+                target: repsToBeat,
+              })
+            : t('{count} more total reps at this load beats last session.', {
+                count: repsToBeat + 1 - repsThisSession,
+              })}
         </p>
       )}
 
       {/* Last session's sets ------------------------------------------------ */}
       <div className="mt-3 rounded-lg bg-coal/70 border border-slate/70 px-3 py-2">
-        <p className="text-[11px] uppercase tracking-wider text-smoke">Last time’s sets</p>
+        <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Last time’s sets')}</p>
         {previous ? (
           <p className="text-sm text-parchment mt-0.5">
             {formatDateLabel(previous.date)} —{' '}
@@ -551,7 +583,7 @@ function ExerciseBlock({
               .join(' · ')}
           </p>
         ) : (
-          <p className="text-sm text-ash mt-0.5">No previous session for this movement.</p>
+          <p className="text-sm text-ash mt-0.5">{t('No previous session for this movement.')}</p>
         )}
       </div>
 
@@ -560,7 +592,7 @@ function ExerciseBlock({
         summary={
           <span className="flex items-center gap-2">
             <span className="text-ember-400 font-medium">{recommendation.headline}</span>
-            <span className="text-xs text-smoke">— why?</span>
+            <span className="text-xs text-smoke">{t('— why?')}</span>
           </span>
         }
         tone="quiet"
@@ -595,17 +627,21 @@ function ExerciseBlock({
         >
           {challenge.status === 'completed' ? (
             <div className="flex items-center gap-2 flex-wrap">
-              <Chip tone="good">Challenge done</Chip>
+              <Chip tone="good">{t('Challenge done')}</Chip>
               <span className="text-sm text-parchment">{challenge.headline}</span>
               <span className="text-xs text-vital">
-                +{ECONOMY.rewards.challenge_completed.coins} coins · +
-                {ECONOMY.rewards.challenge_completed.xp} XP
+                {t('+{coins} coins · +{xp} XP', {
+                  coins: ECONOMY.rewards.challenge_completed.coins,
+                  xp: ECONOMY.rewards.challenge_completed.xp,
+                })}
               </span>
             </div>
           ) : challenge.status === 'declined' || challenge.status === 'abandoned' ? (
             <p className="text-xs text-smoke leading-relaxed">
-              {challenge.status === 'declined' ? 'Passed on' : 'Called off'}: {challenge.headline}.
-              Nothing lost — it was never part of the plan.
+              {t('{outcome}: {headline}. Nothing lost — it was never part of the plan.', {
+                outcome: challenge.status === 'declined' ? t('Passed on') : t('Called off'),
+                headline: challenge.headline,
+              })}
             </p>
           ) : null}
         </div>
@@ -617,9 +653,12 @@ function ExerciseBlock({
           className="mt-3 rounded-xl border border-ember-500/50 bg-ember-500/[0.1] px-3 py-3"
         >
           <div className="flex items-center gap-2 flex-wrap">
-            <Chip tone="ember">Challenge</Chip>
+            <Chip tone="ember">{t('Challenge')}</Chip>
             <span className="text-[11px] text-smoke tabular">
-              {takenElsewhere + 1} of {RULES.intensity.maxPerSession} today
+              {t('{number} of {max} today', {
+                number: takenElsewhere + 1,
+                max: RULES.intensity.maxPerSession,
+              })}
             </span>
           </div>
           <p className="font-display text-lg uppercase tracking-wide text-ember-200 mt-1.5 leading-tight">
@@ -627,8 +666,10 @@ function ExerciseBlock({
           </p>
           <p className="text-xs text-ash mt-1 leading-relaxed">{finisher.technique.reason}</p>
           <p className="text-xs text-gold-300 mt-2">
-            Finish it: +{ECONOMY.rewards.challenge_completed.coins} coins, +
-            {ECONOMY.rewards.challenge_completed.xp} XP
+            {t('Finish it: +{coins} coins, +{xp} XP', {
+              coins: ECONOMY.rewards.challenge_completed.coins,
+              xp: ECONOMY.rewards.challenge_completed.xp,
+            })}
           </p>
           {!readOnly && (
             <div className="grid grid-cols-2 gap-2 mt-2.5">
@@ -643,7 +684,7 @@ function ExerciseBlock({
                   })
                 }
               >
-                Take it
+                {t('Take it')}
               </Button>
               <Button
                 onClick={() =>
@@ -655,12 +696,16 @@ function ExerciseBlock({
                   })
                 }
               >
-                Not today
+                {t('Not today')}
               </Button>
             </div>
           )}
           <Disclosure
-            summary={<span className="text-xs text-smoke">How, and what the evidence actually says</span>}
+            summary={
+              <span className="text-xs text-smoke">
+                {t('How, and what the evidence actually says')}
+              </span>
+            }
             tone="quiet"
           >
             <p className="text-[11px] uppercase tracking-wider text-smoke mt-2">
@@ -676,12 +721,15 @@ function ExerciseBlock({
             </ol>
             {finisher.technique.missingData.map((gap) => (
               <p key={gap} className="text-[11px] text-smoke mt-1.5 leading-relaxed">
-                Missing: {gap}
+                {t('Missing: {gap}', { gap: t(gap) })}
               </p>
             ))}
             <p className="text-[11px] text-smoke mt-2">
-              Rule <span className="text-ash">{finisher.technique.rule}</span> · confidence{' '}
-              {finisher.technique.confidence} · counts as {finisher.technique.countsAsSets} of a hard set
+              {t('Rule')} <span className="text-ash">{finisher.technique.rule}</span>{' '}
+              {t('· confidence {confidence} · counts as {sets} of a hard set', {
+                confidence: t(finisher.technique.confidence),
+                sets: finisher.technique.countsAsSets,
+              })}
             </p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {citationsFor(finisher.technique.citationIds).map((c) => (
@@ -702,7 +750,7 @@ function ExerciseBlock({
 
       {done && challenge?.status === 'accepted' && (
         <div className="mt-2 rounded-xl border border-ember-500/60 bg-ember-500/[0.12] px-3 py-3">
-          <Chip tone="ember">Challenge accepted</Chip>
+          <Chip tone="ember">{t('Challenge accepted')}</Chip>
           <p className="font-display text-lg uppercase tracking-wide text-ember-200 mt-1.5 leading-tight">
             {challenge.headline}
           </p>
@@ -728,7 +776,7 @@ function ExerciseBlock({
                   })
                 }
               >
-                Done
+                {t('Done')}
               </Button>
               <Button
                 onClick={() =>
@@ -739,7 +787,7 @@ function ExerciseBlock({
                   })
                 }
               >
-                Couldn’t finish
+                {t('Couldn’t finish')}
               </Button>
             </div>
           )}
@@ -749,7 +797,9 @@ function ExerciseBlock({
         // Saying why NOT is the same promise as saying why. A silent absence
         // teaches people the feature is broken.
         <p className="text-[11px] text-smoke mt-2.5 leading-relaxed">
-          No finisher today: {BLOCK_EXPLANATION[finisher.blockedBy]}
+          {t('No finisher today: {reason}', {
+            reason: t(BLOCK_EXPLANATION[finisher.blockedBy]),
+          })}
         </p>
       )}
 
@@ -818,7 +868,9 @@ function ExerciseBlock({
               />
             </div>
             <div>
-              <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1">Reps</p>
+              <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1">{t('Reps')}</p>
+              {/* The stepper's own label stays English: it becomes the input's
+                  aria-label, and the browser suite types into it by that name. */}
               <NumberStepper label="Reps" value={draftReps} min={1} max={100} onChange={setDraftReps} />
             </div>
           </div>
@@ -834,30 +886,35 @@ function ExerciseBlock({
                 <span className="block text-xs text-parchment truncate">{describePlan(platePlan, units)}</span>
                 {!platePlan.exact && !platePlan.belowBar && (
                   <span className="block text-[11px] text-caution truncate">
-                    Not loadable — nearest is {platePlan.total} {units}
+                    {t('Not loadable — nearest is {total} {units}', {
+                      total: platePlan.total,
+                      units,
+                    })}
                   </span>
                 )}
               </span>
-              <span className="text-[11px] text-ember-400 shrink-0">Plates ›</span>
+              <span className="text-[11px] text-ember-400 shrink-0">{t('Plates ›')}</span>
             </button>
           ) : (
-            hint && <p className="text-[11px] text-smoke -mt-1">{hint}</p>
+            hint && <p className="text-[11px] text-smoke -mt-1">{t(hint)}</p>
           )}
           {loading === 'barbell' && exercise?.unilateral && (
-            <p className="text-[11px] text-smoke -mt-1">One side at a time — log each side as its own set</p>
+            <p className="text-[11px] text-smoke -mt-1">
+              {t('One side at a time — log each side as its own set')}
+            </p>
           )}
 
           <div>
             <div className="flex items-center justify-between mb-1">
               <p className="block text-[11px] uppercase tracking-wider text-smoke">
-                Reps in reserve {draftRir === null && '(not reported)'}
+                {t('Reps in reserve')} {draftRir === null && t('(not reported)')}
               </p>
               <button
                 type="button"
                 onClick={() => setDraftRir((v) => (v === null ? entry.targetRIR : null))}
                 className="text-[11px] text-ember-400 underline underline-offset-2 touch-target px-1"
               >
-                {draftRir === null ? 'Report effort' : 'Skip'}
+                {draftRir === null ? t('Report effort') : t('Skip')}
               </button>
             </div>
             <div className="grid grid-cols-6 gap-1">
@@ -879,8 +936,10 @@ function ExerciseBlock({
               ))}
             </div>
             <p className="text-[11px] text-smoke mt-1">
-              0 = could not do another rep. {RULES.progression.rirWindow.min}–{RULES.progression.rirWindow.max} is the
-              target window for working sets.
+              {t('0 = could not do another rep. {min}–{max} is the target window for working sets.', {
+                min: RULES.progression.rirWindow.min,
+                max: RULES.progression.rirWindow.max,
+              })}
             </p>
           </div>
 
@@ -894,13 +953,13 @@ function ExerciseBlock({
                 warmup ? 'border-cool bg-cool/15 text-cool' : 'border-slate bg-coal text-ash',
               )}
             >
-              Warm-up set
+              {t('Warm-up set')}
             </button>
             <Button size="sm" onClick={copyPrevious} disabled={!previous && entry.sets.length === 0}>
-              Copy last
+              {t('Copy last')}
             </Button>
             <Button variant="primary" size="sm" className="flex-1" onClick={log}>
-              Log set
+              {t('Log set')}
             </Button>
           </div>
         </div>
@@ -910,22 +969,24 @@ function ExerciseBlock({
       {!readOnly && (
         <div className="mt-4 pt-3 border-t border-slate/70 space-y-3">
           <Slider
-            label="Pain during this movement (0–10)"
+            label={t('Pain during this movement (0–10)')}
             value={entry.pain}
             min={0}
             max={10}
             tone={entry.pain >= RULES.progression.painBlockThreshold ? 'caution' : 'ember'}
-            labels={['None', 'Severe']}
+            labels={[t('None'), t('Severe')]}
             onChange={(v) => store.updateEntry(sessionId, entry.id, { pain: v })}
           />
           {entry.pain >= RULES.progression.painStopThreshold && (
-            <Alert tone="danger" title="Stop this movement">
-              Pain at {entry.pain}/10 is your signal to stop this exercise today. FORGED will not prescribe more load
-              here. If it is sharp, radiating, or lingers after training, see a physiotherapist or physician.
+            <Alert tone="danger" title={t('Stop this movement')}>
+              {t(
+                'Pain at {pain}/10 is your signal to stop this exercise today. FORGED will not prescribe more load here. If it is sharp, radiating, or lingers after training, see a physiotherapist or physician.',
+                { pain: entry.pain },
+              )}
             </Alert>
           )}
           <div>
-            <p className="text-[11px] uppercase tracking-wider text-smoke mb-1.5">Technique</p>
+            <p className="text-[11px] uppercase tracking-wider text-smoke mb-1.5">{t('Technique')}</p>
             <div className="grid grid-cols-3 gap-1.5">
               {(
                 [
@@ -946,14 +1007,14 @@ function ExerciseBlock({
                       : 'border-slate bg-coal text-ash',
                   )}
                 >
-                  {option.label}
+                  {t(option.label)}
                 </button>
               ))}
             </div>
           </div>
           <div className="flex gap-2">
             <Button size="sm" full onClick={onSubstitute}>
-              Substitute
+              {t('Substitute')}
             </Button>
             <Button
               size="sm"
@@ -961,14 +1022,14 @@ function ExerciseBlock({
               variant="ghost"
               onClick={() => store.removeEntryFromSession(sessionId, entry.id)}
             >
-              Remove
+              {t('Remove')}
             </Button>
           </div>
         </div>
       )}
 
       {/* Edit a logged set -------------------------------------------------- */}
-      <Sheet open={editing !== null} onClose={() => setEditing(null)} title="Edit set">
+      <Sheet open={editing !== null} onClose={() => setEditing(null)} title={t('Edit set')}>
         {editing && (
           <EditSetForm
             set={editing}
@@ -983,7 +1044,7 @@ function ExerciseBlock({
         )}
       </Sheet>
 
-      <Sheet open={plateOpen} onClose={() => setPlateOpen(false)} title="What is on the bar?">
+      <Sheet open={plateOpen} onClose={() => setPlateOpen(false)} title={t('What is on the bar?')}>
         <PlateCalculator
           barDisplay={barDisplay}
           plates={plates}
@@ -1019,6 +1080,7 @@ function PlateCalculator({
   initial: PlateGroup[]
   onUse: (total: number) => void
 }) {
+  const { t } = useT()
   const [counts, setCounts] = useState<Record<number, number>>(() =>
     Object.fromEntries(initial.map((g) => [g.plate, g.count])),
   )
@@ -1034,18 +1096,22 @@ function PlateCalculator({
   return (
     <div className="space-y-4">
       <div className="forge-panel-raised px-4 py-3 text-center">
-        <p className="text-[11px] uppercase tracking-wider text-smoke">Total on the bar</p>
+        <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Total on the bar')}</p>
         <p className="font-display text-5xl text-ember-400 tabular leading-none mt-1">
           {total}
           <span className="text-xl text-ash"> {units}</span>
         </p>
         <p className="text-xs text-ash mt-1.5 tabular">
-          {barDisplay} {units} bar + {perSideWeight} {units} per side
+          {t('{bar} {units} bar + {perSide} {units} per side', {
+            bar: barDisplay,
+            perSide: perSideWeight,
+            units,
+          })}
         </p>
       </div>
 
       <div>
-        <p className="text-[11px] uppercase tracking-wider text-smoke mb-2">Plates per side</p>
+        <p className="text-[11px] uppercase tracking-wider text-smoke mb-2">{t('Plates per side')}</p>
         <ul className="space-y-2">
           {plates.map((plate) => {
             const count = counts[plate] ?? 0
@@ -1059,6 +1125,8 @@ function PlateCalculator({
                 >
                   {plate} {units}
                 </span>
+                {/* Both plate-button labels stay English: the browser suite
+                    taps them with `getByRole('button', { name: /One more/ })`. */}
                 <IconButton label={`One less ${plate} ${units} plate`} onClick={() => bump(plate, -1)} disabled={count === 0}>
                   <span aria-hidden className="text-xl">−</span>
                 </IconButton>
@@ -1076,14 +1144,14 @@ function PlateCalculator({
 
       <div className="flex gap-2">
         <Button className="flex-1" onClick={() => setCounts({})}>
-          Clear
+          {t('Clear')}
         </Button>
         <Button variant="primary" className="flex-[2]" onClick={() => onUse(total)}>
-          Use {total} {units}
+          {t('Use {total} {units}', { total, units })}
         </Button>
       </div>
       <p className="text-[11px] text-smoke leading-relaxed">
-        Bar weight and the plates your gym stocks are both editable in Profile → Settings.
+        {t('Bar weight and the plates your gym stocks are both editable in Profile → Settings.')}
       </p>
     </div>
   )
@@ -1102,6 +1170,7 @@ function EditSetForm({
   loading: LoadingStyle
   onSave: (patch: Partial<LoggedSet>) => void
 }) {
+  const { t } = useT()
   const [weight, setWeight] = useState(Number(toDisplay(set.weightKg, units).toFixed(1)))
   const [reps, setReps] = useState(set.reps)
   const [rir, setRir] = useState<number | null>(set.rir)
@@ -1125,12 +1194,15 @@ function EditSetForm({
           />
         </div>
         <div>
-          <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1">Reps</p>
+          <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1">{t('Reps')}</p>
+          {/* English label on purpose — see the note on the other stepper. */}
           <NumberStepper label="Reps" value={reps} min={0} max={100} onChange={setReps} />
         </div>
       </div>
       <div>
-        <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1.5">Reps in reserve</p>
+        <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1.5">
+          {t('Reps in reserve')}
+        </p>
         <div className="grid grid-cols-7 gap-1">
           {[null, 0, 1, 2, 3, 4, 5].map((value, i) => (
             <button
@@ -1157,14 +1229,14 @@ function EditSetForm({
           warmup ? 'border-cool bg-cool/15 text-cool' : 'border-slate bg-coal text-ash',
         )}
       >
-        {warmup ? 'Warm-up set' : 'Working set'}
+        {warmup ? t('Warm-up set') : t('Working set')}
       </button>
       <Button
         variant="primary"
         full
         onClick={() => onSave({ weightKg: fromDisplay(weight, units), reps, rir, warmup })}
       >
-        Save changes
+        {t('Save changes')}
       </Button>
     </div>
   )
@@ -1190,6 +1262,7 @@ export function ExercisePicker({
   suggestions?: string[]
 }) {
   const { data } = useStore()
+  const { t } = useT()
   const [query, setQuery] = useState('')
 
   const results = useMemo(
@@ -1206,13 +1279,17 @@ export function ExercisePicker({
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search exercises"
+        placeholder={t('Search exercises')}
+        // The aria-label stays English: the browser suite finds this field with
+        // `input[aria-label="Search exercises"]`.
         aria-label="Search exercises"
         className="w-full h-12 rounded-xl bg-coal border border-slate px-3.5 text-parchment placeholder:text-smoke mb-3"
       />
       {suggested.length > 0 && !query && (
         <>
-          <p className="text-[11px] uppercase tracking-wider text-smoke mb-1.5">Suggested swaps</p>
+          <p className="text-[11px] uppercase tracking-wider text-smoke mb-1.5">
+            {t('Suggested swaps')}
+          </p>
           <ul className="space-y-1.5 mb-4">
             {suggested.map((exercise) => (
               <li key={exercise!.id}>
@@ -1239,13 +1316,17 @@ export function ExercisePicker({
               <span className="block text-sm text-parchment">{exercise.name}</span>
               <span className="block text-[11px] text-smoke">
                 {matchedAlias
-                  ? `also called “${matchedAlias}”`
+                  ? t('also called “{alias}”', { alias: matchedAlias })
                   : Object.keys(exercise.contributions).slice(0, 3).join(', ').replace(/_/g, ' ')}
               </span>
             </button>
           </li>
         ))}
-        {!results.length && <li className="text-sm text-ash text-center py-6">No exercises match “{query}”.</li>}
+        {!results.length && (
+          <li className="text-sm text-ash text-center py-6">
+            {t('No exercises match “{query}”.', { query })}
+          </li>
+        )}
       </ul>
     </Sheet>
   )

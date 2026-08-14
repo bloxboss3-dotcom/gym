@@ -9,6 +9,7 @@ import { personalRecords, sessionVolumeLoad, rirQuality } from '@/engine/stats'
 import { formatWeight } from '@/engine/units'
 import { formatDateLabel, formatDuration } from '@/lib/date'
 import { ECONOMY } from '@/config/economy'
+import { useT } from '@/i18n/useT'
 import { useStore } from '@/state/store'
 
 /**
@@ -19,6 +20,7 @@ export default function SessionSummary() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
   const { data } = useStore()
+  const { t } = useT()
   const session = data.sessions.find((s) => s.id === sessionId)
   const units = data.profile?.units ?? 'kg'
 
@@ -61,11 +63,17 @@ export default function SessionSummary() {
 
   if (!session) {
     return (
-      <Screen title="Summary" back="/train">
+      <Screen title={t('Summary')} back="/train">
         <EmptyState
-          title="Session not found"
-          body="This session no longer exists. It may have been deleted or replaced by an imported backup."
-          action={<Button variant="primary" onClick={() => navigate('/train')}>Back to Train</Button>}
+          title={t('Session not found')}
+          body={t(
+            'This session no longer exists. It may have been deleted or replaced by an imported backup.',
+          )}
+          action={
+            <Button variant="primary" onClick={() => navigate('/train')}>
+              {t('Back to Train')}
+            </Button>
+          }
         />
       </Screen>
     )
@@ -79,22 +87,30 @@ export default function SessionSummary() {
   const painFlag = session.entries.some((e) => e.pain >= 3)
 
   return (
-    <Screen title="Session complete" subtitle={formatDateLabel(session.date)} back="/">
+    <Screen title={t('Session complete')} subtitle={formatDateLabel(session.date)} back="/">
       <div className="space-y-4">
         <Card raised>
           <h2 className="font-display text-2xl uppercase tracking-wide">{session.title}</h2>
           <div className="grid grid-cols-3 gap-2 mt-3">
-            <Stat label="Working sets" value={workingSets.length} />
-            <Stat label="Volume load" value={formatWeight(sessionVolumeLoad(session, data.exercises), units, { decimals: 0 })} />
-            <Stat label="Duration" value={formatDuration(duration)} />
+            <Stat label={t('Working sets')} value={workingSets.length} />
+            <Stat label={t('Volume load')} value={formatWeight(sessionVolumeLoad(session, data.exercises), units, { decimals: 0 })} />
+            <Stat label={t('Duration')} value={formatDuration(duration)} />
           </div>
           {quality.averageRir !== null && (
             <p className="text-xs text-ash mt-3 leading-relaxed">
-              Average effort {quality.averageRir} reps in reserve across {quality.ratedSets} rated sets
+              {t('Average effort {rir} reps in reserve across {sets} rated sets', {
+                rir: quality.averageRir,
+                sets: quality.ratedSets,
+              })}
               {quality.toFailureFraction > 0.5 &&
-                ' — more than half of those went to failure, which is more fatigue than most sessions need.'}
+                t(
+                  ' — more than half of those went to failure, which is more fatigue than most sessions need.',
+                )}
               {quality.missingFraction > 0.3 &&
-                ` Effort was not recorded on ${Math.round(quality.missingFraction * 100)}% of sets, which lowers the confidence of next session's recommendations.`}
+                t(
+                  " Effort was not recorded on {percent}% of sets, which lowers the confidence of next session's recommendations.",
+                  { percent: Math.round(quality.missingFraction * 100) },
+                )}
             </p>
           )}
         </Card>
@@ -108,13 +124,24 @@ export default function SessionSummary() {
         */}
         {totalXp === 0 && totalCoins === 0 && (
           <Card>
-            <p className="font-display text-lg uppercase tracking-wide text-smoke">No rewards for this one</p>
+            <p className="font-display text-lg uppercase tracking-wide text-smoke">
+              {t('No rewards for this one')}
+            </p>
             <p className="text-xs text-ash mt-1.5 leading-relaxed">
               {workingSets.length < ECONOMY.limits.minWorkingSetsForReward
-                ? `Sessions need at least ${ECONOMY.limits.minWorkingSetsForReward} working sets to pay out. This one is saved either way and still counts toward your weekly volume.`
+                ? t(
+                    'Sessions need at least {sets} working sets to pay out. This one is saved either way and still counts toward your weekly volume.',
+                    { sets: ECONOMY.limits.minWorkingSetsForReward },
+                  )
                 : duration / 60 < ECONOMY.limits.minSessionMinutes
-                  ? `Sessions need to run at least ${ECONOMY.limits.minSessionMinutes} minutes to pay out. The training is saved either way.`
-                  : `You have already hit today's ceiling of ${ECONOMY.limits.dailyXpCap} XP and ${ECONOMY.limits.dailyCoinCap} coins. The session counts for everything else — volume, progression, your streak — it just cannot print more currency today.`}
+                  ? t(
+                      'Sessions need to run at least {minutes} minutes to pay out. The training is saved either way.',
+                      { minutes: ECONOMY.limits.minSessionMinutes },
+                    )
+                  : t(
+                      "You have already hit today's ceiling of {xp} XP and {coins} coins. The session counts for everything else — volume, progression, your streak — it just cannot print more currency today.",
+                      { xp: ECONOMY.limits.dailyXpCap, coins: ECONOMY.limits.dailyCoinCap },
+                    )}
             </p>
           </Card>
         )}
@@ -122,16 +149,18 @@ export default function SessionSummary() {
         {(totalXp > 0 || totalCoins > 0) && (
           <Card className="border-gold-500/40">
             <div className="flex items-center justify-between">
-              <p className="font-display text-lg uppercase tracking-wide text-gold-300">Rewards earned</p>
+              <p className="font-display text-lg uppercase tracking-wide text-gold-300">
+                {t('Rewards earned')}
+              </p>
               <div className="flex gap-2">
                 <Chip tone="ember">+{totalXp} XP</Chip>
-                <Chip tone="gold">+{totalCoins} coins</Chip>
+                <Chip tone="gold">{t('+{count} coins', { count: totalCoins })}</Chip>
               </div>
             </div>
             <ul className="mt-2.5 space-y-1">
               {rewards.map((reward) => (
                 <li key={reward.id} className="text-xs text-ash flex justify-between gap-3">
-                  <span>{REWARD_REASON_LABEL[reward.reason]} — {reward.detail}</span>
+                  <span>{t(REWARD_REASON_LABEL[reward.reason])} — {reward.detail}</span>
                   <span className="tabular shrink-0 text-smoke">+{reward.xp}/{reward.coins}</span>
                 </li>
               ))}
@@ -140,14 +169,15 @@ export default function SessionSummary() {
         )}
 
         {painFlag && (
-          <Alert tone="warn" title="Pain was reported">
-            FORGED will not add load to a movement that hurt. If it keeps happening, swap the movement or get it
-            looked at by a physiotherapist — an app cannot assess an injury.
+          <Alert tone="warn" title={t('Pain was reported')}>
+            {t(
+              'FORGED will not add load to a movement that hurt. If it keeps happening, swap the movement or get it looked at by a physiotherapist — an app cannot assess an injury.',
+            )}
           </Alert>
         )}
 
         <div>
-          <SectionHeading title="Next session" hint="Generated from what you just logged." />
+          <SectionHeading title={t('Next session')} hint={t('Generated from what you just logged.')} />
           <div className="space-y-3">
             {recommendations.map(({ entry, exercise, recommendation }) => (
               <RecommendationCard
@@ -160,7 +190,7 @@ export default function SessionSummary() {
             ))}
             {!recommendations.length && (
               <Card>
-                <p className="text-sm text-ash">No exercises were logged in this session.</p>
+                <p className="text-sm text-ash">{t('No exercises were logged in this session.')}</p>
               </Card>
             )}
           </div>
@@ -168,7 +198,10 @@ export default function SessionSummary() {
 
         {prs.length > 0 && (
           <div>
-            <SectionHeading title="Personal records" hint="Best working set and best estimated 1RM per lift." />
+            <SectionHeading
+              title={t('Personal records')}
+              hint={t('Best working set and best estimated 1RM per lift.')}
+            />
             <ul className="space-y-1.5">
               {prs
                 .filter((pr) => session.entries.some((e) => e.exerciseId === pr.exerciseId))
@@ -194,10 +227,10 @@ export default function SessionSummary() {
 
         <div className="grid grid-cols-2 gap-2">
           <Button full onClick={() => navigate('/progress')}>
-            View progress
+            {t('View progress')}
           </Button>
           <Button variant="primary" full onClick={() => navigate('/')}>
-            Done
+            {t('Done')}
           </Button>
         </div>
       </div>

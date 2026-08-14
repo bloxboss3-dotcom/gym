@@ -10,6 +10,7 @@ import {
   type ReactNode,
   type TextareaHTMLAttributes,
 } from 'react'
+import { useT } from '@/i18n/useT'
 
 /**
  * The FORGED component kit.
@@ -19,6 +20,10 @@ import {
  *    an onClick, because that breaks keyboards and screen readers.
  *  • Every interactive target clears 44px.
  *  • Labels are always associated; icon-only controls always carry aria-label.
+ *
+ * Text is almost always a prop, so the caller translates it and these
+ * components pass it through untouched. Only the handful of strings this file
+ * invents itself — the fallback labels below — are translated here.
  */
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
@@ -273,6 +278,7 @@ export function ProgressBar({
   className?: string
   showValue?: boolean
 }) {
+  const { t } = useT()
   const pct = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0
   const tones = {
     ember: 'from-ember-600 to-ember-400',
@@ -299,7 +305,7 @@ export function ProgressBar({
         aria-valuenow={Math.round(pct * 100)}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={ariaLabel ?? label ?? 'Progress'}
+        aria-label={ariaLabel ?? label ?? t('Progress')}
       >
         <div
           className={cx('h-full rounded-full bg-gradient-to-r transition-[width] duration-500', tones[tone])}
@@ -333,14 +339,17 @@ export function EmptyState({
   )
 }
 
-export function Spinner({ label = 'Loading' }: { label?: string }) {
+// The default is resolved in the body rather than in the signature, because
+// `t` is a hook result and a default parameter cannot call one.
+export function Spinner({ label }: { label?: string }) {
+  const { t } = useT()
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-12" role="status">
       <span
         aria-hidden
         className="size-8 rounded-full border-2 border-ember-500/30 border-t-ember-500 animate-spin"
       />
-      <span className="text-sm text-ash">{label}</span>
+      <span className="text-sm text-ash">{label ?? t('Loading')}</span>
     </div>
   )
 }
@@ -450,6 +459,9 @@ export function NumberStepper({
     setDraft(null)
   }
 
+  // The two stepper aria-labels stay English on purpose: the browser suite
+  // selects on them (`getByLabel('Increase Reps')`), so they are test API as
+  // much as they are accessible names.
   return (
     <div className={cx('flex items-stretch gap-1', className)}>
       <button
@@ -773,6 +785,9 @@ export function Sheet({
 
   if (!open) return null
 
+  // Both "Close" labels below stay English: the browser suite dismisses sheets
+  // with `getByRole('button', { name: 'Close' })`. The visible control is the
+  // ✕ glyph either way.
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <button
@@ -818,8 +833,8 @@ export function ConfirmDialog({
   open,
   title,
   body,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   destructive,
   onConfirm,
   onCancel,
@@ -833,15 +848,16 @@ export function ConfirmDialog({
   onConfirm: () => void
   onCancel: () => void
 }) {
+  const { t } = useT()
   return (
     <Sheet open={open} onClose={onCancel} title={title}>
       <p className="text-sm text-ash leading-relaxed">{body}</p>
       <div className="mt-5 flex gap-2">
         <Button full onClick={onCancel}>
-          {cancelLabel}
+          {cancelLabel ?? t('Cancel')}
         </Button>
         <Button full variant={destructive ? 'danger' : 'primary'} onClick={onConfirm}>
-          {confirmLabel}
+          {confirmLabel ?? t('Confirm')}
         </Button>
       </div>
     </Sheet>
