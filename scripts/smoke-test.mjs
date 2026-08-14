@@ -982,10 +982,62 @@ if (unopened) {
   const equipVisible = await page.getByRole('button', { name: 'Equip now' }).isVisible().catch(() => false)
   record('pack opening reveals an item', equipVisible)
   if (equipVisible) {
-    await page.getByRole('button', { name: 'Equip now' }).click()
-    await page.waitForTimeout(700)
+    // A pack holds several items and Equip now advances to the next one, so
+    // it takes a click per item before the screen changes.
+    for (let i = 0; i < 4; i += 1) {
+      if (!(await page.getByRole('button', { name: 'Equip now' }).count())) break
+      await page.getByRole('button', { name: 'Equip now' }).click()
+      await page.waitForTimeout(500)
+    }
+    await page.waitForTimeout(400)
     await shot('19-character')
-    record('equipping an item lands on the character screen', page.url().includes('/forge/'))
+    // Was `/forge/`, which the pack screen this started on also satisfies, so
+    // it passed without the flow ever arriving anywhere.
+    record(
+      'equipping an item lands on the character screen',
+      page.url().includes('/forge/character'),
+      page.url().split('#')[1] ?? page.url(),
+    )
+
+    // The pose slot, which is where "the poses do nothing" was visible twice
+    // over: the tiles drew a sword glyph instead of the stance, and the
+    // stances themselves were whole-figure tilts. Both have to show up here.
+    // The screen is lazily imported, so wait for it rather than counting
+    // zero tabs and skipping — a check that quietly does not run is worse
+    // than one that fails.
+    await page
+      .locator('[data-testid="equipped-pose"]')
+      .first()
+      .waitFor({ state: 'attached', timeout: 8000 })
+      .catch(() => {})
+    const poseTab = page.locator('button:has([data-testid="equipped-pose"])')
+    record('the wardrobe offers a pose slot', (await poseTab.count()) > 0)
+    if (await poseTab.count()) {
+      await poseTab.first().click()
+      await page.waitForTimeout(400)
+      const tiles = page.locator('li button[aria-pressed]')
+      const drawn = await tiles.locator('svg').count()
+      record(
+        'the pose picker draws the stance rather than a generic icon',
+        drawn > 0,
+        `${drawn} of ${await tiles.count()} tiles render a figure`,
+      )
+      // And the tiles differ from each other: identical markup would mean the
+      // preview is drawing the same warrior however many poses you own.
+      const shapes = await tiles.locator('svg').evaluateAll((els) =>
+        els.map((e) => e.innerHTML.replace(/\bid="[^"]*"|url\(#[^)]*\)/g, '')),
+      )
+      // Tied to the tile count, not to how many figures happened to render:
+      // with the previews removed this counted zero of zero and passed.
+      const owned = await tiles.count()
+      record(
+        'and a different one for each pose you own',
+        shapes.length === owned && (owned < 2 || new Set(shapes).size === shapes.length),
+        `${new Set(shapes).size} distinct figures across ${owned} tiles`,
+      )
+      await noOverflow('pose picker')
+      await shot('19b-poses')
+    }
   }
 }
 

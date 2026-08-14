@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { Warrior } from '@/character/Warrior'
+import { ItemPreview, Warrior } from '@/character/Warrior'
 import { ITEMS } from '@/data/items'
 
 /**
@@ -241,6 +241,32 @@ describe('poses move the body, not just the picture', () => {
       ) as Element,
     ), 100, 58)
     expect(distance(turned, straight)).toBeGreaterThan(2)
+  })
+
+  it('previews the stance itself in the picker, rather than a generic icon', () => {
+    /*
+      The pose slot was the one place in the wardrobe that drew a sword glyph
+      instead of the figure, so picking between eight stances meant tapping
+      eight identical icons. Whatever the tile renders, it has to be the
+      warrior actually holding that pose.
+    */
+    const previewOf = (art: string) => {
+      const item = ITEMS.find((i) => i.slot === 'pose' && i.art === art)
+      if (!item) throw new Error(`no ${art} pose`)
+      return new DOMParser().parseFromString(
+        renderToStaticMarkup(<ItemPreview item={item} frame="masculine" />),
+        'image/svg+xml',
+      )
+    }
+    const standing = previewOf('ready')
+    for (const art of ['heroic', 'guard', 'raised']) {
+      const posedPreview = previewOf(art)
+      const moved = Math.max(
+        distance(wrist(posedPreview, 'left'), wrist(standing, 'left')),
+        distance(wrist(posedPreview, 'right'), wrist(standing, 'right')),
+      )
+      expect(moved, `${art} previews identically to standing still`).toBeGreaterThan(12)
+    }
   })
 
   it('keeps every pose standing on the floor', () => {
