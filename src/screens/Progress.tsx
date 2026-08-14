@@ -36,9 +36,11 @@ import {
 import { formatWeight, fromDisplay, toDisplay } from '@/engine/units'
 import { formatDateLabel, isoDateOf, lastNDays, startOfWeek, toIsoDate } from '@/lib/date'
 import { useStore } from '@/state/store'
+import { useT } from '@/i18n/useT'
 
 /** Progress hub: strength, volume, body, recovery, and the deload picture. */
 export default function Progress() {
+  const { t } = useT()
   const store = useStore()
   const { data } = store
   const profile = data.profile!
@@ -136,17 +138,17 @@ export default function Progress() {
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-wider text-smoke">
-                Last {verdict.windowDays} days
+                {t('Last {days} days', { days: verdict.windowDays })}
               </p>
               <p className="font-display text-xl uppercase leading-tight mt-0.5">
-                {verdict.headline}
+                {t(verdict.headlineTemplate, verdict.verdictVars)}
               </p>
             </div>
             <Chip tone={verdict.status === 'good' ? 'good' : verdict.status === 'attention' ? 'caution' : 'neutral'}>
-              {verdict.status === 'unknown' ? 'no call' : verdict.status}
+              {t(verdict.status === 'unknown' ? 'no call' : verdict.status)}
             </Chip>
           </div>
-          <p className="text-sm text-ash mt-2 leading-relaxed">{verdict.detail}</p>
+          <p className="text-sm text-ash mt-2 leading-relaxed">{t(verdict.detailTemplate, verdict.verdictVars)}</p>
 
           {verdict.movements.length > 0 && (
             <ul className="mt-3 space-y-1.5">
@@ -165,16 +167,18 @@ export default function Progress() {
                               : 'caution'
                       }
                     >
-                      {m.trend === 'gaining'
-                        ? 'gaining'
-                        : m.trend === 'slipping'
-                          ? 'slipping'
-                          : m.trend === 'unknown'
-                            ? 'too few'
-                            : 'flat'}
+                      {t(
+                        m.trend === 'gaining'
+                          ? 'gaining'
+                          : m.trend === 'slipping'
+                            ? 'slipping'
+                            : m.trend === 'unknown'
+                              ? 'too few'
+                              : 'flat',
+                      )}
                     </Chip>
                   </div>
-                  <p className="text-[11px] text-smoke mt-1 leading-relaxed">{m.note}</p>
+                  <p className="text-[11px] text-smoke mt-1 leading-relaxed">{t(m.noteTemplate, m.noteVars)}</p>
                 </li>
               ))}
             </ul>
@@ -182,7 +186,7 @@ export default function Progress() {
 
           {verdict.missingData.map((gap) => (
             <p key={gap} className="text-[11px] text-smoke mt-2 leading-relaxed">
-              {gap}
+              {t(gap)}
             </p>
           ))}
           <div className="mt-2">

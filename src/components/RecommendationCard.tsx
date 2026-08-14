@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useT } from '@/i18n/useT'
 import { citationsFor } from '@/data/citations'
 import { ACTION_LABEL, ACTION_TONE, type Confidence, type Recommendation } from '@/engine/progression'
 import { Alert, Card, Chip, Disclosure, cx } from '@/components/ui'
@@ -74,6 +75,7 @@ export function RecommendationCard({
   detailHref?: string
   compact?: boolean
 }) {
+  const { t } = useT()
   const tone = ACTION_TONE[recommendation.action]
   const toneClasses = {
     good: 'border-vital/40',
@@ -89,7 +91,7 @@ export function RecommendationCard({
         <div className="min-w-0">
           {exerciseName && <p className="text-xs uppercase tracking-wider text-smoke">{exerciseName}</p>}
           <p className="font-display text-xl uppercase tracking-wide leading-tight mt-0.5">
-            {recommendation.headline}
+            {t(recommendation.headline)}
           </p>
         </div>
         <Chip tone={chipTone[tone]}>{ACTION_LABEL[recommendation.action]}</Chip>
@@ -101,17 +103,17 @@ export function RecommendationCard({
           not notice you lifted two different weights. */}
       {recommendation.judgedOn && (
         <p className="mt-3 rounded-lg border border-cool/35 bg-cool/[0.08] px-3 py-2 text-xs text-ash leading-relaxed">
-          {recommendation.judgedOn}
+          {t(recommendation.judgedOn)}
         </p>
       )}
 
       <div className="mt-3 rounded-lg bg-coal/80 border border-slate/70 px-3 py-2.5">
         <p className="text-[11px] uppercase tracking-wider text-smoke">Next session target</p>
-        <p className="text-sm text-parchment mt-0.5 leading-snug">{recommendation.target.description}</p>
+        <p className="text-sm text-parchment mt-0.5 leading-snug">{t(recommendation.target.description)}</p>
       </div>
 
       <p className={cx('text-sm text-ash mt-3 leading-relaxed', compact && 'line-clamp-4')}>
-        {recommendation.reason}
+        {t(recommendation.reason)}
       </p>
 
       {recommendation.warning && (
@@ -139,7 +141,7 @@ export function RecommendationCard({
             <Disclosure summary="What FORGED is missing" tone="quiet">
               <ul className="list-disc pl-4 space-y-1">
                 {recommendation.missingData.map((item) => (
-                  <li key={item}>{item}</li>
+                  <li key={item}>{t(item)}</li>
                 ))}
               </ul>
               <p className="mt-2 text-smoke">

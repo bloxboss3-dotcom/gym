@@ -68,6 +68,10 @@ export interface TrainingVerdict {
   /** The one sentence somebody should read if they read nothing else. */
   headline: string
   detail: string
+  /** The same two before interpolation, so a screen can translate them. */
+  headlineTemplate: string
+  detailTemplate: string
+  verdictVars: Record<string, string | number>
   status: 'good' | 'attention' | 'unknown'
   movements: MovementVerdict[]
   gaining: number
@@ -268,7 +272,14 @@ export function assessTraining(input: {
   if (!judged.length) {
     return {
       headline: 'Not enough logged yet to judge this',
-      detail: `A verdict needs at least ${MIN_SESSIONS} sessions on a movement inside ${windowDays} days. Keep logging and this fills in on its own.`,
+      detail: interpolate(
+        'A verdict needs at least {min} sessions on a movement inside {days} days. Keep logging and this fills in on its own.',
+        { min: MIN_SESSIONS, days: windowDays },
+      ),
+      headlineTemplate: 'Not enough logged yet to judge this',
+      detailTemplate:
+        'A verdict needs at least {min} sessions on a movement inside {days} days. Keep logging and this fills in on its own.',
+      verdictVars: { min: MIN_SESSIONS, days: windowDays },
       status: 'unknown',
       movements,
       gaining,
@@ -285,23 +296,44 @@ export function assessTraining(input: {
   const effortProblem =
     leavingReps >= Math.ceil(movements.length * RULES.coaching.effortProblemFraction)
 
-  const headline = effortProblem
-    ? `You are leaving reps in the tank on ${leavingReps} of ${movements.length} movements`
+  /*
+    Headline and detail, as templates for the same reason the note is one:
+    a sentence with the numbers already in it cannot be looked up, and this
+    is the single line somebody reads if they read nothing else on the screen.
+  */
+  const headlineTemplate = effortProblem
+    ? 'You are leaving reps in the tank on {leavingReps} of {movements} movements'
     : mostlyGaining
-      ? `Progressing on ${gaining} of ${judged.length} movements`
-      : `${stalled} of ${judged.length} movements have stopped moving`
+      ? 'Progressing on {gaining} of {judged} movements'
+      : '{stalled} of {judged} movements have stopped moving'
 
-  const detail = effortProblem
-    ? `Sets finishing more than ${RULES.progression.rirWindow.max} reps short of failure do most of the work of a warm-up and little of the work of a hard set. That is the first thing to fix, before adding sets or changing anything else.`
+  const detailTemplate = effortProblem
+    ? 'Sets finishing more than {rirMax} reps short of failure do most of the work of a warm-up and little of the work of a hard set. That is the first thing to fix, before adding sets or changing anything else.'
     : mostlyGaining
       ? stalled > 0
-        ? `The load is moving on most of what you train. ${stalled} ${stalled === 1 ? 'movement has' : 'movements have'} stopped, which is normal — the list below says which and what is likely behind it.`
+        ? stalled === 1
+          ? 'The load is moving on most of what you train. 1 movement has stopped, which is normal — the list below says which and what is likely behind it.'
+          : 'The load is moving on most of what you train. {stalled} movements have stopped, which is normal — the list below says which and what is likely behind it.'
         : 'The load is moving on everything you are training often enough to judge. This is what working looks like; the job now is to keep doing it.'
-      : `More of what you train is flat than is moving. The list below separates the ones where effort is the cause from the ones where it is not, because they need opposite fixes.`
+      : 'More of what you train is flat than is moving. The list below separates the ones where effort is the cause from the ones where it is not, because they need opposite fixes.'
+
+  const verdictVars = {
+    leavingReps,
+    movements: movements.length,
+    gaining,
+    judged: judged.length,
+    stalled,
+    rirMax: RULES.progression.rirWindow.max,
+  }
+  const headline = interpolate(headlineTemplate, verdictVars)
+  const detail = interpolate(detailTemplate, verdictVars)
 
   return {
     headline,
     detail,
+    headlineTemplate,
+    detailTemplate,
+    verdictVars,
     status: effortProblem || !mostlyGaining ? 'attention' : 'good',
     movements,
     gaining,
