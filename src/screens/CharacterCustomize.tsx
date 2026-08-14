@@ -140,13 +140,21 @@ export default function CharacterCustomize() {
                       active ? 'border-ember-500 bg-ember-500/12' : 'border-slate bg-coal',
                     )}
                   >
-                    {slot === 'title' || slot === 'pose' ? (
+                    {/*
+                      A title is text and has nothing to draw. A pose is the
+                      opposite — the stance IS the item, and it was the one
+                      slot in the whole screen showing a generic sword glyph
+                      instead of the figure. Choosing between eight of them
+                      meant tapping identical icons and scrolling up to find
+                      out what you had picked.
+                    */}
+                    {slot === 'title' ? (
                       <span
                         aria-hidden
                         className="grid place-items-center h-12 font-display text-lg"
                         style={{ color: meta.color }}
                       >
-                        {slot === 'title' ? 'ᛟ' : '⚔'}
+                        ᛟ
                       </span>
                     ) : (
                       <span className="grid place-items-center">

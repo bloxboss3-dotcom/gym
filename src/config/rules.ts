@@ -240,6 +240,38 @@ export const RULES = {
      */
     dropCount: 2,
     dropCountRange: { min: 1, max: 3 },
+    /* --------------------------------------------------------------------
+     * Recognising a drop set that was simply logged.
+     *
+     * A drop set leaves a signature in the data — the load goes down and the
+     * next set happens immediately — so asking somebody to accept a
+     * challenge, do it, and then confirm it is three taps to record something
+     * the app can already see. These are the bounds on "the weight was
+     * lowered and you went straight back to work".
+     * ------------------------------------------------------------------ */
+    /**
+     * A drop has to be a real cut, not a rounding wobble. Ten percent is the
+     * same floor `dropLadder` uses when it builds the prescription, so what
+     * counts as a drop coming out matches what counted going in.
+     */
+    detectMinDropPct: 0.1,
+    /**
+     * And not a bottomless one. Past this the load has more likely been typed
+     * wrong, or the set belongs to a different movement, than been dropped —
+     * the prescription itself never cuts more than 40%.
+     */
+    detectMaxDropPct: 0.6,
+    /**
+     * Seconds between the two sets, past which it stops being a drop set and
+     * starts being a lighter set after a rest.
+     *
+     * A drop set is defined by not resting; the plate change plus reading the
+     * screen and tapping Log is generously under two minutes, while a genuine
+     * back-off set comes after a full prescribed rest, which is at least that
+     * long. Sets logged in one batch at the end of an exercise land a few
+     * seconds apart and still read correctly.
+     */
+    detectWindowSec: 150,
     /** Rest-pause: rest this long, then squeeze out another mini-set. */
     restPauseSec: 20,
     restPauseBursts: 2,

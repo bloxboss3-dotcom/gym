@@ -6,6 +6,7 @@ import { EXERCISE_BY_ID } from '@/data/exercises'
 import {
   auditHypertrophy,
   collectAuditInput,
+  detectDropSet,
   loadsLongLengths,
   primaryMuscle,
   suggestFinisher,
@@ -15,6 +16,11 @@ import type { Exercise, LoggedSet, Session, SessionEntry } from '@/types'
 
 function set(weightKg: number, reps: number, rir: number | null = 1, warmup = false): LoggedSet {
   return { id: `s${weightKg}-${reps}-${Math.random()}`, weightKg, reps, rir, warmup, completedAt: 0 }
+}
+
+/** A set logged `atSec` seconds into the exercise, for the timing rules. */
+function setAt(atSec: number, weightKg: number, reps: number, warmup = false): LoggedSet {
+  return { ...set(weightKg, reps, 1, warmup), completedAt: atSec * 1000 }
 }
 
 function entryFor(exercise: Exercise, sets: LoggedSet[], overrides: Partial<SessionEntry> = {}): SessionEntry {
@@ -43,7 +49,6 @@ function context(overrides: Partial<FinisherContext> = {}): FinisherContext {
     entry: entryFor(exercise, [set(30, 12), set(30, 11), set(30, 10)]),
     weeklySets: 4,
     weeklyRange: { min: 8, max: 14 },
-    finishersUsedThisSession: 0,
     deloadActive: false,
     units: 'kg',
     ...overrides,
@@ -418,10 +423,14 @@ describe('a finisher is offered whenever the evidence-based conditions hold', ()
     week is SHORT for that muscle, and the deload engine watches accumulated
     fatigue across the week regardless.
   */
+  /* Six machine movements, each one its own entry with its own finished
+     sets — a real session, walked the way the screen walks it. */
   const walkSession = (movements: number) => {
+    const exercise = EXERCISE_BY_ID['triceps-pushdown']
     const taken: string[] = []
     for (let i = 0; i < movements; i += 1) {
-      const result = suggestFinisher(context({ finishersUsedThisSession: taken.length }))
+      const entry = entryFor(exercise, [set(30, 12), set(30, 11), set(30, 10)], { id: `e${i}` })
+      const result = suggestFinisher(context({ entry }))
       if (result.technique) taken.push(result.technique.kind)
     }
     return taken
@@ -431,11 +440,11 @@ describe('a finisher is offered whenever the evidence-based conditions hold', ()
     expect(walkSession(6).length).toBe(6)
   })
 
-  it('does not refuse on a count of how many have been taken', () => {
-    for (const already of [0, 1, 2, 5, 20]) {
-      const result = suggestFinisher(context({ finishersUsedThisSession: already }))
-      expect(result.technique, `refused after ${already}`).not.toBeNull()
-    }
+  it('takes no count of how many were taken before it', () => {
+    // The strong version of "no session cap": there is no input to carry one.
+    // A finisher already accepted on five other movements cannot reach this
+    // decision, because nothing in the context describes it.
+    expect(Object.keys(context())).not.toContain('finishersUsedThisSession')
   })
 
   it('still refuses for every reason that has evidence behind it', () => {
@@ -544,5 +553,102 @@ describe('the drop target is a landmark, not a requirement', () => {
     // Everything named has to be below the load that was just used.
     const working = 60
     for (const n of numbers) expect(n).toBeLessThan(working)
+  })
+})
+
+describe('recognising a drop set that was simply logged', () => {
+  const exercise = EXERCISE_BY_ID['triceps-pushdown']
+  /** Three planned sets at 40 kg, done, at ten-second intervals. */
+  const planned = () => [setAt(0, 40, 12), setAt(120, 40, 11), setAt(240, 40, 10)]
+
+  it('reads the drops straight out of the sets', () => {
+    const evidence = detectDropSet(
+      entryFor(exercise, [...planned(), setAt(250, 30, 8), setAt(262, 22.5, 6)]),
+    )
+    expect(evidence).not.toBeNull()
+    expect(evidence!.fromKg).toBe(40)
+    expect(evidence!.drops.map((d) => d.weightKg)).toEqual([30, 22.5])
+    expect(evidence!.dropReps).toBe(14)
+  })
+
+  it('recognises a single drop as well as a ladder', () => {
+    const evidence = detectDropSet(entryFor(exercise, [...planned(), setAt(252, 30, 9)]))
+    expect(evidence!.drops).toHaveLength(1)
+  })
+
+  it('says nothing when the weight never came down', () => {
+    expect(detectDropSet(entryFor(exercise, [...planned(), setAt(255, 40, 7)]))).toBeNull()
+  })
+
+  it('ignores a cut too small to be a drop', () => {
+    // 40 → 38 is a 5% trim, under `detectMinDropPct`. Somebody nudged the
+    // weight, they did not drop it.
+    expect(detectDropSet(entryFor(exercise, [...planned(), setAt(250, 38, 9)]))).toBeNull()
+  })
+
+  it('ignores a cut too big to have come off that set', () => {
+    // 40 → 10 is 75% off. More likely a typo or a different movement than a
+    // drop; the prescription itself never cuts anywhere near that far.
+    expect(detectDropSet(entryFor(exercise, [...planned(), setAt(250, 10, 9)]))).toBeNull()
+  })
+
+  it('is a back-off set, not a drop set, once you have rested', () => {
+    const rested = RULES.intensity.detectWindowSec + 30
+    expect(detectDropSet(entryFor(exercise, [...planned(), setAt(240 + rested, 30, 9)]))).toBeNull()
+  })
+
+  it('does not turn a descending session into one long drop set', () => {
+    // The plan itself goes down in weight — a pyramid, not a finisher.
+    const pyramid = entryFor(exercise, [setAt(0, 60, 6), setAt(180, 45, 8), setAt(360, 32.5, 10)])
+    expect(detectDropSet(pyramid)).toBeNull()
+  })
+
+  it('waits until the planned work is actually finished', () => {
+    // Two of three planned sets done, then the weight comes down. That is
+    // somebody struggling, not somebody adding a finisher.
+    const short = entryFor(exercise, [setAt(0, 40, 12), setAt(120, 40, 9), setAt(130, 30, 6)])
+    expect(detectDropSet(short)).toBeNull()
+  })
+
+  it('reads sets logged in one batch at the end', () => {
+    // Every timestamp within a few seconds, because they were typed in
+    // together afterwards. The load still came down, in order.
+    const batched = entryFor(exercise, [
+      setAt(600, 40, 12),
+      setAt(602, 40, 11),
+      setAt(604, 40, 10),
+      setAt(606, 30, 8),
+    ])
+    expect(detectDropSet(batched)).not.toBeNull()
+  })
+
+  it('does not let a warm-up ramp stand in for planned work', () => {
+    // Two warm-ups and only two of three planned sets, then the weight comes
+    // down. Counting the warm-ups toward the plan would call this a finisher
+    // when it is really somebody cutting a set short.
+    const withWarmups = entryFor(exercise, [
+      setAt(0, 20, 10, true),
+      setAt(60, 30, 8, true),
+      setAt(120, 40, 12),
+      setAt(240, 40, 9),
+      setAt(250, 30, 8),
+    ])
+    expect(detectDropSet(withWarmups)).toBeNull()
+  })
+
+  it('still finds the drops when the ramp is logged in front of them', () => {
+    const withWarmups = entryFor(exercise, [
+      setAt(0, 20, 10, true),
+      setAt(60, 30, 8, true),
+      ...planned(),
+      setAt(250, 30, 8),
+    ])
+    const evidence = detectDropSet(withWarmups)
+    expect(evidence!.fromKg).toBe(40)
+    expect(evidence!.drops).toHaveLength(1)
+  })
+
+  it('needs reps on the drop, not just a lighter number typed in', () => {
+    expect(detectDropSet(entryFor(exercise, [...planned(), setAt(250, 30, 0)]))).toBeNull()
   })
 })

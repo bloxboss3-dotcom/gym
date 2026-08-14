@@ -222,62 +222,10 @@ describe('the wardrobe fits both figures', () => {
   })
 })
 
-describe('poses do something', () => {
-  const POSES = ITEMS.filter((i) => i.slot === 'pose')
-
-  const withPose = (poseId: string) =>
-    renderToStaticMarkup(
-      <Warrior equipped={{ ...LOADOUT, pose: poseId }} frame="masculine" build={0.5} still />,
-    ).replace(/\bid="[^"]*"|url\(#[^)]*\)/g, '')
-
-  it('has poses to test', () => {
-    expect(POSES.length).toBeGreaterThanOrEqual(6)
-  })
-
-  it('draws a visibly different figure for every one of them', () => {
-    // Two of these used to render identically — `pose-braced` carried the
-    // same art key as `pose-guard`, so unlocking it changed nothing at all.
-    const seen = new Map<string, string>()
-    const clashes: string[] = []
-    for (const pose of POSES) {
-      const markup = withPose(pose.id)
-      const already = seen.get(markup)
-      if (already) clashes.push(`${pose.id} renders exactly like ${already}`)
-      else seen.set(markup, pose.id)
-    }
-    expect(clashes, clashes.join('; ')).toEqual([])
-  })
-
-  it('moves the figure enough to notice', () => {
-    // A two-degree rotation is present in the markup and invisible on a
-    // phone. Every pose other than the default has to shift the figure by a
-    // real amount: several degrees, several units, or several percent.
-    const tooSubtle: string[] = []
-    for (const pose of POSES) {
-      const markup = withPose(pose.id)
-      const transform = markup.match(/<g transform="([^"]*(?:rotate|translate|scale)[^"]*)"/)?.[1]
-      if (pose.art === 'ready') continue
-      if (!transform) {
-        tooSubtle.push(`${pose.id}: no transform at all`)
-        continue
-      }
-      const rotate = Math.abs(Number(transform.match(/rotate\((-?[\d.]+)/)?.[1] ?? 0))
-      const shift = Math.abs(Number(transform.match(/translate\((-?[\d.]+)\s+(-?[\d.]+)/)?.[2] ?? 0))
-      const scale = Math.abs(1 - Number(transform.match(/scale\(([\d.]+)/)?.[1] ?? 1))
-      if (rotate < 3 && shift < 5 && scale < 0.03) {
-        tooSubtle.push(`${pose.id}: rotate ${rotate}, shift ${shift}, scale ${scale}`)
-      }
-    }
-    expect(tooSubtle, tooSubtle.join('; ')).toEqual([])
-  })
-
-  it('keeps every pose standing on the floor', () => {
-    // Rotations are anchored at the ground plane so nothing pivots about its
-    // navel and hovers.
-    for (const pose of POSES) {
-      const markup = withPose(pose.id)
-      const rotate = markup.match(/rotate\(-?[\d.]+\s+(\d+)\s+(\d+)\)/)
-      if (rotate) expect(Number(rotate[2]), pose.id).toBe(252)
-    }
-  })
-})
+/*
+  Poses used to be asserted here, by reading the pose transform out of the
+  markup and checking the number in it was larger than three. Every pose
+  passed that while the figure itself never changed shape. It now lives in
+  `pose.test.tsx`, which renders the warrior and works out where the hands
+  actually end up.
+*/

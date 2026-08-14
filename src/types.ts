@@ -320,14 +320,10 @@ export interface SessionEntry {
   /**
    * The intensity finisher offered on this movement, and what became of it.
    *
-   * Recorded rather than merely displayed, because without a record the
-   * fatigue budget cannot work: the engine has always capped finishers at two
-   * a session, but nothing told it how many had been taken, so it offered one
-   * on every movement and a session could end up carrying five.
-   *
-   * `accepted` and `completed` both spend the budget — you did the work
-   * either way. `declined` does not, but still stops this movement being
-   * asked twice.
+   * Recorded rather than merely displayed: it is what stops a movement being
+   * asked twice, it is what the reward ledger keys off, and it is the only
+   * durable record that the extra sets under it were a finisher rather than
+   * ordinary work.
    */
   challenge?: SessionChallenge
 }
@@ -342,6 +338,16 @@ export interface SessionChallenge {
   status: ChallengeStatus
   /** When the status last changed. */
   at: Millis
+  /**
+   * True when the app worked out that this was done by reading the sets that
+   * were logged, rather than being told.
+   *
+   * Kept separate from `status` so the record stays honest about where the
+   * claim came from: "you dropped the weight and kept going, so this is done"
+   * is a different statement from "you pressed Done", and if the detector is
+   * ever wrong it should be possible to see which ones it decided.
+   */
+  detected?: boolean
 }
 
 export type SessionStatus = 'active' | 'completed' | 'abandoned'

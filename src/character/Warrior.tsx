@@ -41,12 +41,91 @@ import { useReducedMotion } from "@/components/ui";
  * deltoid caps, arm and leg thickness, trapezius, a narrower waist — sits
  * outside those paths and is free to move.
  */
+/**
+ * Where the joints are.
+ *
+ * Shared rather than recomputed, because the arms are drawn inside `Body` and
+ * the gloves and weapon are drawn outside it, and a pose moves all three. If
+ * the two ever disagreed about where a shoulder is, gear would swing about a
+ * different point from the arm holding it.
+ *
+ * Elbows and wrists are fixed points: the drawing puts them there regardless
+ * of build, and only the shoulder moves outward as the figure widens.
+ */
+export const JOINTS = {
+  shoulderY: 92,
+  elbow: { left: { x: 72, y: 122 }, right: { x: 128, y: 122 } },
+  wrist: { left: { x: 67, y: 150 }, right: { x: 133, y: 150 } },
+  /** The ground plane. Rotations anchor here so nobody hovers. */
+  floorY: 252,
+} as const;
+
+function shoulderX(build: number, frame: Figure, heavy: boolean) {
+  const b = Math.min(1, Math.max(0, build));
+  const fem = frame === "feminine";
+  const half = (fem ? (heavy ? 23 : 20) : heavy ? 24 : 21) + b * 3;
+  return { left: 100 - half + 2, right: 100 + half - 2, half };
+}
+
+/** An arm that has not been posed. */
+export const NEUTRAL_ARM = { shoulder: 0, elbow: 0 } as const;
+
+/** One arm, as the two angles a shoulder and an elbow actually have. */
+export interface ArmAngles {
+  /** Degrees at the shoulder. Positive swings the LEFT arm away from the body. */
+  shoulder: number;
+  /** Degrees at the elbow, on top of the shoulder. */
+  elbow: number;
+}
+
+/**
+ * The transform for one limb segment, and its exact inverse.
+ *
+ * The inverse is not decoration. Gloves and weapons live outside `Body`, and
+ * the only way to send the left one with the left arm is to draw the gear
+ * twice and clip each copy to its own side. A `clipPath` resolves in the
+ * coordinate system of the element that references it — which is the rotated
+ * one — so the clip rectangle carries the inverse rotation and lands back on
+ * the un-posed half it was meant to describe. Without that, a raised arm
+ * clips its own sword in half.
+ */
+function limb(rotations: { deg: number; x: number; y: number }[]) {
+  const used = rotations.filter((r) => r.deg !== 0);
+  return {
+    forward: used.map((r) => `rotate(${r.deg} ${r.x} ${r.y})`).join(" "),
+    inverse: [...used]
+      .reverse()
+      .map((r) => `rotate(${-r.deg} ${r.x} ${r.y})`)
+      .join(" "),
+  };
+}
+
+/** Both segments of one arm, ready to hang geometry off. */
+export function armTransforms(
+  side: "left" | "right",
+  build: number,
+  frame: Figure,
+  heavy: boolean,
+  angles: ArmAngles | undefined,
+) {
+  const sx = shoulderX(build, frame, heavy)[side];
+  const elbow = JOINTS.elbow[side];
+  const shoulderRot = { deg: angles?.shoulder ?? 0, x: sx, y: JOINTS.shoulderY };
+  const elbowRot = { deg: angles?.elbow ?? 0, x: elbow.x, y: elbow.y };
+  return {
+    upper: limb([shoulderRot]),
+    lower: limb([shoulderRot, elbowRot]),
+  };
+}
+
 function Body({
   heavy,
   build,
   frame,
   legsOnly,
   upperOnly,
+  arms,
+  head,
 }: {
   heavy: boolean;
   build: number;
@@ -55,6 +134,10 @@ function Body({
   legsOnly?: boolean;
   /** Everything above them, which breathes. */
   upperOnly?: boolean;
+  /** Per-side arm angles from the equipped pose. */
+  arms?: { left: ArmAngles; right: ArmAngles };
+  /** Transform applied to the neck and skull, so the head can turn. */
+  head?: string;
 }) {
   const b = Math.min(1, Math.max(0, build));
   const fem = frame === "feminine";
@@ -69,7 +152,8 @@ function Body({
    * for one of them would quietly tell half the users their training counts
    * for less, which is both untrue and the opposite of the point.
    */
-  const shoulder = (fem ? (heavy ? 23 : 20) : heavy ? 24 : 21) + b * 3;
+  const { left: leftShoulderX, right: rightShoulderX, half: shoulder } =
+    shoulderX(build, frame, heavy);
   /**
    * Deltoid caps are drawn proud of the torso edge, and the torso edge is
    * where the armour is. Narrowing the feminine shoulder without widening the
@@ -92,8 +176,8 @@ function Body({
       feminine frame, which is most of what reads as the shape. */
   const waistY = fem ? 116 : 120;
 
-  const leftShoulderX = 100 - shoulder + 2;
-  const rightShoulderX = 100 + shoulder - 2;
+  const leftArm = armTransforms("left", build, frame, heavy, arms?.left);
+  const rightArm = armTransforms("right", build, frame, heavy, arms?.right);
 
   const legs = fem ? (
     <>
@@ -198,13 +282,14 @@ function Body({
           opacity={0.55 + b * 0.35}
         />
       )}
-      {/* arms */}
+      {/* arms — upper rotates at the shoulder, forearm at the elbow on top of it */}
       <path
         d={`M${leftShoulderX} 92 L72 122`}
         stroke={SKIN}
         strokeWidth={upperArm}
         strokeLinecap="round"
         fill="none"
+        transform={leftArm.upper.forward || undefined}
       />
       <path
         d="M72 122 L67 150"
@@ -212,6 +297,7 @@ function Body({
         strokeWidth={foreArm}
         strokeLinecap="round"
         fill="none"
+        transform={leftArm.lower.forward || undefined}
       />
       <path
         d={`M${rightShoulderX} 92 L128 122`}
@@ -219,6 +305,7 @@ function Body({
         strokeWidth={upperArm}
         strokeLinecap="round"
         fill="none"
+        transform={rightArm.upper.forward || undefined}
       />
       <path
         d="M128 122 L133 150"
@@ -226,6 +313,7 @@ function Body({
         strokeWidth={foreArm}
         strokeLinecap="round"
         fill="none"
+        transform={rightArm.lower.forward || undefined}
       />
       {/* deltoid caps, drawn last so they sit proud of the torso edge */}
       <ellipse
@@ -242,16 +330,18 @@ function Body({
         ry={delt * 0.86}
         fill={SKIN}
       />
-      {/* neck + head */}
-      <rect
-        x={100 - neckW / 2}
-        y="74"
-        width={neckW}
-        height="12"
-        fill={SKIN_SHADE}
-        rx="3"
-      />
-      <ellipse cx="100" cy="58" rx={headRx} ry="21" fill={SKIN} />
+      {/* neck + head, turning together with whatever is worn on them */}
+      <g transform={head || undefined}>
+        <rect
+          x={100 - neckW / 2}
+          y="74"
+          width={neckW}
+          height="12"
+          fill={SKIN_SHADE}
+          rx="3"
+        />
+        <ellipse cx="100" cy="58" rx={headRx} ry="21" fill={SKIN} />
+      </g>
     </g>
   );
 }
@@ -2843,34 +2933,142 @@ function LegacyCompanionArt({
 /**
  * Stance.
  *
- * These used to be two-degree rotations and four-pixel nudges in a 280-unit
- * canvas — present in the markup, invisible on a phone. Somebody could pull a
- * mythical pose and see nothing change, which makes the whole slot feel like
- * a lie. They are now rotations and shifts you can actually see at thumbnail
- * size, anchored at the feet (y = 252) so nobody floats off the floor.
+ * Twice now this slot has been a lie. First as two-degree rotations that were
+ * present in the markup and invisible on a phone; then as whole-figure tilts,
+ * which are visible but are not poses — the figure leans, and a lean is not
+ * the difference between standing at rest and holding a guard. Somebody
+ * unlocking a mythical pose still saw the same drawing at a slightly
+ * different angle.
  *
- * Still whole-figure transforms rather than repositioned limbs. That is a
- * real limit and worth naming: a proper guard stance would move the arms, and
- * the arms are drawn inside the body with the gloves and the weapon aligned
- * to them, so posing them means posing all four together. Bigger job.
+ * So the joints move. Each pose sets an angle at each shoulder and each
+ * elbow, and the gloves and the weapon are carried along by the arm holding
+ * them, which is what makes it read as a body doing something rather than a
+ * picture being rotated. Head and stance move too.
+ *
+ * The angles are bounded rather than theatrical, and the reason is the
+ * weapon: it is drawn in the hand's frame, so an arm swung through 150° takes
+ * a sword through 150° with it and buries the point in the floor. Within
+ * about sixty degrees of travel a blade still reads as held. That is the real
+ * ceiling on this approach, and posing a weapon independently of the hand
+ * that holds it is the job after this one.
  */
-const POSE_TRANSFORM: Record<string, string> = {
-  ready: "",
-  // Squared up and settled, weight down.
-  guard: "translate(0 3) rotate(-6 100 252) scale(0.99)",
-  // Slouched off one hip.
-  rest: "translate(-4 6) rotate(4 100 252) scale(0.985)",
-  // Tall, chest up, leaning back into it.
-  heroic: "translate(0 -5) rotate(-3 100 252) scale(1.05)",
-  // Turned into a raised blade.
-  raised: "translate(3 -3) rotate(-11 100 252) scale(1.02)",
+export interface PoseSpec {
+  /** Whole figure, still useful for height and lean on top of the joints. */
+  figure?: string;
+  left?: ArmAngles;
+  right?: ArmAngles;
+  /** Neck and skull, about the base of the neck. */
+  head?: string;
+  /** Legs and boots together, about the floor. */
+  stance?: string;
+}
+
+const POSES: Record<string, PoseSpec> = {
+  // Feet set, weight even. The reference every other pose departs from.
+  ready: {},
+  // Hands up, chin down: elbows out, forearms drawn in across the chest.
+  guard: {
+    figure: "translate(0 3) rotate(-4 100 252) scale(0.99)",
+    left: { shoulder: 36, elbow: -88 },
+    right: { shoulder: -36, elbow: 88 },
+    head: "translate(0 3) rotate(-3 100 86)",
+  },
+  // Between sets, breathing. One hand to the hip, weight off one leg.
+  rest: {
+    figure: "translate(-4 5) rotate(3 100 252) scale(0.985)",
+    left: { shoulder: 4, elbow: -55 },
+    right: { shoulder: -14, elbow: 20 },
+    head: "rotate(7 100 86)",
+    stance: "rotate(-3 100 252)",
+  },
+  // Chest up. Earned it. Arms open, standing tall.
+  heroic: {
+    figure: "translate(0 -5) rotate(-2 100 252) scale(1.05)",
+    left: { shoulder: 34, elbow: -8 },
+    right: { shoulder: -34, elbow: 8 },
+    head: "rotate(-2 100 86)",
+  },
+  // Raised blade: the weapon arm lifts and cocks back, the other stays low.
+  raised: {
+    figure: "translate(3 -3) rotate(-7 100 252) scale(1.02)",
+    left: { shoulder: 16, elbow: 26 },
+    right: { shoulder: -22, elbow: -30 },
+    head: "rotate(-6 100 86)",
+  },
   // Braced low and wide, ready to take a hit.
-  braced: "translate(0 5) rotate(3 100 252) scale(1.03)",
-  // Side-on, hand at the hilt.
-  sheathed: "translate(-5 1) rotate(9 100 252) scale(0.98)",
-  // Rising, barely on the floor.
-  ascend: "translate(0 -12) rotate(-2 100 252) scale(1.06)",
+  braced: {
+    figure: "translate(0 5) rotate(2 100 252) scale(1.03)",
+    left: { shoulder: 30, elbow: -30 },
+    right: { shoulder: -30, elbow: 30 },
+    head: "translate(0 2)",
+    stance: "translate(100 252) scale(1.1 0.96) translate(-100 -252)",
+  },
+  // Side-on, hand at the hilt, nothing drawn yet.
+  sheathed: {
+    figure: "translate(-5 1) rotate(8 100 252) scale(0.98)",
+    left: { shoulder: 6, elbow: -46 },
+    right: { shoulder: -10, elbow: -22 },
+    head: "rotate(9 100 86)",
+  },
+  // Rising. Both feet still on the floor, only just.
+  ascend: {
+    figure: "translate(0 -12) rotate(-1 100 252) scale(1.06)",
+    left: { shoulder: 40, elbow: -16 },
+    right: { shoulder: -40, elbow: 16 },
+    head: "rotate(-3 100 86)",
+  },
 };
+
+/**
+ * Gloves and weapon, each side carried by the arm that holds it.
+ *
+ * Every hand art in this file draws its pair at x = 67 and x = 133, and every
+ * weapon hangs off the right hand (a couple mirror a second copy into the
+ * left). None of it crosses the centre line before a pose moves it, so
+ * splitting the drawing at x = 100 splits it into left-hand and right-hand
+ * halves exactly — which is what lets both follow their own arm without
+ * rewriting eighty art variants.
+ *
+ * When no pose moves the arms, this draws once with no clips at all, so the
+ * default figure is byte-for-byte what it was before poses articulated.
+ */
+function ArmGear({
+  left,
+  right,
+  children,
+}: {
+  left: ReturnType<typeof armTransforms>["lower"];
+  right: ReturnType<typeof armTransforms>["lower"];
+  children: ReactNode;
+}) {
+  const clipId = useId();
+  if (!left.forward && !right.forward) return <>{children}</>;
+  const half = (side: "l" | "r", inverse: string) => (
+    <clipPath id={`${clipId}-${side}`} key={side}>
+      <rect
+        x={side === "l" ? -200 : 100}
+        y={-200}
+        width={300}
+        height={700}
+        transform={inverse || undefined}
+      />
+    </clipPath>
+  );
+  return (
+    <>
+      <defs>
+        {half("l", left.inverse)}
+        {half("r", right.inverse)}
+      </defs>
+      <g transform={left.forward || undefined}>
+        <g clipPath={`url(#${clipId}-l)`}>{children}</g>
+      </g>
+      <g transform={right.forward || undefined}>
+        <g clipPath={`url(#${clipId}-r)`}>{children}</g>
+      </g>
+    </>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Public component
@@ -2915,11 +3113,15 @@ export function Warrior({
   const aura = item("aura");
   const companion = item("companion");
   const pose = item("pose");
+  const posed = POSES[pose?.art ?? "ready"] ?? POSES.ready;
 
   const heavy =
     body?.art === "heavy-plate" ||
     body?.art === "ember-plate" ||
     body?.art === "mecha";
+  const arms = { left: posed.left ?? NEUTRAL_ARM, right: posed.right ?? NEUTRAL_ARM };
+  const leftArm = armTransforms("left", build, frame, heavy, arms.left);
+  const rightArm = armTransforms("right", build, frame, heavy, arms.right);
   // Stagger the breath per instance so two warriors on one screen — the Forge
   // card and an inventory preview — do not inhale in lockstep.
   const breathDelay =
@@ -2968,7 +3170,7 @@ export function Warrior({
           frame === "feminine" ? "translate(0 8.44) scale(0.966)" : undefined
         }
       >
-        <g transform={POSE_TRANSFORM[pose?.art ?? "ready"] || undefined}>
+        <g transform={posed.figure || undefined}>
           {back && (
             <BackArt
               art={back.art}
@@ -2989,20 +3191,33 @@ export function Warrior({
           the same screen — the Forge card and an inventory preview — are not
           inhaling in lockstep.
         */}
-          <FrameHair frame={frame} layer="behind" animate={animate} />
-          <Body heavy={heavy} build={build} frame={frame} legsOnly />
-          {feet && (
-            <FeetArt
-              art={feet.art}
-              p={paletteOf(feet, { base: CLOTH, accent: "#777" })}
-              animate={animate}
-            />
-          )}
+          <g transform={posed.head || undefined}>
+            <FrameHair frame={frame} layer="behind" animate={animate} />
+          </g>
+          {/* Legs and boots move together, or a braced stance leaves its
+              footwear standing where the feet used to be. */}
+          <g transform={posed.stance || undefined}>
+            <Body heavy={heavy} build={build} frame={frame} legsOnly />
+            {feet && (
+              <FeetArt
+                art={feet.art}
+                p={paletteOf(feet, { base: CLOTH, accent: "#777" })}
+                animate={animate}
+              />
+            )}
+          </g>
           <g
             className={animate ? "anim-breathe" : undefined}
             style={animate ? { animationDelay: `${breathDelay}s` } : undefined}
           >
-            <Body heavy={heavy} build={build} frame={frame} upperOnly />
+            <Body
+              heavy={heavy}
+              build={build}
+              frame={frame}
+              upperOnly
+              arms={arms}
+              head={posed.head}
+            />
             {body && (
               <BodyArt
                 art={body.art}
@@ -3011,33 +3226,37 @@ export function Warrior({
                 frame={frame}
               />
             )}
-            <FrameHair frame={frame} layer="crown" animate={animate} />
-            {head && head.art !== "none" && (
-              <HeadArt
-                art={head.art}
-                p={paletteOf(head, { base: "#2b2b31", accent: "#888" })}
+            <g transform={posed.head || undefined}>
+              <FrameHair frame={frame} layer="crown" animate={animate} />
+              {head && head.art !== "none" && (
+                <HeadArt
+                  art={head.art}
+                  p={paletteOf(head, { base: "#2b2b31", accent: "#888" })}
+                  animate={animate}
+                />
+              )}
+              <FaceArt
+                art={face?.art ?? "stoic"}
+                p={paletteOf(face, { base: "#2b2b31", accent: "#888" })}
                 animate={animate}
               />
-            )}
-            <FaceArt
-              art={face?.art ?? "stoic"}
-              p={paletteOf(face, { base: "#2b2b31", accent: "#888" })}
-              animate={animate}
-            />
-            {hands && (
-              <HandsArt
-                art={hands.art}
-                p={paletteOf(hands, { base: CLOTH, accent: "#888" })}
-                animate={animate}
-              />
-            )}
-            {weapon && weapon.art !== "none" && (
-              <WeaponArt
-                art={weapon.art}
-                p={paletteOf(weapon, { base: "#8a8a94", accent: "#c9c9d2" })}
-                animate={animate}
-              />
-            )}
+            </g>
+            <ArmGear left={leftArm.lower} right={rightArm.lower}>
+              {hands && (
+                <HandsArt
+                  art={hands.art}
+                  p={paletteOf(hands, { base: CLOTH, accent: "#888" })}
+                  animate={animate}
+                />
+              )}
+              {weapon && weapon.art !== "none" && (
+                <WeaponArt
+                  art={weapon.art}
+                  p={paletteOf(weapon, { base: "#8a8a94", accent: "#c9c9d2" })}
+                  animate={animate}
+                />
+              )}
+            </ArmGear>
           </g>
         </g>
       </g>
