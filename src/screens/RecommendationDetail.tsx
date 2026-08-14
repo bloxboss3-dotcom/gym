@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useT } from '@/i18n/useT'
 import { Link, useParams } from 'react-router-dom'
 import { Screen } from '@/components/AppShell'
 import { CitationList, ConfidenceChip } from '@/components/RecommendationCard'
@@ -17,6 +18,7 @@ import { useStore } from '@/state/store'
  * it wanted and did not have.
  */
 export default function RecommendationDetail() {
+  const { t } = useT()
   const { exerciseId } = useParams<{ exerciseId: string }>()
   const { data } = useStore()
   const profile = data.profile!
@@ -71,7 +73,7 @@ export default function RecommendationDetail() {
   }
 
   return (
-    <Screen title="Why this?" subtitle={exercise.name} back={`/train/exercise/${exercise.id}`}>
+    <Screen title="Why this?" subtitle={t(exercise.name)} back={`/train/exercise/${exercise.id}`}>
       <div className="space-y-4">
         <Card raised>
           <div className="flex items-start justify-between gap-2">

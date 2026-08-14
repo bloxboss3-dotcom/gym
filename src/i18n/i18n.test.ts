@@ -49,7 +49,27 @@ describe('the catalogue', () => {
     // An entry that matches its key is either an oversight or a word that
     // needs no translation; the second is fine but should be deliberate, so
     // the exceptions are listed.
-    const SAME_IN_BOTH = new Set(['FORGED', 'RIR', 'XP', 'kg', 'lb', 'kcal', 'IMC', 'BMI'])
+    /*
+      Words that are genuinely the same in both, listed so that leaving one
+      untranslated is a decision somebody made rather than one nobody noticed.
+      The gym loanwords are what people actually say on a Spanish-speaking
+      gym floor — nobody asks for a "tirón a la cara" or a "empuje de cadera",
+      and translating them would make the app harder to read, not easier.
+    */
+    const SAME_IN_BOTH = new Set([
+      'FORGED',
+      'RIR',
+      'XP',
+      'kg',
+      'lb',
+      'kcal',
+      'IMC',
+      'BMI',
+      'Face Pull',
+      'Hip Thrust',
+      'Hollow Hold',
+      '~{minutes} min',
+    ])
     const identical = Object.entries(ES)
       .filter(([en, es]) => en === es && !SAME_IN_BOTH.has(en))
       .map(([en]) => en)

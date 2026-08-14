@@ -153,7 +153,7 @@ export default function VolumeDashboard() {
               {suggestions.map((s) => (
                 <li key={s.muscle} className="text-sm">
                   <span className="text-parchment font-medium">
-                    {MUSCLE_LABEL[s.muscle]} — add up to {s.addSets} set{s.addSets === 1 ? '' : 's'}
+                    {t(MUSCLE_LABEL[s.muscle])} — add up to {s.addSets} set{s.addSets === 1 ? '' : 's'}
                   </span>
                   <span className="block text-xs text-ash mt-0.5 leading-snug">{s.reason}</span>
                 </li>
@@ -207,6 +207,7 @@ function MuscleRow({
 }) {
   const { data } = useStore()
   const [open, setOpen] = useState(false)
+  const { t } = useT()
   const tone =
     assessment.status === 'high'
       ? 'danger'
@@ -219,7 +220,7 @@ function MuscleRow({
   return (
     <Card>
       <TargetBar
-        label={MUSCLE_LABEL[assessment.muscle as MuscleKey]}
+        label={t(MUSCLE_LABEL[assessment.muscle as MuscleKey])}
         value={assessment.hardSets}
         target={assessment.range}
         ceiling={RULES.volume.autoCeiling}

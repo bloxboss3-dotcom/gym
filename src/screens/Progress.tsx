@@ -314,7 +314,7 @@ export default function Progress() {
                 .map((v) => (
                   <li key={v.muscle}>
                     <TargetBar
-                      label={MUSCLE_LABEL[v.muscle]}
+                      label={t(MUSCLE_LABEL[v.muscle])}
                       value={v.hardSets}
                       target={v.range}
                       ceiling={RULES.volume.autoCeiling}

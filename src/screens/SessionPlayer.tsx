@@ -503,7 +503,7 @@ function ExerciseBlock({
             {entry.substitutedFromId && ` · ${t('substituted')}`}
           </p>
           <h2 className="font-display text-xl uppercase tracking-wide leading-tight">
-            {exercise?.name ?? entry.exerciseId}
+            {exercise ? t(exercise.name) : entry.exerciseId}
           </h2>
           <p className="text-xs text-ash mt-0.5">
             {t('{sets} × {repMin}–{repMax} · rest {minutes} min · target {rir} RIR', {
@@ -1313,7 +1313,7 @@ export function ExercisePicker({
               onClick={() => onPick(exercise.id)}
               className="w-full text-left touch-target rounded-lg border border-slate bg-coal px-3 py-2.5 hover:border-edge"
             >
-              <span className="block text-sm text-parchment">{exercise.name}</span>
+              <span className="block text-sm text-parchment">{t(exercise.name)}</span>
               <span className="block text-[11px] text-smoke">
                 {matchedAlias
                   ? t('also called “{alias}”', { alias: matchedAlias })

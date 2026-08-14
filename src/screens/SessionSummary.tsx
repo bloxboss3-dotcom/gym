@@ -183,7 +183,7 @@ export default function SessionSummary() {
               <RecommendationCard
                 key={entry.id}
                 recommendation={recommendation}
-                exerciseName={exercise?.name ?? entry.exerciseId}
+                exerciseName={exercise ? t(exercise.name) : entry.exerciseId}
                 detailHref={`/progress/recommendation/${entry.exerciseId}`}
                 compact
               />
