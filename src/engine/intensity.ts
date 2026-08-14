@@ -52,6 +52,14 @@ export interface FinisherContext {
   exercise: Exercise
   entry: SessionEntry
   /**
+   * How many drops to prescribe in one drop set, when the user has a
+   * preference. Falls back to `RULES.intensity.dropCount`.
+   *
+   * This is the number that is actually researched, and therefore the only
+   * one worth letting somebody choose.
+   */
+  dropCount?: number
+  /**
    * Weekly hard sets already done for this exercise's primary muscle, and the
    * range the volume engine thinks that muscle should be in. Null when the
    * caller has not computed them — the technique is then not offered, because
@@ -103,7 +111,6 @@ export type FinisherBlock =
   | 'deload'
   | 'pain'
   | 'unsafe_movement'
-  | 'session_budget'
   | 'already_used'
   | 'sets_incomplete'
   | 'volume_not_short'
@@ -136,8 +143,6 @@ export function suggestFinisher(ctx: FinisherContext): FinisherResult {
   const safeLoading = (cfg.safeLoading as readonly string[]).includes(exercise.loading)
   const safePattern = !(cfg.unsafePatterns as readonly string[]).includes(exercise.pattern)
   if (!safeLoading || !safePattern) return no('unsafe_movement')
-
-  if (ctx.finishersUsedThisSession >= cfg.maxPerSession) return no('session_budget')
 
   if (ctx.weeklySets === null || ctx.weeklyRange === null) return no('unknown_volume')
   const shortBy = ctx.weeklyRange.min - ctx.weeklySets
@@ -174,22 +179,28 @@ export function suggestFinisher(ctx: FinisherContext): FinisherResult {
     // kilogram constant; the entry carries the unit-native one the rest of the
     // app already resolved. Rounding a drop target on a converted 2.5 kg step
     // produces "33.1 lb", a number no pin-loaded stack has ever had.
-    const dropped = dropTarget(lastSet.weightKg, entry.incrementKg, ctx.units)
+    const drops = ctx.dropCount ?? cfg.dropCount
+    const ladder = dropLadder(lastSet.weightKg, entry.incrementKg, ctx.units, drops)
+    const first = ladder[0]
     return {
       blockedBy: null,
       technique: {
         ...shared,
         kind: 'drop_set',
         name: 'Drop set',
-        headline: `Drop to ${dropped.label} and go again`,
+        headline:
+          drops === 1
+            ? `Drop to ${first.label} and go again`
+            : `Drop ${drops}× — ${ladder.map((r) => r.label).join(' → ')}`,
         steps: [
-          `Move the pin to about ${dropped.label} — roughly ${Math.round(cfg.dropLoadPct * 100)}% lighter.`,
-          // The target is a landmark, not a requirement. Machines have the
-          // pins they have, and somebody standing at a stack should not be
-          // wondering whether the nearest hole counts.
-          `The nearest pin either side is fine — anywhere from ${dropped.rangeLabel} does the job. The number is a landmark, not a rule.`,
+          `Take the weight down to about ${first.label}, roughly ${Math.round(cfg.dropLoadPct * 100)}% lighter.`,
+          `The nearest pin either side is fine — anywhere from ${first.rangeLabel} does the job. The number is a landmark, not a rule.`,
           'Go straight back to work with no rest, and take it to the point where the next rep would break down.',
-          `One drop is enough. ${shortByPhrase(shortBy)}`,
+          ...ladder.slice(1).map(
+            (rung, i) =>
+              `Drop ${i + 2}: down to about ${rung.label} (${rung.rangeLabel}) and straight back to failure.`,
+          ),
+          `${drops} drop${drops === 1 ? '' : 's'} on this set, then move on. ${shortByPhrase(shortBy)}`,
         ],
         reason:
           'A drop set is not a bigger stimulus per set — trials that match total work find growth much the same as ordinary straight sets. What it does buy is volume per minute, which is worth having only because your weekly sets for this muscle are short. If you have the time, another straight set is the simpler answer.',
@@ -251,34 +262,41 @@ function shortByPhrase(shortBy: number): string {
 }
 
 /**
- * Where to drop to, and the band around it that is just as good.
+ * The ladder of drops, and the band around each one that is just as good.
+ *
+ * Each drop cuts `dropLoadPct` off the load before it, which is how the
+ * protocol in the cited trial actually ran — a set to failure, then straight
+ * into a lighter one, repeatedly, with no real rest.
  *
  * A stack has the pins it has, a rack of dumbbells jumps in fives, and the
- * research behind drop sets says nothing whatsoever about hitting a specific
- * number — the useful property is "meaningfully lighter, immediately". So the
- * band is published alongside the target, because a precise-looking figure on
- * its own reads as a requirement, and somebody standing in front of a machine
- * should not be wondering whether the nearest hole counts.
+ * research says nothing whatsoever about hitting a specific number: the useful
+ * property is "meaningfully lighter, immediately". So the band is published
+ * alongside each target, because a precise-looking figure on its own reads as
+ * a requirement, and somebody standing at a machine should not be wondering
+ * whether the nearest hole counts.
  */
-function dropTarget(weightKg: number, incrementKg: number, units: Units) {
-  const target = weightKg * (1 - RULES.intensity.dropLoadPct)
-  const rounded = roundToIncrement(target, incrementKg, units)
+function dropLadder(weightKg: number, incrementKg: number, units: Units, drops: number) {
   const show = (kg: number) => Number(toDisplay(kg, units).toFixed(1))
   const band = RULES.intensity.dropTolerancePct
-  // Clamped below the working weight: a "drop" that is not lighter is a
-  // second straight set with extra steps.
-  const low = roundToIncrement(target * (1 - band), incrementKg, units)
-  const high = Math.min(
-    roundToIncrement(target * (1 + band), incrementKg, units),
-    roundToIncrement(weightKg * 0.9, incrementKg, units),
-  )
-  return {
-    kg: rounded,
-    label: `${show(rounded)} ${units}`,
-    lowKg: low,
-    highKg: high,
-    rangeLabel: `${show(low)} to ${show(Math.max(high, rounded))} ${units}`,
+  const rungs: { kg: number; label: string; rangeLabel: string }[] = []
+  let from = weightKg
+  for (let i = 0; i < drops; i += 1) {
+    const target = from * (1 - RULES.intensity.dropLoadPct)
+    const rounded = roundToIncrement(target, incrementKg, units)
+    // Clamped below the load it came from: a "drop" that is not lighter is
+    // just another straight set with extra steps.
+    const capped = Math.min(rounded, roundToIncrement(from * 0.9, incrementKg, units))
+    const low = roundToIncrement(target * (1 - band), incrementKg, units)
+    const high = Math.min(roundToIncrement(target * (1 + band), incrementKg, units), capped)
+    rungs.push({
+      kg: capped,
+      label: `${show(capped)} ${units}`,
+      rangeLabel: `${show(low)} to ${show(Math.max(high, capped))} ${units}`,
+    })
+    from = capped
+    if (capped <= 0) break
   }
+  return rungs
 }
 
 export const BLOCK_EXPLANATION: Record<FinisherBlock, string> = {
@@ -287,7 +305,6 @@ export const BLOCK_EXPLANATION: Record<FinisherBlock, string> = {
   pain: `You reported pain of ${RULES.intensity.painBlock} or more on this movement. Nothing gets pushed past failure while that is true.`,
   unsafe_movement:
     'Not on this movement. Going past failure with a loaded spine, or under a barbell you have to escape from, is not worth any amount of extra growth.',
-  session_budget: `You have already added ${RULES.intensity.maxPerSession} finishers today. That is the fatigue budget.`,
   already_used: 'This movement already has a finisher today.',
   sets_incomplete: 'Finish your planned working sets first.',
   volume_not_short:

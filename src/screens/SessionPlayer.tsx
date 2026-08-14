@@ -655,10 +655,7 @@ function ExerciseBlock({
           <div className="flex items-center gap-2 flex-wrap">
             <Chip tone="ember">{t('Challenge')}</Chip>
             <span className="text-[11px] text-smoke tabular">
-              {t('{number} of {max} today', {
-                number: takenElsewhere + 1,
-                max: RULES.intensity.maxPerSession,
-              })}
+              {t('{drops} drops on this set', { drops: RULES.intensity.dropCount })}
             </span>
           </div>
           <p className="font-display text-lg uppercase tracking-wide text-ember-200 mt-1.5 leading-tight">

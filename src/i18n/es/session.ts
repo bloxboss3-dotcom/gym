@@ -120,7 +120,7 @@ export const SESSION: Dict = {
   'Passed on': 'Lo dejaste pasar',
   'Called off': 'Lo cancelaste',
   Challenge: 'Reto',
-  '{number} of {max} today': '{number} de {max} hoy',
+  '{drops} drops on this set': '{drops} bajadas en esta serie',
   'Finish it: +{coins} coins, +{xp} XP': 'Complétalo: +{coins} monedas, +{xp} XP',
   'Take it': 'Acepto',
   'Not today': 'Hoy no',
