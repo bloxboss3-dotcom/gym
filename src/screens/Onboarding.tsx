@@ -7,6 +7,8 @@ import { calculateProteinTarget } from '@/engine/protein'
 import { generateProgram } from '@/engine/program'
 import { feetInchesToCm, fromDisplay, toDisplay } from '@/engine/units'
 import { useStore } from '@/state/store'
+import { LANGUAGES } from '@/i18n'
+import { useT } from '@/i18n/useT'
 import { Warrior } from '@/character/Warrior'
 import {
   Alert,
@@ -67,7 +69,8 @@ const EQUIPMENT_OPTIONS: { value: EquipmentKey; label: string; hint?: string }[]
 const STEP_COUNT = 11
 
 export default function Onboarding() {
-  const { completeOnboarding, loadDemo, data } = useStore()
+  const { completeOnboarding, loadDemo, updateSettings, data } = useStore()
+  const { lang } = useT()
   const [figureChoice, setFigureChoice] = useState<Figure | null>(null)
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
@@ -195,6 +198,34 @@ export default function Onboarding() {
               you gain. Nobody can do that from a phone. Every recommendation comes with the rule it used, the
               evidence behind it, and a confidence level — so you can disagree with it.
             </Alert>
+            {/* Language, on the very first screen and before a single
+                question is asked. Somebody who cannot read the welcome text
+                cannot be asked to finish onboarding to find the setting, and
+                each option is written in its own language so it can be
+                recognised without reading the label. */}
+            <div
+              role="radiogroup"
+              aria-label="Language"
+              className="flex gap-2 justify-center"
+            >
+              {LANGUAGES.map((l) => (
+                <button
+                  key={l.code}
+                  type="button"
+                  role="radio"
+                  aria-checked={lang === l.code}
+                  onClick={() => updateSettings({ language: l.code })}
+                  className={cx(
+                    'touch-target rounded-full border px-4 text-sm transition-colors',
+                    lang === l.code
+                      ? 'border-ember-500 bg-ember-500/15 text-ember-200'
+                      : 'border-slate bg-coal text-ash',
+                  )}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
             <div className="space-y-2">
               <Button variant="primary" size="lg" full onClick={() => setStep(1)}>
                 Begin

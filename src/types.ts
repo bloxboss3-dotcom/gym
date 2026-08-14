@@ -201,6 +201,11 @@ export interface Settings {
   mealsPerDay: number
   finalMealTime: string
   avoidFoods: string[]
+  /**
+   * Interface language. Absent means English, which is what every account
+   * created before this existed will read as.
+   */
+  language?: 'en' | 'es'
   reducedMotion: boolean
   soundEnabled: boolean
   hapticsEnabled: boolean

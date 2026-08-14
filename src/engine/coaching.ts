@@ -1,4 +1,5 @@
 import { RULES } from '@/config/rules'
+import { interpolate } from '@/i18n'
 import { historyFor } from '@/engine/progression'
 import { estimateOneRepMax } from '@/engine/stats'
 import { daysBetween } from '@/lib/date'
@@ -48,8 +49,19 @@ export interface MovementVerdict {
   /** Median reps in reserve across working sets in the window. */
   medianRir: number | null
   effort: EffortVerdict
-  /** One line naming what is happening and what it means. */
+  /** One line naming what is happening and what it means, in English. */
   note: string
+  /**
+   * The same line before interpolation, plus its values.
+   *
+   * The engine has no business knowing what language anybody reads — it stays
+   * pure and English — but a finished sentence cannot be looked up in a
+   * catalogue. Emitting the template alongside the sentence lets the screen
+   * translate it and fill in the numbers afterwards, which is also the only
+   * way word order can differ between languages.
+   */
+  noteTemplate: string
+  noteVars: Record<string, string | number>
 }
 
 export interface TrainingVerdict {
@@ -154,23 +166,46 @@ export function assessMovement(
     "Not progressing" and "training three reps shy of failure" are the same
     story told twice, and reported as separate rows nobody joins them up. The
     note names the cause when there is one to name.
+
+    Built from a template with {placeholders} rather than assembled inline.
+    The engine stays pure and still emits English; the template is also the
+    lookup key for a translation, which a finished sentence could never be —
+    interpolate first and there is nothing left to look up, and word order
+    differs between languages anyway.
   */
-  let note: string
+  const movingWord =
+    trend === 'slipping' ? 'Going backwards ({pct})' : 'Flat ({pct})'
+  let template: string
   if (trend === 'unknown') {
-    note = `Only ${history.length} session${history.length === 1 ? '' : 's'} in the last ${windowDays} days — not enough to call a trend yet.`
+    template =
+      history.length === 1
+        ? 'Only 1 session in the last {days} days — not enough to call a trend yet.'
+        : 'Only {sessions} sessions in the last {days} days — not enough to call a trend yet.'
   } else if (trend === 'gaining' && effort === 'hard_enough') {
-    note = `Going up (${pct}) and the sets are landing in the right effort window. Leave it alone.`
+    template = 'Going up ({pct}) and the sets are landing in the right effort window. Leave it alone.'
   } else if (trend === 'gaining') {
-    note = `Going up (${pct}), ${effort === 'leaving_reps' ? `and at a median of ${medianRir} reps in reserve there is more in the tank` : 'though the sets are running very close to failure'}.`
+    template =
+      effort === 'leaving_reps'
+        ? 'Going up ({pct}), and at a median of {rir} reps in reserve there is more in the tank.'
+        : 'Going up ({pct}), though the sets are running very close to failure.'
   } else if (effort === 'leaving_reps') {
-    note = `${trend === 'slipping' ? `Going backwards (${pct})` : `Flat (${pct})`}, at a median of ${medianRir} reps in reserve. That is the likely reason — a set you could have doubled is not a hard set.`
+    template = `${movingWord}, at a median of {rir} reps in reserve. That is the likely reason — a set you could have doubled is not a hard set.`
   } else if (effort === 'grinding') {
-    note = `${trend === 'slipping' ? `Going backwards (${pct})` : `Flat (${pct})`}, and the sets are going to failure or past it. More effort is not the missing ingredient here; recovery or volume might be.`
+    template = `${movingWord}, and the sets are going to failure or past it. More effort is not the missing ingredient here; recovery or volume might be.`
   } else if (trend === 'slipping') {
-    note = `Going backwards (${pct}) despite the effort being in the right window. Worth checking sleep, food and how much else is being trained.`
+    template =
+      'Going backwards ({pct}) despite the effort being in the right window. Worth checking sleep, food and how much else is being trained.'
   } else {
-    note = `Flat (${pct}) at a reasonable effort. Normal for a stretch — if it holds another few weeks, change the rep range or the movement.`
+    template =
+      'Flat ({pct}) at a reasonable effort. Normal for a stretch — if it holds another few weeks, change the rep range or the movement.'
   }
+  const vars = {
+    pct: pct ?? '',
+    rir: medianRir ?? 0,
+    days: windowDays,
+    sessions: history.length,
+  }
+  const note = interpolate(template, vars)
 
   return {
     exerciseId: exercise.id,
@@ -181,6 +216,9 @@ export function assessMovement(
     medianRir,
     effort,
     note,
+    /** The un-interpolated sentence and its values, so the UI can translate. */
+    noteTemplate: template,
+    noteVars: vars,
   }
 }
 
