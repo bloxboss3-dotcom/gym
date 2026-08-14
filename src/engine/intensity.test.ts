@@ -8,7 +8,6 @@ import {
   collectAuditInput,
   loadsLongLengths,
   primaryMuscle,
-  BLOCK_EXPLANATION,
   suggestFinisher,
   type FinisherContext,
 } from '@/engine/intensity'
@@ -113,15 +112,6 @@ describe('intensity finishers', () => {
 
   it('does not undermine a deload', () => {
     expect(suggestFinisher(context({ deloadActive: true })).blockedBy).toBe('deload')
-  })
-
-  it('caps how many one session can carry', () => {
-    expect(
-      suggestFinisher(context({ finishersUsedThisSession: RULES.intensity.maxPerSession })).blockedBy,
-    ).toBe('session_budget')
-    expect(
-      suggestFinisher(context({ finishersUsedThisSession: RULES.intensity.maxPerSession - 1 })).technique,
-    ).not.toBeNull()
   })
 
   it('waits until the planned sets are actually done', () => {
@@ -413,64 +403,106 @@ describe('hypertrophy audit', () => {
   })
 })
 
-describe('the fatigue budget, as the session player actually uses it', () => {
-  /**
-   * The bug this exists for.
-   *
-   * The engine has always capped finishers per session, the rule was written,
-   * and a test asserted it — but the caller passed a hardcoded 0, so the cap
-   * never fired. A finisher was offered on every movement in the workout, and
-   * a session could end up carrying five of them. Every check in the suite
-   * passed the whole time, because they all called the engine directly.
-   *
-   * So this walks a whole session the way the screen does: offer, accept,
-   * feed the real count back in, offer again.
-   */
+describe('a finisher is offered whenever the evidence-based conditions hold', () => {
+  /*
+    There is no session cap, and there never should have been one.
+
+    The old rule refused a third finisher in a session. It was a judgement
+    call written in the same voice as the rules that ARE sourced, and it
+    turned away a technique on movements where every condition with evidence
+    behind it — volume short for the muscle, safe loading, no pain, not
+    deloading — was satisfied.
+
+    What actually guards against overdoing it is measured rather than
+    guessed, and all of it is still here: the offer only appears when the
+    week is SHORT for that muscle, and the deload engine watches accumulated
+    fatigue across the week regardless.
+  */
   const walkSession = (movements: number) => {
     const taken: string[] = []
-    const offered: boolean[] = []
     for (let i = 0; i < movements; i += 1) {
       const result = suggestFinisher(context({ finishersUsedThisSession: taken.length }))
-      offered.push(result.technique !== null)
       if (result.technique) taken.push(result.technique.kind)
     }
-    return { offered, taken }
+    return taken
   }
 
-  it('stops offering once the budget is spent', () => {
-    const { taken } = walkSession(6)
-    expect(taken.length).toBe(RULES.intensity.maxPerSession)
+  it('keeps offering across a whole session', () => {
+    expect(walkSession(6).length).toBe(6)
   })
 
-  it('never offers a third on a six-movement session', () => {
-    const { offered } = walkSession(6)
-    expect(offered.slice(RULES.intensity.maxPerSession).every((o) => o === false)).toBe(true)
+  it('does not refuse on a count of how many have been taken', () => {
+    for (const already of [0, 1, 2, 5, 20]) {
+      const result = suggestFinisher(context({ finishersUsedThisSession: already }))
+      expect(result.technique, `refused after ${already}`).not.toBeNull()
+    }
   })
 
-  it('keeps the budget small enough to be a garnish', () => {
-    // Two is a fatigue budget. Five is a second workout, which is what
-    // happens when nothing counts them.
-    expect(RULES.intensity.maxPerSession).toBeLessThanOrEqual(3)
-    expect(RULES.intensity.maxPerSession).toBeGreaterThanOrEqual(1)
+  it('still refuses for every reason that has evidence behind it', () => {
+    // Removing the arbitrary cap must not have loosened the real gates.
+    expect(suggestFinisher(context({ deloadActive: true })).blockedBy).toBe('deload')
+    expect(suggestFinisher(context({ goal: 'strength' })).blockedBy).toBe('goal')
+    expect(suggestFinisher(context({ weeklySets: 20 })).blockedBy).toBe('volume_not_short')
+  })
+})
+
+describe('how many drops one drop set carries', () => {
+  const dropSet = (dropCount?: number) => {
+    const result = suggestFinisher(context(dropCount === undefined ? {} : { dropCount }))
+    if (!result.technique) throw new Error('expected a finisher')
+    return result.technique
+  }
+
+  it('prescribes the number the research actually used, not one', () => {
+    // The trial this cites (Fink 2018) ran a set to failure and then three
+    // consecutive drops. Prescribing a single drop was not that protocol.
+    expect(RULES.intensity.dropCount).toBeGreaterThanOrEqual(2)
+    expect(RULES.intensity.dropCount).toBeLessThanOrEqual(RULES.intensity.dropCountRange.max)
   })
 
-  it('explains the refusal rather than going quiet', () => {
-    const spent = suggestFinisher(
-      context({ finishersUsedThisSession: RULES.intensity.maxPerSession }),
-    )
-    expect(spent.technique).toBeNull()
-    expect(spent.blockedBy).toBe('session_budget')
-    expect(BLOCK_EXPLANATION[spent.blockedBy!]).toMatch(/budget/i)
+  it('lets somebody pick how many drops', () => {
+    for (const n of [1, 2, 3]) {
+      const steps = dropSet(n).steps.join(' ')
+      expect(steps, `${n} drops`).toMatch(new RegExp(`${n} drops? on this set`))
+    }
+  })
+
+  it('gets lighter every drop', () => {
+    const steps = dropSet(3).steps.join(' ')
+    const weights = [...steps.matchAll(/([\d.]+) kg/g)].map((m) => Number(m[1]))
+    expect(weights.length).toBeGreaterThanOrEqual(3)
+    // Each named target has to be below the one before it, or a "drop" is
+    // just another straight set with extra steps.
+    const targets = weights.filter((_, i) => i % 2 === 0)
+    for (let i = 1; i < targets.length; i += 1) {
+      expect(targets[i], `drop ${i + 1} of ${targets.join(', ')}`).toBeLessThan(targets[i - 1])
+    }
+  })
+
+  it('names every drop in the headline when there is more than one', () => {
+    expect(dropSet(3).headline).toMatch(/→/)
+    expect(dropSet(1).headline).not.toMatch(/→/)
+  })
+
+  it('never names a weight at or above the working set', () => {
+    const steps = dropSet(3).steps.join(' ')
+    for (const m of steps.matchAll(/([\d.]+) kg/g)) expect(Number(m[1])).toBeLessThan(60)
   })
 })
 
 describe('what a finished challenge is worth', () => {
-  it('cannot pay for more challenges than the fatigue budget allows', () => {
-    // If the daily reward cap were higher than the per-session cap, the
-    // economy would be quietly arguing for a third one.
-    expect(ECONOMY.limits.perDay.challenge_completed).toBeLessThanOrEqual(
-      RULES.intensity.maxPerSession,
-    )
+  it('pays for a few and then stops, without forbidding more', () => {
+    /*
+      The reward cap is not permission any more.
+
+      There is no session limit on doing drop sets, so the economy must not
+      reintroduce one by the back door — but an uncapped payout would make
+      the coins, rather than the training, the reason to add a fourth. So it
+      pays for the first few and goes quiet: you can keep doing them, they
+      just stop being worth anything.
+    */
+    expect(ECONOMY.limits.perDay.challenge_completed).toBeGreaterThan(1)
+    expect(ECONOMY.limits.perDay.challenge_completed).toBeLessThanOrEqual(6)
   })
 
   it('pays less for garnishing a session than for finishing one', () => {

@@ -123,9 +123,14 @@ export const ECONOMY = {
       quest_completed: 3,
       puzzle_solved: 5,
       anvil_round: 3,
-      /** Matches RULES.intensity.maxPerSession — the reward cannot outrun the
-       *  fatigue budget, or the economy starts arguing against the coaching. */
-      challenge_completed: 2,
+      /**
+       * Not a limit on doing them — there is no session cap on drop sets any
+       * more. This is where the PAYING stops. Uncapped, the coins rather
+       * than the training would become the reason to add a fourth; capped at
+       * two it read as permission. Four pays for a genuinely hard session and
+       * then goes quiet.
+       */
+      challenge_completed: 4,
       percentile_band: 3,
       level_up: 99,
       duplicate_refund: 99,

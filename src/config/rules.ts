@@ -185,9 +185,22 @@ export const RULES = {
   intensity: {
     /** Goals where a finisher is offered at all. */
     goals: ['hypertrophy', 'recomp'] as const,
-    /** Fatigue budget. More than this per session is how people dig holes. */
-    maxPerSession: 2,
-    /** Never on the same movement twice in one session. */
+    /**
+     * How many finishers one session may carry.
+     *
+     * There is no session cap any more, and the honest reason is that there
+     * never was any evidence for one. Two-per-session was a judgement call
+     * dressed up in the same voice as the rules that ARE sourced, and it
+     * refused a technique somebody wanted on movements where every
+     * evidence-based condition was satisfied.
+     *
+     * What actually guards against overdoing it is already in the app and
+     * is measured rather than guessed: a finisher is only offered when the
+     * week is SHORT on volume for that muscle, never on a loaded spine or a
+     * barbell you have to escape from, never through pain, never in a
+     * deload — and the deload engine watches accumulated fatigue across the
+     * week regardless.
+     */
     maxPerExercise: 1,
     /**
      * Loading styles safe to take past failure without a spotter. A barbell
@@ -201,7 +214,7 @@ export const RULES = {
     setsShortOfRange: 1,
     /** Blocked at or above this reported pain (0–10). */
     painBlock: 3,
-    /** Drop set: cut this fraction of the load, then go to failure again. */
+    /** Each drop cuts this fraction off the load before the next set. */
     dropLoadPct: 0.25,
     /**
      * How far either side of that target is just as good.
@@ -213,7 +226,20 @@ export const RULES = {
      * around it is printed too.
      */
     dropTolerancePct: 0.2,
-    dropCount: 1,
+    /**
+     * Drops in one drop set — the number that IS researched.
+     *
+     * The trial this app cites for drop sets (Fink 2018) had its subjects
+     * take a set to failure and then perform THREE consecutive drops. The
+     * app was prescribing one, which is not the protocol the evidence is
+     * about, and then capping the session — restricting the parameter with
+     * no support and under-delivering on the parameter with support.
+     *
+     * Two by default, adjustable to three. One is still allowed for anyone
+     * who wants a lighter version.
+     */
+    dropCount: 2,
+    dropCountRange: { min: 1, max: 3 },
     /** Rest-pause: rest this long, then squeeze out another mini-set. */
     restPauseSec: 20,
     restPauseBursts: 2,

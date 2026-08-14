@@ -404,24 +404,35 @@ for (let i = 0; i < 3; i += 1) {
   await page.waitForTimeout(150)
 }
 const finisherText = await page
-  .locator('text=/Drop to .* and go again/')
+  .locator('text=/Drop \\d+× —|Drop to .* and go again/')
   .first()
   .innerText()
   .catch(() => '')
-// The number has to be a weight the machine can actually be set to. A 2.5 kg
-// increment converted literally lands on 33.1 lb, which exists on no stack —
-// the fifth time a kilogram constant has reached the UI in this app.
-const dropLb = Number(finisherText.match(/drop to ([\d.]+) lb/i)?.[1])
+// Every rung of the ladder has to be a weight the machine can actually be set
+// to. A 2.5 kg increment converted literally lands on 33.1 lb, which exists on
+// no stack — the fifth time a kilogram constant reached the UI in this app.
+const dropLbs = [...finisherText.matchAll(/([\d.]+)\s*lb/gi)].map((m) => Number(m[1]))
 record(
   'offers a drop set once the sets are done and the week is short',
-  Number.isFinite(dropLb),
+  dropLbs.length > 0,
   finisherText || 'no finisher shown',
 )
 record(
-  'drops to a weight the stack actually has',
-  Number.isInteger(dropLb) && dropLb % 5 === 0,
-  `${dropLb} lb`,
+  'prescribes more than one drop, as the cited trial did',
+  dropLbs.length >= 2,
+  `${dropLbs.length} rungs: ${dropLbs.join(' → ')}`,
 )
+record(
+  'every drop lands on a weight the stack actually has',
+  dropLbs.length > 0 && dropLbs.every((n) => Number.isInteger(n) && n % 5 === 0),
+  dropLbs.join(', '),
+)
+record(
+  'each drop is lighter than the one before it',
+  dropLbs.every((n, i) => i === 0 || n < dropLbs[i - 1]),
+  dropLbs.join(' → '),
+)
+
 if (finisherText) {
   await page.locator('button[aria-expanded]').last().click()
   await page.waitForTimeout(250)
@@ -463,8 +474,8 @@ if (await challengeCards().count()) {
   await challengeCards().first().screenshot({ path: `${SHOTS}/06e-challenge-offer.png` })
   const asks = await challengeCards().first().innerText()
   record(
-    'the challenge states the payout and the budget up front',
-    /coins/i.test(asks) && /of 2/i.test(asks),
+    'the challenge states the payout up front',
+    /coins/i.test(asks),
     asks.replace(/\n/g, ' / ').slice(0, 120),
   )
 }
@@ -480,13 +491,14 @@ for (let guard = 0; guard < 6; guard += 1) {
     await page.waitForTimeout(250)
   }
 }
+// No session cap any more. What must hold is that a challenge is offered on
+// every movement where the evidence-based conditions are satisfied, rather
+// than being refused on a count of how many have already been taken.
 record(
-  'stops offering challenges once the fatigue budget is spent',
-  accepted > 0 && accepted <= 2,
-  `${accepted} accepted, cap is 2`,
+  'keeps offering challenges across the session',
+  accepted >= 2,
+  `${accepted} accepted with no session cap`,
 )
-const stillOffering = await challengeCards().count()
-record('no challenge is offered past the cap', stillOffering === 0, `${stillOffering} still on screen`)
 const paid = await page.locator('text=/Challenge done/').count()
 record('a finished challenge is recorded as done', paid > 0, `${paid} marked done`)
 await noOverflow('challenges')
