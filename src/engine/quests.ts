@@ -104,6 +104,8 @@ export interface AchievementProgress {
   /** 0–1 for the ones with an obvious numeric path. */
   progress: number
   detail: string
+  detailTemplate: string
+  detailVars: Record<string, string | number>
 }
 
 export function evaluateAchievements(data: AppData, today: IsoDate = toIsoDate()): AchievementProgress[] {
@@ -134,38 +136,109 @@ export function evaluateAchievements(data: AppData, today: IsoDate = toIsoDate()
     : null
   const level = data.game.xp
 
-  const metric: Record<string, { value: number; goal: number; detail: string }> = {
-    'first-session': { value: completedSessions, goal: 1, detail: `${completedSessions} sessions completed` },
-    'ten-sessions': { value: completedSessions, goal: 10, detail: `${completedSessions}/10 sessions` },
-    'thirty-sessions': { value: completedSessions, goal: 30, detail: `${completedSessions}/30 sessions` },
-    'four-week-consistency': {
-      value: consistency && consistency.score >= 0.8 && consistency.expected >= 8 ? 1 : 0,
+  const metric: Record<
+    string,
+    { value: number; goal: number; detail: string; template: string; vars: Record<string, string | number> }
+  > = {
+    'first-session': {
+      value: completedSessions,
       goal: 1,
-      detail: consistency ? `Consistency ${Math.round(consistency.score * 100)}% over ${consistency.expected} planned days` : 'No data yet',
+      detail: `${completedSessions} sessions completed`,
+      template: '{n} sessions completed',
+      vars: { n: completedSessions },
     },
-    'first-run': { value: data.runs.length, goal: 1, detail: `${data.runs.length} runs logged` },
-    'fifty-km': { value: totalRunKm, goal: 50, detail: `${totalRunKm.toFixed(1)}/50 km` },
-    'protein-week': { value: proteinDays, goal: 5, detail: `${proteinDays}/5 days this week` },
-    'first-deload': { value: deloadsDone, goal: 1, detail: `${deloadsDone} deloads completed` },
-    'first-pr': { value: prs.length ? 1 : 0, goal: 1, detail: prs.length ? `${prs.length} lifts with records` : 'No records yet' },
-    'benchmark-improved': {
+    'ten-sessions': {
+      value: completedSessions,
+      goal: 10,
+      detail: `${completedSessions}/10 sessions`,
+      template: '{n}/10 sessions',
+      vars: { n: completedSessions },
+    },
+    'thirty-sessions': {
+      value: completedSessions,
+      goal: 30,
+      detail: `${completedSessions}/30 sessions`,
+      template: '{n}/30 sessions',
+      vars: { n: completedSessions },
+    },
+    'unbroken-month': {
+      value: consistency ? Math.round(consistency.score * 100) : 0,
+      goal: 80,
+      detail: consistency ? `Consistency ${Math.round(consistency.score * 100)}% over ${consistency.expected} planned days` : 'No data yet',
+      template: consistency ? 'Consistency {pct}% over {days} planned days' : 'No data yet',
+      vars: consistency
+        ? { pct: Math.round(consistency.score * 100), days: consistency.expected }
+        : {},
+    },
+    'first-run': {
+      value: data.runs.length,
+      goal: 1,
+      detail: `${data.runs.length} runs logged`,
+      template: '{n} runs logged',
+      vars: { n: data.runs.length },
+    },
+    'fifty-km': {
+      value: totalRunKm,
+      goal: 50,
+      detail: `${totalRunKm.toFixed(1)}/50 km`,
+      template: '{km}/50 km',
+      vars: { km: totalRunKm.toFixed(1) },
+    },
+    'protein-week': {
+      value: proteinDays,
+      goal: 5,
+      detail: `${proteinDays}/5 days this week`,
+      template: '{n}/5 days this week',
+      vars: { n: proteinDays },
+    },
+    'first-deload': {
+      value: deloadsDone,
+      goal: 1,
+      detail: `${deloadsDone} deloads completed`,
+      template: '{n} deloads completed',
+      vars: { n: deloadsDone },
+    },
+    'first-pr': {
+      value: prs.length ? 1 : 0,
+      goal: 1,
+      detail: prs.length ? `${prs.length} lifts with records` : 'No records yet',
+      template: prs.length ? '{n} lifts with records' : 'No records yet',
+      vars: { n: prs.length },
+    },
+    'faster-benchmark': {
       value: benchmark?.improved ? 1 : 0,
       goal: 1,
       detail: benchmark?.detail ?? 'No benchmark run logged',
+      template: benchmark?.detail ?? 'No benchmark run logged',
+      vars: {},
     },
-    'level-ten': { value: level, goal: 3600, detail: 'Reach level 10' },
-    'honest-logger': { value: ratedSets, goal: 100, detail: `${ratedSets}/100 sets with RIR` },
+    'level-ten': {
+      value: level,
+      goal: 3600,
+      detail: 'Reach level 10',
+      template: 'Reach level 10',
+      vars: {},
+    },
+    'honest-logger': {
+      value: ratedSets,
+      goal: 100,
+      detail: `${ratedSets}/100 sets with RIR`,
+      template: '{n}/100 sets with RIR',
+      vars: { n: ratedSets },
+    },
   }
 
   return ACHIEVEMENTS.map((def) => {
     const state = data.game.achievements.find((a) => a.id === def.id)
-    const m = metric[def.id] ?? { value: 0, goal: 1, detail: '' }
+    const m = metric[def.id] ?? { value: 0, goal: 1, detail: '', template: '', vars: {} }
     return {
       def,
       unlocked: Boolean(state) || m.value >= m.goal,
       unlockedAt: state?.unlockedAt ?? null,
       progress: Math.min(1, m.goal > 0 ? m.value / m.goal : 0),
       detail: m.detail,
+      detailTemplate: m.template,
+      detailVars: m.vars,
     }
   })
 }

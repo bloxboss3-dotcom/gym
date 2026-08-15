@@ -11,9 +11,11 @@ import { evaluateQuests } from '@/engine/quests'
 import { formatDateLabel, toIsoDate } from '@/lib/date'
 import { useStore } from '@/state/store'
 import type { PackKind } from '@/types'
+import { useT } from '@/i18n/useT'
 
 /** The Forge: your warrior, your currency, packs, and where they came from. */
 export default function Forge() {
+  const { t } = useT()
   const { data, buyPack } = useStore()
   const navigate = useNavigate()
   const today = toIsoDate()
@@ -29,7 +31,7 @@ export default function Forge() {
 
   return (
     <Screen
-      title="The Forge"
+      title={t('The Forge')}
       subtitle={`Level ${level.level} · ${data.game.coins} coins`}
       action={
         <Link to="/forge/quests" className="relative touch-target flex items-center px-2 text-sm text-ember-400">
@@ -74,18 +76,18 @@ export default function Forge() {
           <div className="grid grid-cols-2 gap-2 mt-4">
             <Link to="/forge/character" className="contents">
               <Button variant="primary" full>
-                Customise
+                {t('Customise')}
               </Button>
             </Link>
             <Link to="/forge/inventory" className="contents">
-              <Button full>Inventory</Button>
+              <Button full>{t('Inventory')}</Button>
             </Link>
           </div>
         </Card>
 
         {packs.length > 0 && (
           <div>
-            <SectionHeading title="Unopened" hint="Tap to heat and crack them open." />
+            <SectionHeading title={t('Unopened')} hint={t('Tap to heat and crack them open.')} />
             <ul className="grid grid-cols-2 gap-2">
               {packs.map((pack) => (
                 <li key={pack.id}>
@@ -111,7 +113,7 @@ export default function Forge() {
         )}
 
         <div>
-          <SectionHeading title="Buy a pack" hint="Coins come from training. Nothing here can be bought with money." />
+          <SectionHeading title={t('Buy a pack')} hint={t('Coins come from training. Nothing here can be bought with money.')} />
           <ul className="space-y-2">
             {(Object.keys(ECONOMY.packs) as PackKind[]).map((kind) => {
               const config = ECONOMY.packs[kind]
@@ -174,23 +176,22 @@ export default function Forge() {
           </ul>
         </div>
 
-        <Alert tone="info" title="Cosmetic only, always">
-          Coins, levels and items change how your warrior looks and nothing else. No recommendation, chart, safety
-          message or feature in FORGED is ever locked behind them, and there is nothing to buy with real money.
+        <Alert tone="info" title={t('Cosmetic only, always')}>
+          {t('Coins, levels and items change how your warrior looks and nothing else. No recommendation, chart, safety message or feature in FORGED is ever locked behind them, and there is nothing to buy with real money.')}
         </Alert>
 
         <div className="grid grid-cols-3 gap-2">
-          <Stat label="Total XP" value={data.game.xp.toLocaleString()} tone="ember" />
-          <Stat label="Coins" value={data.game.coins} tone="gold" />
+          <Stat label={t('Total XP')} value={data.game.xp.toLocaleString()} tone="ember" />
+          <Stat label={t('Coins')} value={data.game.coins} tone="gold" />
           <Stat
-            label="Collected"
+            label={t('Collected')}
             value={`${Math.round((collection.owned / collection.total) * 100)}%`}
             sub={`${collection.owned}/${collection.total}`}
           />
         </div>
 
         <div>
-          <SectionHeading title="Where your rewards came from" hint="Every payout, with its source." />
+          <SectionHeading title={t('Where your rewards came from')} hint={t('Every payout, with its source.')} />
           {recentRewards.length ? (
             <ul className="space-y-1.5">
               {recentRewards.map((entry) => (
@@ -213,39 +214,38 @@ export default function Forge() {
           ) : (
             <Card>
               <p className="text-sm text-ash text-center py-2">
-                Complete a session, a run, a check-in or your protein target to start earning.
+                {t('Complete a session, a run, a check-in or your protein target to start earning.')}
               </p>
             </Card>
           )}
         </div>
 
         <Card>
-          <SectionHeading title="Daily reward caps" hint="Why you cannot farm the game." />
+          <SectionHeading title={t('Daily reward caps')} hint={t('Why you cannot farm the game.')} />
           <ul className="space-y-1.5 text-sm text-ash">
             <li className="flex justify-between">
-              <span>Daily XP cap</span>
+              <span>{t('Daily XP cap')}</span>
               <span className="tabular text-parchment">{ECONOMY.limits.dailyXpCap}</span>
             </li>
             <li className="flex justify-between">
-              <span>Daily coin cap</span>
+              <span>{t('Daily coin cap')}</span>
               <span className="tabular text-parchment">{ECONOMY.limits.dailyCoinCap}</span>
             </li>
             <li className="flex justify-between">
-              <span>Minimum working sets to earn</span>
+              <span>{t('Minimum working sets to earn')}</span>
               <span className="tabular text-parchment">{ECONOMY.limits.minWorkingSetsForReward}</span>
             </li>
             <li className="flex justify-between">
-              <span>Minimum session length</span>
+              <span>{t('Minimum session length')}</span>
               <span className="tabular text-parchment">{ECONOMY.limits.minSessionMinutes} min</span>
             </li>
             <li className="flex justify-between">
-              <span>Rewarded sessions per day</span>
+              <span>{t('Rewarded sessions per day')}</span>
               <span className="tabular text-parchment">{ECONOMY.limits.perDay.workout_completed}</span>
             </li>
           </ul>
           <p className="text-xs text-smoke mt-2 leading-relaxed">
-            Extra sessions still count toward your volume, history and recommendations — they just do not print extra
-            currency. The economy rewards honest, planned training, not repetition.
+            {t('Extra sessions still count toward your volume, history and recommendations — they just do not print extra currency. The economy rewards honest, planned training, not repetition.')}
           </p>
         </Card>
       </div>

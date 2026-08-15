@@ -25,6 +25,8 @@ export interface DeloadSignal {
   label: string
   triggered: boolean
   detail: string
+  detailTemplate: string
+  detailVars: Record<string, string | number>
 }
 
 export interface DeloadAssessment {
@@ -32,6 +34,8 @@ export interface DeloadAssessment {
   triggeredCount: number
   signals: DeloadSignal[]
   reason: string
+  reasonTemplate: string
+  reasonVars: Record<string, string | number>
   rule: string
   confidence: Confidence
   missingData: string[]
@@ -39,6 +43,8 @@ export interface DeloadAssessment {
     loadReductionPct: number
     volumeReductionPct: number
     description: string
+    descriptionTemplate: string
+    descriptionVars: Record<string, string | number>
   }
   citationIds: string[]
 }
@@ -144,6 +150,11 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
         decline.tracked < 3
           ? 'Not enough repeated exercises in the last 10 days to judge.'
           : `${decline.declining} of ${decline.tracked} tracked lifts went backwards.`,
+      detailTemplate:
+        decline.tracked < 3
+          ? 'Not enough repeated exercises in the last 10 days to judge.'
+          : '{declining} of {tracked} tracked lifts went backwards.',
+      detailVars: { declining: decline.declining, tracked: decline.tracked },
     },
     {
       key: 'soreness',
@@ -153,6 +164,11 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
         soreness === null
           ? 'No check-ins logged recently.'
           : `Average soreness ${soreness}/5 (flag at ${RULES.deload.sorenessThreshold}).`,
+      detailTemplate:
+        soreness === null
+          ? 'No check-ins logged recently.'
+          : 'Average soreness {value}/5 (flag at {threshold}).',
+      detailVars: { value: soreness ?? 0, threshold: RULES.deload.sorenessThreshold },
     },
     {
       key: 'readiness',
@@ -162,6 +178,11 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
         readiness === null
           ? 'No check-ins logged recently.'
           : `Average readiness ${readiness}/5 (flag at ${RULES.deload.readinessThreshold}).`,
+      detailTemplate:
+        readiness === null
+          ? 'No check-ins logged recently.'
+          : 'Average readiness {value}/5 (flag at {threshold}).',
+      detailVars: { value: readiness ?? 0, threshold: RULES.deload.readinessThreshold },
     },
     {
       key: 'joint_pain',
@@ -171,18 +192,33 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
         jointPain === null
           ? 'No check-ins logged recently.'
           : `Average joint pain ${jointPain}/10 (flag at ${RULES.deload.jointPainThreshold}).`,
+      detailTemplate:
+        jointPain === null
+          ? 'No check-ins logged recently.'
+          : 'Average joint pain {value}/10 (flag at {threshold}).',
+      detailVars: { value: jointPain ?? 0, threshold: RULES.deload.jointPainThreshold },
     },
     {
       key: 'hard_sessions',
       label: 'Sessions harder than prescribed',
       triggered: hardSessions >= RULES.deload.hardSessionsThreshold,
       detail: `${hardSessions} session${hardSessions === 1 ? '' : 's'} in the last ${window} days ran well past the target effort.`,
+      detailTemplate:
+        hardSessions === 1
+          ? '1 session in the last {days} days ran well past the target effort.'
+          : '{sessions} sessions in the last {days} days ran well past the target effort.',
+      detailVars: { sessions: hardSessions, days: window },
     },
     {
       key: 'accumulated_weeks',
       label: 'Weeks of accumulated hard training',
       triggered: hardWeeks >= RULES.deload.weeksBeforeDeload,
       detail: `${hardWeeks} consecutive week${hardWeeks === 1 ? '' : 's'} of training without a planned back-off (flag at ${RULES.deload.weeksBeforeDeload}).`,
+      detailTemplate:
+        hardWeeks === 1
+          ? '1 consecutive week of training without a planned back-off (flag at {threshold}).'
+          : '{weeks} consecutive weeks of training without a planned back-off (flag at {threshold}).',
+      detailVars: { weeks: hardWeeks, threshold: RULES.deload.weeksBeforeDeload },
     },
   ]
 
@@ -223,6 +259,22 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
       : cooledDown
         ? `${triggeredCount} of ${RULES.deload.triggerCount} deload signals are currently firing. Keep training as planned and keep checking in — FORGED will flag it if the pattern builds.`
         : `You backed off recently, so FORGED is holding off on another deload suggestion for now (${RULES.deload.cooldownDays}-day cooldown).`,
+    // The same sentence with its numbers pulled out, so it can be translated.
+    reasonTemplate: suggested
+      ? '{count} fatigue signals are firing at once: {signals}. That pattern usually means accumulated fatigue is masking your actual fitness. A week at roughly {load}% of your usual load and {volume}% of your usual sets normally brings performance back up rather than down.'
+      : cooledDown
+        ? '{count} of {needed} deload signals are currently firing. Keep training as planned and keep checking in — FORGED will flag it if the pattern builds.'
+        : 'You backed off recently, so FORGED is holding off on another deload suggestion for now ({days}-day cooldown).',
+    reasonVars: suggested
+      ? {
+          count: triggeredCount,
+          signals: firing.join(', '),
+          load: Math.round((1 - RULES.deload.loadReductionPct) * 100),
+          volume: Math.round((1 - RULES.deload.volumeReductionPct) * 100),
+        }
+      : cooledDown
+        ? { count: triggeredCount, needed: RULES.deload.triggerCount }
+        : { days: RULES.deload.cooldownDays },
     rule: `${RULES.deload.triggerCount}+ of 6 fatigue signals inside a ${window}-day window → suggest a deload (rules.deload).`,
     confidence,
     missingData,
@@ -230,6 +282,12 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
       loadReductionPct: RULES.deload.loadReductionPct,
       volumeReductionPct: RULES.deload.volumeReductionPct,
       description: `Keep the same movements. Cut working sets by about ${Math.round(RULES.deload.volumeReductionPct * 100)}% and load by about ${Math.round(RULES.deload.loadReductionPct * 100)}%, and stop every set well short of failure (4+ reps in reserve). Keep easy running, keep protein where it is, and sleep as much as you can.`,
+      descriptionTemplate:
+        'Keep the same movements. Cut working sets by about {volume}% and load by about {load}%, and stop every set well short of failure (4+ reps in reserve). Keep easy running, keep protein where it is, and sleep as much as you can.',
+      descriptionVars: {
+        volume: Math.round(RULES.deload.volumeReductionPct * 100),
+        load: Math.round(RULES.deload.loadReductionPct * 100),
+      },
     },
     citationIds: ['bell-2020-overreaching', 'acsm-2011-quantity'],
   }

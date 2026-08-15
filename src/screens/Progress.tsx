@@ -128,7 +128,7 @@ export default function Progress() {
   const recentCheckins = data.checkins.slice(0, 7)
 
   return (
-    <Screen title="Progress" subtitle="What the data actually says">
+    <Screen title={t('Progress')} subtitle={t('What the data actually says')}>
       <div className="space-y-4">
         {/* The verdict ------------------------------------------------------
             First on the screen, because "am I getting anywhere and am I
@@ -198,14 +198,14 @@ export default function Progress() {
         <Card raised className={cx(deload.suggested && 'border-caution/50')}>
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wider text-smoke">Fatigue check</p>
+              <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Fatigue check')}</p>
               <p className="font-display text-xl uppercase leading-tight mt-0.5">
                 {deload.suggested ? 'Deload worth taking' : `${deload.triggeredCount}/${RULES.deload.triggerCount} signals firing`}
               </p>
             </div>
             <Chip tone={deload.suggested ? 'caution' : 'good'}>{deload.confidence} confidence</Chip>
           </div>
-          <p className="text-sm text-ash mt-2 leading-relaxed">{deload.reason}</p>
+          <p className="text-sm text-ash mt-2 leading-relaxed">{t(deload.reasonTemplate, deload.reasonVars)}</p>
           <ul className="mt-3 space-y-1">
             {deload.signals.map((signal) => (
               <li key={signal.key} className="flex items-start gap-2 text-xs">
@@ -217,22 +217,22 @@ export default function Progress() {
                   )}
                 />
                 <span className={signal.triggered ? 'text-caution' : 'text-smoke'}>
-                  <span className="font-medium">{signal.label}</span> — {signal.detail}
+                  <span className="font-medium">{t(signal.label)}</span> — {t(signal.detailTemplate, signal.detailVars)}
                 </span>
               </li>
             ))}
           </ul>
           {deload.suggested && (
             <div className="mt-3 space-y-2">
-              <Alert tone="info" title="What a deload looks like">
-                {deload.plan.description}
+              <Alert tone="info" title={t('What a deload looks like')}>
+                {t(deload.plan.descriptionTemplate, deload.plan.descriptionVars)}
               </Alert>
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="ghost" full onClick={() => store.declineDeload(deload.reason)}>
-                  Not now
+                  {t('Not now')}
                 </Button>
                 <Button variant="primary" full onClick={() => store.acceptDeload(deload.reason)}>
-                  Start deload
+                  {t('Start deload')}
                 </Button>
               </div>
             </div>
@@ -246,11 +246,11 @@ export default function Progress() {
                   if (active) store.completeDeload(active.id)
                 }}
               >
-                Mark deload complete
+                {t('Mark deload complete')}
               </Button>
             </div>
           )}
-          <Disclosure summary="Evidence" tone="quiet">
+          <Disclosure summary={t('Evidence')} tone="quiet">
             <CitationList ids={deload.citationIds} />
           </Disclosure>
         </Card>
@@ -258,24 +258,24 @@ export default function Progress() {
         {/* Headline stats --------------------------------------------------- */}
         <div className="grid grid-cols-2 gap-2">
           <Stat
-            label="Consistency"
+            label={t('Consistency')}
             value={`${Math.round(consistency.score * 100)}%`}
             tone="ember"
             sub={`${consistency.credited}/${consistency.expected} planned days`}
           />
           <Stat
-            label="Sets this week"
+            label={t('Sets this week')}
             value={`${completion.completedSets}/${completion.plannedSets}`}
             sub={`${completion.completedSessions} of ${completion.plannedSessions} sessions`}
           />
           <Stat
-            label="Protein adherence"
+            label={t('Protein adherence')}
             value={`${proteinWeek.daysHit}/7`}
             tone="gold"
             sub={`${proteinWeek.averageG} g average on tracked days`}
           />
           <Stat
-            label="7-day weight"
+            label={t('7-day weight')}
             value={sevenDay ? formatWeight(sevenDay, units) : '—'}
             sub={sevenDay ? 'Rolling average' : 'Log your weight'}
           />
@@ -283,26 +283,26 @@ export default function Progress() {
 
         {/* Consistency ------------------------------------------------------ */}
         <Card>
-          <SectionHeading title="Consistency" hint="Rolling 28 days. Missed days do not erase progress." />
+          <SectionHeading title={t('Consistency')} hint={t('Rolling 28 days. Missed days do not erase progress.')} />
           <ConsistencyStrip days={consistency.days} />
           <div className="flex flex-wrap gap-2 mt-3">
-            <Chip tone="ember">Lifted</Chip>
-            <Chip tone="cool">Ran</Chip>
-            <Chip tone="gold">Deload</Chip>
-            <Chip tone="good">Rest logged</Chip>
-            <Chip tone="danger">Missed</Chip>
+            <Chip tone="ember">{t('Lifted')}</Chip>
+            <Chip tone="cool">{t('Ran')}</Chip>
+            <Chip tone="gold">{t('Deload')}</Chip>
+            <Chip tone="good">{t('Rest logged')}</Chip>
+            <Chip tone="danger">{t('Missed')}</Chip>
           </div>
-          <p className="text-xs text-ash mt-2 leading-relaxed">{consistency.message}</p>
+          <p className="text-xs text-ash mt-2 leading-relaxed">{t(consistency.messageTemplate, consistency.messageVars)}</p>
         </Card>
 
         {/* Volume ----------------------------------------------------------- */}
         <div>
           <SectionHeading
-            title="Weekly hard sets"
-            hint="This week, per muscle. Band shows your starting range."
+            title={t('Weekly hard sets')}
+            hint={t('This week, per muscle. Band shows your starting range.')}
             action={
               <Link to="/progress/volume" className="text-sm text-ember-400 touch-target flex items-center">
-                Details
+                {t('Details')}
               </Link>
             }
           />
@@ -327,7 +327,7 @@ export default function Progress() {
               to="/progress/volume"
               className="mt-3 inline-flex text-sm text-ember-400 font-medium touch-target items-center"
             >
-              All muscles and contributing exercises →
+              {t('All muscles and contributing exercises →')}
             </Link>
           </Card>
         </div>
@@ -338,8 +338,8 @@ export default function Progress() {
             caveat is not fine print here — it is part of the answer. */}
         <Card>
           <SectionHeading
-            title="Where you stand"
-            hint="Your lifts against published strength standards, scaled to your body weight."
+            title={t('Where you stand')}
+            hint={t('Your lifts against published strength standards, scaled to your body weight.')}
           />
           {strength.overall === null ? (
             <p className="text-sm text-ash mt-1">
@@ -351,7 +351,7 @@ export default function Progress() {
               <div className="flex items-end gap-3 mt-1">
                 <p className="font-display text-5xl text-ember-400 tabular leading-none">
                   {strength.overall}
-                  <span className="text-xl text-ash">th</span>
+                  <span className="text-xl text-ash">{t('th')}</span>
                 </p>
                 <p className="text-xs text-ash leading-snug pb-1">
                   percentile among {strength.comparisonGroup}
@@ -375,7 +375,7 @@ export default function Progress() {
                     <div className="text-right shrink-0">
                       <p className="font-display text-xl text-parchment tabular leading-none">
                         {lift.percentile}
-                        <span className="text-[11px] text-smoke">th</span>
+                        <span className="text-[11px] text-smoke">{t('th')}</span>
                       </p>
                       {lift.nextLoadKg !== null && (
                         <p className="text-[10px] text-smoke mt-0.5">
@@ -388,22 +388,19 @@ export default function Progress() {
               </ul>
             </>
           )}
-          <Disclosure summary="What this number is, and what it is not" tone="quiet">
-            <p className="mb-2">{strength.caveat}</p>
+          <Disclosure summary={t('What this number is, and what it is not')} tone="quiet">
+            <p className="mb-2">{t(strength.caveat)}</p>
             {strength.missingData.map((gap) => (
               <p key={gap} className="mb-2 text-smoke">
                 {gap}
               </p>
             ))}
             <p className="mb-2">
-              Body weight is handled allometrically — strength scales with roughly the two-thirds power of body mass,
-              so a heavier lifter needs more weight on the bar but a smaller multiple of themselves for the same
-              standing. One exponent, applied identically to everyone.
+              {t('Body weight is handled allometrically — strength scales with roughly the two-thirds power of body mass, so a heavier lifter needs more weight on the bar but a smaller multiple of themselves for the same standing. One exponent, applied identically to everyone.')}
             </p>
             <p className="mb-2">
-              XP is paid for <span className="text-parchment">crossing</span> a percentile band, never for the band you
-              are already in. Rewarding the standing would hand the biggest prizes to whoever walked in strongest;
-              rewarding the climb pays a beginner exactly what it pays anyone else, and beginners climb fastest.
+              {t('XP is paid for')} <span className="text-parchment">{t('crossing')}</span>{' '}
+              {t('a percentile band, never for the band you are already in. Rewarding the standing would hand the biggest prizes to whoever walked in strongest; rewarding the climb pays a beginner exactly what it pays anyone else, and beginners climb fastest.')}
             </p>
             <CitationList ids={strength.citationIds} />
           </Disclosure>
@@ -411,7 +408,7 @@ export default function Progress() {
 
         {/* Strength trends -------------------------------------------------- */}
         <div>
-          <SectionHeading title="Strength trend" hint="Estimated 1RM. An estimate from a formula, not a measurement." />
+          <SectionHeading title={t('Strength trend')} hint={t('Estimated 1RM. An estimate from a formula, not a measurement.')} />
           {topLifts.length ? (
             <div className="space-y-3">
               {topLifts.map(({ pr, trend }) => (
@@ -434,7 +431,7 @@ export default function Progress() {
           ) : (
             <Card>
               <p className="text-sm text-ash">
-                Log a movement at least twice and its estimated strength trend appears here.
+                {t('Log a movement at least twice and its estimated strength trend appears here.')}
               </p>
             </Card>
           )}
@@ -442,13 +439,13 @@ export default function Progress() {
 
         {/* Rep quality ------------------------------------------------------ */}
         <Card>
-          <SectionHeading title="Rep quality this week" hint="How close to failure your sets actually ran." />
+          <SectionHeading title={t('Rep quality this week')} hint={t('How close to failure your sets actually ran.')} />
           {quality.totalSets ? (
             <>
               <div className="grid grid-cols-3 gap-2">
-                <Stat label="Rated sets" value={`${quality.ratedSets}/${quality.totalSets}`} />
-                <Stat label="Average RIR" value={quality.averageRir ?? '—'} tone="ember" />
-                <Stat label="To failure" value={`${Math.round(quality.toFailureFraction * 100)}%`} />
+                <Stat label={t('Rated sets')} value={`${quality.ratedSets}/${quality.totalSets}`} />
+                <Stat label={t('Average RIR')} value={quality.averageRir ?? '—'} tone="ember" />
+                <Stat label={t('To failure')} value={`${Math.round(quality.toFailureFraction * 100)}%`} />
               </div>
               <p className="text-xs text-ash mt-2 leading-relaxed">
                 {quality.missingFraction > 0.34
@@ -459,21 +456,21 @@ export default function Progress() {
               </p>
             </>
           ) : (
-            <p className="text-sm text-ash">No working sets logged this week yet.</p>
+            <p className="text-sm text-ash">{t('No working sets logged this week yet.')}</p>
           )}
         </Card>
 
         {/* Body ------------------------------------------------------------- */}
         <div>
           <SectionHeading
-            title="Body"
+            title={t('Body')}
             action={
               <button
                 type="button"
                 onClick={() => setWeightOpen(true)}
                 className="text-sm text-ember-400 touch-target flex items-center"
               >
-                Log weight
+                {t('Log weight')}
               </button>
             }
           />
@@ -483,25 +480,24 @@ export default function Progress() {
                 <LineChart
                   series={bodySeries.map((p) => ({ date: p.date, value: toDisplay(p.value, units) }))}
                   secondary={bodyAverage.map((p) => ({ date: p.date, value: toDisplay(p.value, units) }))}
-                  ariaLabel="Body weight over time"
+                  ariaLabel={t('Body weight over time')}
                   format={(v) => v.toFixed(1)}
                 />
                 <p className="text-[11px] text-smoke mt-1.5">
-                  Solid = daily entries, dashed = 7-day rolling average. Day-to-day swings are mostly water and food
-                  in transit — read the average.
+                  {t('Solid = daily entries, dashed = 7-day rolling average. Day-to-day swings are mostly water and food in transit — read the average.')}
                 </p>
               </>
             ) : (
-              <p className="text-sm text-ash">Log your weight a few times to see a trend.</p>
+              <p className="text-sm text-ash">{t('Log your weight a few times to see a trend.')}</p>
             )}
             <div className="grid grid-cols-2 gap-2 mt-3">
               <Button size="sm" full onClick={() => setMeasureOpen(true)}>
-                Add measurements
+                {t('Add measurements')}
               </Button>
               <label className="contents">
-                <span className="sr-only">Add a progress photo</span>
+                <span className="sr-only">{t('Add a progress photo')}</span>
                 <Button size="sm" full onClick={() => document.getElementById('photo-input')?.click()}>
-                  Add photo
+                  {t('Add photo')}
                 </Button>
               </label>
             </div>
@@ -547,7 +543,7 @@ export default function Progress() {
                       onClick={() => store.deletePhoto(photo.id)}
                       className="w-full text-[10px] text-smoke hover:text-danger touch-target"
                     >
-                      Remove
+                      {t('Remove')}
                     </button>
                   </li>
                 ))}
@@ -573,10 +569,10 @@ export default function Progress() {
         {/* Recovery --------------------------------------------------------- */}
         <div>
           <SectionHeading
-            title="Recovery"
+            title={t('Recovery')}
             action={
               <Link to="/progress/checkin" className="text-sm text-ember-400 touch-target flex items-center">
-                Check in
+                {t('Check in')}
               </Link>
             }
           />
@@ -597,7 +593,7 @@ export default function Progress() {
               </ul>
             ) : (
               <p className="text-sm text-ash">
-                No check-ins yet. They take 15 seconds and they are what makes deload detection meaningful.
+                {t('No check-ins yet. They take 15 seconds and they are what makes deload detection meaningful.')}
               </p>
             )}
           </Card>
@@ -606,14 +602,14 @@ export default function Progress() {
         {/* Deload history --------------------------------------------------- */}
         {data.deloads.length > 0 && (
           <div>
-            <SectionHeading title="Deload history" />
+            <SectionHeading title={t('Deload history')} />
             <Card>
               <ul className="space-y-2">
                 {data.deloads.map((d) => (
                   <li key={d.id} className="text-sm flex items-start justify-between gap-2">
                     <span className="min-w-0">
                       <span className="block text-parchment">{formatDateLabel(d.startDate)}</span>
-                      <span className="block text-xs text-smoke line-clamp-2">{d.reason}</span>
+                      <span className="block text-xs text-smoke line-clamp-2">{t(d.reason)}</span>
                     </span>
                     <Chip tone={d.status === 'completed' ? 'good' : d.status === 'declined' ? 'neutral' : 'ember'}>
                       {d.status}
@@ -628,7 +624,7 @@ export default function Progress() {
         {/* Personal records -------------------------------------------------- */}
         {prs.length > 0 && (
           <div>
-            <SectionHeading title="Personal records" />
+            <SectionHeading title={t('Personal records')} />
             <ul className="space-y-1.5">
               {prs.slice(0, 10).map((pr) => (
                 <li key={pr.exerciseId}>
@@ -650,7 +646,7 @@ export default function Progress() {
         )}
       </div>
 
-      <Sheet open={weightOpen} onClose={() => setWeightOpen(false)} title="Log body weight">
+      <Sheet open={weightOpen} onClose={() => setWeightOpen(false)} title={t('Log body weight')}>
         <WeightForm
           units={units}
           initial={profile.bodyWeightKg}
@@ -661,7 +657,7 @@ export default function Progress() {
         />
       </Sheet>
 
-      <Sheet open={measureOpen} onClose={() => setMeasureOpen(false)} title="Measurements">
+      <Sheet open={measureOpen} onClose={() => setMeasureOpen(false)} title={t('Measurements')}>
         <MeasurementForm
           onSave={(values) => {
             store.addMeasurement({ date: today, values })
@@ -682,12 +678,13 @@ function WeightForm({
   initial: number
   onSave: (kg: number) => void
 }) {
+  const { t } = useT()
   const [value, setValue] = useState(Number(toDisplay(initial, units).toFixed(1)))
   return (
     <div className="space-y-4">
-      <Field label={`Body weight (${units})`} hint="Weigh in at a consistent time — first thing after waking works well.">
+      <Field label={`Body weight (${units})`} hint={t('Weigh in at a consistent time — first thing after waking works well.')}>
         <NumberStepper
-          label="Body weight"
+          label={t('Body weight')}
           value={value}
           min={20}
           max={400}
@@ -698,7 +695,7 @@ function WeightForm({
         />
       </Field>
       <Button variant="primary" full onClick={() => onSave(fromDisplay(value, units))}>
-        Save
+        {t('Save')}
       </Button>
     </div>
   )
@@ -707,10 +704,11 @@ function WeightForm({
 const MEASUREMENT_FIELDS = ['waist', 'chest', 'arm', 'thigh', 'hips', 'calf'] as const
 
 function MeasurementForm({ onSave }: { onSave: (values: Record<string, number>) => void }) {
+  const { t } = useT()
   const [values, setValues] = useState<Record<string, string>>({})
   return (
     <div className="space-y-3">
-      <p className="text-xs text-ash">All measurements in centimetres. Leave anything blank that you did not measure.</p>
+      <p className="text-xs text-ash">{t('All measurements in centimetres. Leave anything blank that you did not measure.')}</p>
       {MEASUREMENT_FIELDS.map((field) => (
         <Field key={field} label={field[0].toUpperCase() + field.slice(1)} htmlFor={`m-${field}`}>
           <TextInput
@@ -734,7 +732,7 @@ function MeasurementForm({ onSave }: { onSave: (values: Record<string, number>) 
           onSave(parsed)
         }}
       >
-        Save measurements
+        {t('Save measurements')}
       </Button>
     </div>
   )

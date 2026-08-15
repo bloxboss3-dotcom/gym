@@ -1158,10 +1158,24 @@ if (langOffered) {
   )
   record('the navigation is actually Spanish', /Hoy/.test(spanishNav), spanishNav.replace(/\n/g, '/'))
 
-  // Every main screen has to survive the other language. A missing
-  // translation is fine — it renders English — but a crash is not.
-  const SCREENS = ['/', '/train', '/nutrition', '/progress', '/forge', '/profile']
+  /*
+    Every screen, and no English left on any of them.
+
+    The old version of this asked whether the page contained any Spanish-ish
+    word at all, which a screen that was ninety percent English still passed.
+    It now counts English function words — "the", "and", "your", "with" — that
+    have no business appearing in Spanish prose. Exercise names and the brand
+    survive translation on purpose and contain none of them, so a hit here is
+    a screen that did not get translated.
+  */
+  const SCREENS = [
+    '/', '/train', '/train/run', '/nutrition', '/progress', '/progress/volume',
+    '/progress/checkin', '/forge', '/forge/inventory', '/forge/character',
+    '/forge/quests', '/profile', '/profile/science', '/profile/backup',
+  ]
+  const ENGLISH_LEAK = /\b(the|and|your|with|from|that|this|what|when|how|every|nothing|which)\b/gi
   let translatedScreens = 0
+  const leaks = []
   for (const route of SCREENS) {
     await page.goto(`${BASE}#${route}`, { waitUntil: 'networkidle' })
     await page.waitForTimeout(450)
@@ -1170,14 +1184,64 @@ if (langOffered) {
       record(`Spanish ${route} renders`, false, 'screen came back empty')
       continue
     }
-    // Spanish-only characters, or a handful of words that only appear
-    // translated. Crude on purpose: it is checking that translation reached
-    // the screen at all, not grading the prose.
     if (/[áéíóúñ¿¡]|\b(sesión|entrenamiento|series|repeticiones|descanso|peso|comida|progreso)\b/i.test(body)) {
       translatedScreens += 1
     }
+    /*
+      Two things stay English on purpose and are excluded rather than counted.
+
+      A citation is bibliographic: the paper's title, its authors and the
+      journal are what was printed, and a translated title cites a document
+      that does not exist. The takeaway and caveat under each one — the part
+      written for the reader — ARE translated.
+
+      The <noscript> line is served in the HTML shell before any JavaScript
+      runs, so there is nothing available to translate it with.
+    */
+    const bibliography = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-bibliographic]')].map((el) => el.textContent?.trim() ?? ''),
+    )
+    const scanned = body
+      .split('\n')
+      .filter((line) => !bibliography.some((b) => b.includes(line.trim())))
+      .filter((line) => !/needs JavaScript/.test(line))
+      // Institution names inside otherwise-Spanish prose. "Academy of
+      // Nutrition and Dietetics" is what the body is called; translating it
+      // would be wrong, and the "and" in it is not a leak.
+      .map((line) =>
+        line
+          .replace(/Academy of Nutrition and Dietetics/g, '')
+          .replace(/International Society of Sports Nutrition/g, ''),
+      )
+      .join('\n')
+    const found = [...new Set((scanned.match(ENGLISH_LEAK) ?? []).map((w) => w.toLowerCase()))]
+    if (found.length) {
+      leaks.push(`${route}: ${found.slice(0, 6).join(' ')}`)
+      const lines = scanned.split('\n')
+      const re = /\b(the|and|your|with|from|that|this|what|when|how|every|nothing|which)\b/i
+      console.log(`LEAK ${route}:`)
+      for (const l of [...new Set(lines.filter((x) => re.test(x)))].slice(0, 8)) console.log('   · ' + l.slice(0, 120))
+    }
     await noOverflow(`spanish ${route}`)
   }
+  /*
+    No English on any screen in Spanish.
+
+    This started as a budget because engine-built prose — "Build to 27.4 km
+    this week" — cannot be a translation key until the engine hands over a
+    template and its numbers separately. Every engine does that now, so the
+    budget is zero and stays there.
+
+    Two things are excluded above rather than counted, both deliberate: a
+    citation's title, authors and journal are bibliographic and are cited as
+    printed, and the <noscript> line is served before any JavaScript exists to
+    translate it. Institution names inside Spanish prose are stripped too.
+  */
+  record(
+    'no English is left on any screen in Spanish',
+    leaks.length === 0,
+    leaks.length ? leaks.slice(0, 4).join(' · ') : `${SCREENS.length} screens clean`,
+  )
   record(
     'Spanish reaches every main screen',
     translatedScreens === SCREENS.length,

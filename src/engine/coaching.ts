@@ -1,5 +1,5 @@
 import { RULES } from '@/config/rules'
-import { interpolate } from '@/i18n'
+import { interpolate } from '@/lib/interpolate'
 import { historyFor } from '@/engine/progression'
 import { estimateOneRepMax } from '@/engine/stats'
 import { daysBetween } from '@/lib/date'

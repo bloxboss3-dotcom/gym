@@ -22,6 +22,8 @@ export interface ProteinTarget {
   usedLeanEstimate: boolean
   overridden: boolean
   rationale: string
+  rationaleTemplate: string
+  rationaleVars: Record<string, string | number>
   citationIds: string[]
 }
 
@@ -77,10 +79,27 @@ export function calculateProteinTarget(
       ? `You're training in or near an energy deficit, so FORGED points to ${gPerKg} g/kg — the upper part of the practical range — to help protect lean mass. Anything from ${rangeG.min} to ${rangeG.max} g is defensible.`
       : `${gPerKg} g/kg sits just above the ${RULES.protein.baselineGPerKg} g/kg breakpoint where additional protein stops adding much. The full practical range is ${rangeG.min}–${rangeG.max} g/day.`
 
+  const rationaleTemplate = overridden
+    ? 'Using your manual target of {target} g/day. For reference, {baselinePerKg} g/kg on your {weightKind} weight is about {baseline} g, and the practical range is {min}–{max} g.'
+    : dieting
+      ? "You're training in or near an energy deficit, so FORGED points to {gPerKg} g/kg — the upper part of the practical range — to help protect lean mass. Anything from {min} to {max} g is defensible."
+      : '{gPerKg} g/kg sits just above the {baselinePerKg} g/kg breakpoint where additional protein stops adding much. The full practical range is {min}–{max} g/day.'
+  const rationaleVars: Record<string, string | number> = {
+    target: targetG,
+    baselinePerKg: RULES.protein.baselineGPerKg,
+    weightKind: usedLeanEstimate ? 'estimated lean' : 'body',
+    baseline: baselineG,
+    gPerKg,
+    min: rangeG.min,
+    max: rangeG.max,
+  }
+
   return {
     targetG,
     baselineG,
     rangeG,
+    rationaleTemplate,
+    rationaleVars,
     gPerKg: overridden ? Number((targetG / weightKg).toFixed(2)) : gPerKg,
     referenceWeightKg: Number(weightKg.toFixed(1)),
     usedLeanEstimate,

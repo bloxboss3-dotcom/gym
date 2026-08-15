@@ -29,6 +29,9 @@ export interface PlannedRun {
   distanceKm: number | null
   durationMin: number | null
   description: string
+  /** The same line as a template plus its numbers, for translation. */
+  descriptionTemplate: string
+  descriptionVars?: Record<string, string | number>
   /** Suggested weekday (0=Sun). Null means "wherever it fits". */
   weekday: number | null
 }
@@ -36,10 +39,15 @@ export interface PlannedRun {
 export interface RunRecommendation {
   action: RunAction
   headline: string
+  headlineTemplate: string
+  headlineVars: Record<string, string | number>
   targetWeeklyKm: number
   previousWeeklyKm: number
   sessions: PlannedRun[]
   reason: string
+  reasonTemplate: string
+  reasonVars: Record<string, string | number>
+  warningTemplate: string | null
   rule: string
   confidence: Confidence
   missingData: string[]
@@ -47,6 +55,8 @@ export interface RunRecommendation {
   citationIds: string[]
   /** Scheduling note for concurrent-training interference. */
   schedulingNote: string | null
+  schedulingNoteTemplate: string | null
+  schedulingNoteVars: Record<string, string | number>
 }
 
 export interface RunningInput {
@@ -137,6 +147,8 @@ function buildSessionPlan(
         durationMin: 25,
         description:
           'Walk/run: 5 min brisk walk, then 6 × (2 min easy jog / 2 min walk), 5 min walk to finish. Conversational effort throughout.',
+        descriptionTemplate:
+          'Walk/run: 5 min brisk walk, then 6 × (2 min easy jog / 2 min walk), 5 min walk to finish. Conversational effort throughout.',
         weekday: null,
       })
     }
@@ -153,6 +165,9 @@ function buildSessionPlan(
     distanceKm: longKm,
     durationMin: null,
     description: `Long easy run — conversational pace the whole way. Keep it under ${Math.round(RULES.running.longRunMaxFraction * 100)}% of your weekly volume.`,
+    descriptionTemplate:
+      'Long easy run — conversational pace the whole way. Keep it under {pct}% of your weekly volume.',
+    descriptionVars: { pct: Math.round(RULES.running.longRunMaxFraction * 100) },
     weekday: null,
   })
 
@@ -162,6 +177,7 @@ function buildSessionPlan(
       distanceKm: easyKm,
       durationMin: null,
       description: 'Easy aerobic run. If you cannot hold a conversation, slow down.',
+      descriptionTemplate: 'Easy aerobic run. If you cannot hold a conversation, slow down.',
       weekday: null,
     })
   }
@@ -182,6 +198,10 @@ function buildSessionPlan(
         enduranceGoal === 'longer'
           ? 'Threshold: 15 min easy, then 2 × 8 min at "comfortably hard" with 3 min easy between, 10 min easy.'
           : 'Intervals: 12 min easy, then 6 × 400 m at a strong but controlled effort with 90 s walk/jog, 10 min easy.',
+      descriptionTemplate:
+        enduranceGoal === 'longer'
+          ? 'Threshold: 15 min easy, then 2 × 8 min at "comfortably hard" with 3 min easy between, 10 min easy.'
+          : 'Intervals: 12 min easy, then 6 × 400 m at a strong but controlled effort with 90 s walk/jog, 10 min easy.',
       weekday: suggestedDay,
     })
   }
@@ -192,6 +212,7 @@ function buildSessionPlan(
       distanceKm: null,
       durationMin: 25,
       description: 'Very easy shake-out. Stop early if anything is sore or painful.',
+      descriptionTemplate: 'Very easy shake-out. Stop early if anything is sore or painful.',
       weekday: null,
     })
   }
@@ -231,14 +252,25 @@ export function recommendRunning(input: RunningInput): RunRecommendation {
   let targetWeeklyKm: number
   let rule: string
   let reason: string
+  let reasonTemplate: string
+  let reasonVars: Record<string, string | number> = {}
   let warning: string | null = null
+  let warningTemplate: string | null = null
 
   if (painFlag) {
     action = 'reduce'
     targetWeeklyKm = Number((previousWeeklyKm * (1 - RULES.running.reductionPct)).toFixed(1))
     rule = `Run pain ≥ ${RULES.running.painReduceThreshold}/10 → cut weekly volume by ${Math.round(RULES.running.reductionPct * 100)}% (rules.running.painReduceThreshold).`
     reason = `You logged pain of ${Math.max(lastWeek.maxPain, currentWeek.maxPain)}/10 on a recent run. Running through a niggle is the most common way a two-week problem becomes a two-month one. Drop roughly ${Math.round(RULES.running.reductionPct * 100)}% of your volume, keep everything easy, and rebuild once you are pain-free.`
+    reasonTemplate =
+      'You logged pain of {pain}/10 on a recent run. Running through a niggle is the most common way a two-week problem becomes a two-month one. Drop roughly {pct}% of your volume, keep everything easy, and rebuild once you are pain-free.'
+    reasonVars = {
+      pain: Math.max(lastWeek.maxPain, currentWeek.maxPain),
+      pct: Math.round(RULES.running.reductionPct * 100),
+    }
     warning =
+      'If the pain is sharp, localised to a bone, or gets worse as you run, stop running and see a physiotherapist or physician.'
+    warningTemplate =
       'If the pain is sharp, localised to a bone, or gets worse as you run, stop running and see a physiotherapist or physician.'
   } else if (rpeFlag || completionFlag) {
     action = 'hold'
@@ -249,11 +281,20 @@ export function recommendRunning(input: RunningInput): RunRecommendation {
     reason = rpeFlag
       ? `Your runs last week averaged ${lastWeek.meanRpe}/10 effort. That is hard for easy running. Repeat the same volume at a genuinely conversational pace before adding anything — most easy runs should feel almost too easy.`
       : `Last week came in at ${lastWeek.distanceKm} km against ${priorWeek.distanceKm} km the week before. Adding volume on top of a week you did not finish stacks the deficit. Repeat the same target and bank a complete week first.`
+    reasonTemplate = rpeFlag
+      ? 'Your runs last week averaged {rpe}/10 effort. That is hard for easy running. Repeat the same volume at a genuinely conversational pace before adding anything — most easy runs should feel almost too easy.'
+      : 'Last week came in at {last} km against {prior} km the week before. Adding volume on top of a week you did not finish stacks the deficit. Repeat the same target and bank a complete week first.'
+    reasonVars = rpeFlag
+      ? { rpe: lastWeek.meanRpe ?? 0 }
+      : { last: lastWeek.distanceKm, prior: priorWeek.distanceKm }
   } else if (!hasHistory && input.baselineWeeklyKm < RULES.running.walkRunUnderKm) {
     action = 'start_conservative'
     targetWeeklyKm = Math.max(4, Number((input.baselineWeeklyKm || 4).toFixed(1)))
     rule = `New or returning runner below ${RULES.running.walkRunUnderKm} km/week → start with walk/run intervals (rules.running.walkRunUnderKm).`
     reason = `You are starting from ${input.baselineWeeklyKm || 0} km a week, so FORGED begins with walk/run intervals rather than continuous running. Impact tolerance builds more slowly than fitness does — the aim for the first few weeks is finishing every session feeling like you could have done another one.`
+    reasonTemplate =
+      'You are starting from {km} km a week, so FORGED begins with walk/run intervals rather than continuous running. Impact tolerance builds more slowly than fitness does — the aim for the first few weeks is finishing every session feeling like you could have done another one.'
+    reasonVars = { km: input.baselineWeeklyKm || 0 }
   } else {
     action = 'increase'
     const pctAdd = previousWeeklyKm * cap
@@ -264,6 +305,14 @@ export function recommendRunning(input: RunningInput): RunRecommendation {
     targetWeeklyKm = Number((previousWeeklyKm + add).toFixed(1))
     rule = `Completed last week, no pain flag, effort in range → add ${previousWeeklyKm < RULES.running.lowVolumeKm ? `${RULES.running.lowVolumeAddKm} km (flat step under ${RULES.running.lowVolumeKm} km/week)` : `up to ${Math.round(cap * 100)}% capped at ${RULES.running.absoluteWeeklyAddKm} km`} (rules.running.weeklyIncreaseCap).`
     reason = `You completed last week's running (${previousWeeklyKm} km), nothing hurt, and the effort sat in a sensible range. FORGED adds ${add.toFixed(1)} km — a ${(previousWeeklyKm > 0 ? (add / previousWeeklyKm) * 100 : 0).toFixed(0)}% step sized for a ${input.experience} runner. This is not a fixed 10% rule: the cap moves with your experience, and it only applies when you actually finished the previous week.`
+    reasonTemplate =
+      "You completed last week's running ({previous} km), nothing hurt, and the effort sat in a sensible range. FORGED adds {add} km — a {pct}% step sized for a {experience} runner. This is not a fixed 10% rule: the cap moves with your experience, and it only applies when you actually finished the previous week."
+    reasonVars = {
+      previous: previousWeeklyKm,
+      add: add.toFixed(1),
+      pct: (previousWeeklyKm > 0 ? (add / previousWeeklyKm) * 100 : 0).toFixed(0),
+      experience: input.experience,
+    }
   }
 
   // Benchmark: only when the goal calls for it, load is stable, and it has been
@@ -285,6 +334,8 @@ export function recommendRunning(input: RunningInput): RunRecommendation {
       durationMin: null,
       description:
         'Benchmark 5K: 10 min easy warm-up, then 5 km as a steady hard effort you can hold to the finish. Log the time so FORGED can compare it later.',
+      descriptionTemplate:
+        'Benchmark 5K: 10 min easy warm-up, then 5 km as a steady hard effort you can hold to the finish. Log the time so FORGED can compare it later.',
       weekday: 6,
     })
   }
@@ -302,6 +353,19 @@ export function recommendRunning(input: RunningInput): RunRecommendation {
       : input.priority === 'endurance'
         ? 'Endurance is your priority, so run first when a run and a lift land on the same day, and treat lower-body lifting as the session that gives ground.'
         : 'When a hard run and hard leg training land on the same day, put several hours between them and do the one that matters more to you first.'
+  const schedulingNoteTemplate =
+    input.priority === 'muscle' && legDays.length
+      ? 'You lift legs on {days}. Because you told FORGED muscle comes first, keep hard running at least {hours} hours away from those sessions — and ideally on a different day. Easy running on leg days is fine.'
+      : input.priority === 'endurance'
+        ? 'Endurance is your priority, so run first when a run and a lift land on the same day, and treat lower-body lifting as the session that gives ground.'
+        : 'When a hard run and hard leg training land on the same day, put several hours between them and do the one that matters more to you first.'
+  const schedulingNoteVars: Record<string, string | number> =
+    input.priority === 'muscle' && legDays.length
+      ? {
+          days: legDays.map((d) => weekdayName(d, true)).join(' and '),
+          hours: RULES.running.interferenceSpacingHours,
+        }
+      : {}
 
   const confidence: Confidence =
     lastWeek.runs >= 2 && priorWeek.runs >= 1 ? 'high' : lastWeek.runs >= 1 ? 'medium' : 'low'
@@ -318,6 +382,22 @@ export function recommendRunning(input: RunningInput): RunRecommendation {
             : action === 'benchmark'
               ? `Benchmark week — ${targetWeeklyKm} km including a 5K test`
               : `Build to ${targetWeeklyKm} km this week`,
+    headlineTemplate:
+      action === 'reduce'
+        ? 'Cut back to {km} km this week'
+        : action === 'hold'
+          ? 'Hold at {km} km this week'
+          : action === 'start_conservative'
+            ? 'Start with walk/run intervals'
+            : action === 'benchmark'
+              ? 'Benchmark week — {km} km including a 5K test'
+              : 'Build to {km} km this week',
+    headlineVars: { km: targetWeeklyKm },
+    reasonTemplate,
+    reasonVars,
+    warningTemplate,
+    schedulingNoteTemplate,
+    schedulingNoteVars,
     targetWeeklyKm,
     previousWeeklyKm: Number(previousWeeklyKm.toFixed(1)),
     sessions,
@@ -337,6 +417,8 @@ export interface BenchmarkComparison {
   previousSec: number | null
   deltaSec: number | null
   detail: string
+  detailTemplate: string
+  detailVars: Record<string, string | number>
 }
 
 /** Compare the newest benchmark against the best previous one at the same distance. */
@@ -356,6 +438,8 @@ export function compareBenchmark(runs: RunLog[], tolerance = 0.15): BenchmarkCom
       previousSec: null,
       deltaSec: null,
       detail: 'First benchmark at this distance — this is your reference point from now on.',
+      detailTemplate: 'First benchmark at this distance — this is your reference point from now on.',
+      detailVars: {},
     }
   }
   const best = comparable.reduce((a, b) => (b.durationSec < a.durationSec ? b : a))
@@ -369,5 +453,10 @@ export function compareBenchmark(runs: RunLog[], tolerance = 0.15): BenchmarkCom
       delta < 0
         ? `${Math.abs(Math.round(delta))} s faster than your previous best over this distance.`
         : `${Math.round(delta)} s slower than your best. One benchmark is noisy — heat, sleep, and how recently you trained legs all move it.`,
+    detailTemplate:
+      delta < 0
+        ? '{seconds} s faster than your previous best over this distance.'
+        : '{seconds} s slower than your best. One benchmark is noisy — heat, sleep, and how recently you trained legs all move it.',
+    detailVars: { seconds: Math.abs(Math.round(delta)) },
   }
 }

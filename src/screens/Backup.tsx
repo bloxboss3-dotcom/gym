@@ -5,6 +5,7 @@ import { backupFilename, parseBackupText, serializeBackup } from '@/engine/backu
 import type { ImportResult } from '@/engine/backup'
 import { formatDateLabel } from '@/lib/date'
 import { useStore } from '@/state/store'
+import { useT } from '@/i18n/useT'
 
 /**
  * Backup export / import.
@@ -14,6 +15,7 @@ import { useStore } from '@/state/store'
  * what it found.
  */
 export default function Backup() {
+  const { t } = useT()
   const store = useStore()
   const { data } = store
   const fileRef = useRef<HTMLInputElement>(null)
@@ -49,38 +51,35 @@ export default function Backup() {
   )
 
   return (
-    <Screen title="Backup" subtitle="Your data, in your hands" back="/profile">
+    <Screen title={t('Backup')} subtitle={t('Your data, in your hands')} back="/profile">
       <div className="space-y-4">
-        <Alert tone="warn" title="There is no cloud copy">
-          FORGED stores everything on this device only. Clearing your browser data, deleting the app, or losing the
-          phone loses your training history. Export a backup regularly — it takes two seconds.
+        <Alert tone="warn" title={t('There is no cloud copy')}>
+          {t('FORGED stores everything on this device only. Clearing your browser data, deleting the app, or losing the phone loses your training history. Export a backup regularly — it takes two seconds.')}
         </Alert>
 
         <div className="grid grid-cols-2 gap-2">
-          <Stat label="Sessions" value={data.sessions.length} />
-          <Stat label="Working sets" value={totalSets} />
-          <Stat label="Runs" value={data.runs.length} />
-          <Stat label="Protein entries" value={data.proteinEntries.length} />
+          <Stat label={t('Sessions')} value={data.sessions.length} />
+          <Stat label={t('Working sets')} value={totalSets} />
+          <Stat label={t('Runs')} value={data.runs.length} />
+          <Stat label={t('Protein entries')} value={data.proteinEntries.length} />
         </div>
 
         <Card>
-          <SectionHeading title="Export" hint="A single JSON file with everything." />
+          <SectionHeading title={t('Export')} hint={t('A single JSON file with everything.')} />
           <p className="text-sm text-ash leading-relaxed">
-            Includes your profile, programs, every session and set, runs, check-ins, protein log, measurements,
-            photos, inventory and reward history. It is plain readable JSON — you own it and can inspect it.
+            {t('Includes your profile, programs, every session and set, runs, check-ins, protein log, measurements, photos, inventory and reward history. It is plain readable JSON — you own it and can inspect it.')}
           </p>
           <Button variant="primary" full className="mt-3" onClick={exportBackup}>
-            Download backup
+            {t('Download backup')}
           </Button>
           {exported && <p className="text-xs text-vital mt-2 text-center">Exported at {exported}</p>}
         </Card>
 
         <Card>
-          <SectionHeading title="Import" hint="Validated before anything is replaced." />
+          <SectionHeading title={t('Import')} hint={t('Validated before anything is replaced.')} />
           <p className="text-sm text-ash leading-relaxed">
-            Importing <strong className="text-parchment">replaces</strong> everything currently on this device. The
-            file is checked first: wrong format, a newer schema version, or malformed records are rejected with a
-            readable reason rather than half-restored.
+            {t('Importing')} <strong className="text-parchment">{t('replaces')}</strong>{' '}
+            {t('everything currently on this device. The file is checked first: wrong format, a newer schema version, or malformed records are rejected with a readable reason rather than half-restored.')}
           </p>
           <input
             ref={fileRef}
@@ -94,12 +93,12 @@ export default function Backup() {
             }}
           />
           <Button full className="mt-3" onClick={() => fileRef.current?.click()}>
-            Choose a backup file
+            {t('Choose a backup file')}
           </Button>
         </Card>
 
         {result && !result.ok && (
-          <Alert tone="danger" title="That file was not imported">
+          <Alert tone="danger" title={t('That file was not imported')}>
             <ul className="list-disc pl-4 space-y-1">
               {result.errors.map((error) => (
                 <li key={error}>{error}</li>
@@ -110,41 +109,41 @@ export default function Backup() {
 
         {result?.ok && result.summary && (
           <Card className="border-vital/40">
-            <SectionHeading title="Backup contents" />
+            <SectionHeading title={t('Backup contents')} />
             <ul className="space-y-1 text-sm">
               <li className="flex justify-between">
-                <span className="text-ash">Exported</span>
+                <span className="text-ash">{t('Exported')}</span>
                 <span className="text-parchment">
                   {result.summary.exportedAt ? formatDateLabel(result.summary.exportedAt.slice(0, 10)) : 'unknown'}
                 </span>
               </li>
               <li className="flex justify-between">
-                <span className="text-ash">Profile</span>
+                <span className="text-ash">{t('Profile')}</span>
                 <span className="text-parchment">{result.summary.hasProfile ? 'included' : 'missing'}</span>
               </li>
               <li className="flex justify-between">
-                <span className="text-ash">Sessions</span>
+                <span className="text-ash">{t('Sessions')}</span>
                 <span className="text-parchment tabular">{result.summary.sessions}</span>
               </li>
               <li className="flex justify-between">
-                <span className="text-ash">Runs</span>
+                <span className="text-ash">{t('Runs')}</span>
                 <span className="text-parchment tabular">{result.summary.runs}</span>
               </li>
               <li className="flex justify-between">
-                <span className="text-ash">Check-ins</span>
+                <span className="text-ash">{t('Check-ins')}</span>
                 <span className="text-parchment tabular">{result.summary.checkins}</span>
               </li>
               <li className="flex justify-between">
-                <span className="text-ash">Protein entries</span>
+                <span className="text-ash">{t('Protein entries')}</span>
                 <span className="text-parchment tabular">{result.summary.proteinEntries}</span>
               </li>
               <li className="flex justify-between">
-                <span className="text-ash">Items owned</span>
+                <span className="text-ash">{t('Items owned')}</span>
                 <span className="text-parchment tabular">{result.summary.ownedItems}</span>
               </li>
             </ul>
             {result.warnings.length > 0 && (
-              <Alert tone="warn" className="mt-3" title="Warnings">
+              <Alert tone="warn" className="mt-3" title={t('Warnings')}>
                 <ul className="list-disc pl-4 space-y-1">
                   {result.warnings.map((warning) => (
                     <li key={warning}>{warning}</li>
@@ -156,12 +155,12 @@ export default function Backup() {
         )}
 
         <Card>
-          <SectionHeading title="Moving to a new phone" />
+          <SectionHeading title={t('Moving to a new phone')} />
           <ol className="list-decimal pl-4 space-y-1.5 text-sm text-ash leading-relaxed">
-            <li>Export a backup on the old device and send it to yourself (AirDrop, email, files app).</li>
-            <li>Open FORGED on the new device and add it to the home screen.</li>
-            <li>Skip or complete onboarding, then come to this screen and import the file.</li>
-            <li>Everything — including your warrior and inventory — comes across exactly as it was.</li>
+            <li>{t('Export a backup on the old device and send it to yourself (AirDrop, email, files app).')}</li>
+            <li>{t('Open FORGED on the new device and add it to the home screen.')}</li>
+            <li>{t('Skip or complete onboarding, then come to this screen and import the file.')}</li>
+            <li>{t('Everything — including your warrior and inventory — comes across exactly as it was.')}</li>
           </ol>
         </Card>
       </div>
@@ -169,9 +168,9 @@ export default function Backup() {
       <ConfirmDialog
         open={confirmImport}
         destructive
-        title="Replace all data with this backup?"
+        title={t('Replace all data with this backup?')}
         body={`Everything currently on this device will be replaced by the imported file (${result?.summary?.sessions ?? 0} sessions, ${result?.summary?.runs ?? 0} runs). This cannot be undone — export your current data first if you might want it back.`}
-        confirmLabel="Import and replace"
+        confirmLabel={t('Import and replace')}
         onCancel={() => {
           setConfirmImport(false)
           setResult(null)
@@ -182,7 +181,11 @@ export default function Backup() {
             store.pushToast({
               tone: 'info',
               title: 'Backup restored',
-              body: `${result.summary?.sessions ?? 0} sessions and ${result.summary?.runs ?? 0} runs imported.`,
+              body: '{sessions} sessions and {runs} runs imported.',
+              bodyVars: {
+                sessions: result.summary?.sessions ?? 0,
+                runs: result.summary?.runs ?? 0,
+              },
             })
           }
           setConfirmImport(false)

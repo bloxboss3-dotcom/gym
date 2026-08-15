@@ -567,7 +567,7 @@ function CustomExerciseForm({ onSave }: { onSave: (exercise: Exercise) => void }
           max={20}
           step={0.5}
           decimals={1}
-          suffix="kg"
+          suffix={t('kg')}
           onChange={setIncrement}
         />
       </Field>

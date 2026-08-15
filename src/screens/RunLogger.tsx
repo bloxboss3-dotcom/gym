@@ -23,6 +23,7 @@ import { formatDistance, formatPace, kmToMiles, milesToKm, pacePerKm } from '@/e
 import { addDays, formatDateLabel, formatDuration, startOfWeek, toIsoDate } from '@/lib/date'
 import { useStore } from '@/state/store'
 import type { RunSurface, RunType } from '@/types'
+import { useT } from '@/i18n/useT'
 
 /**
  * Running logger and endurance dashboard.
@@ -32,6 +33,7 @@ import type { RunSurface, RunType } from '@/types'
  * experience-scaled increase cap.
  */
 export default function RunLogger() {
+  const { t } = useT()
   const { data, addRun, deleteRun } = useStore()
   const profile = data.profile!
   const units = profile.units
@@ -95,24 +97,29 @@ export default function RunLogger() {
   }
 
   return (
-    <Screen title="Running" subtitle={`${formatDistance(thisWeek.distanceKm, units)} this week`} back="/train">
+    <Screen title={t('Running')} subtitle={t('{distance} this week', { distance: formatDistance(thisWeek.distanceKm, units) })} back="/train">
       <div className="space-y-4">
         <Card raised>
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wider text-ember-400">This week</p>
-              <p className="font-display text-2xl uppercase leading-tight mt-0.5">{recommendation.headline}</p>
+              <p className="text-[11px] uppercase tracking-wider text-ember-400">{t('This week')}</p>
+              <p className="font-display text-2xl uppercase leading-tight mt-0.5">{t(recommendation.headlineTemplate, recommendation.headlineVars)}</p>
             </div>
             <ConfidenceChip confidence={recommendation.confidence} />
           </div>
-          <p className="text-sm text-ash mt-2 leading-relaxed">{recommendation.reason}</p>
+          <p className="text-sm text-ash mt-2 leading-relaxed">{t(recommendation.reasonTemplate, {
+              ...recommendation.reasonVars,
+              ...(recommendation.reasonVars.experience
+                ? { experience: t(String(recommendation.reasonVars.experience)) }
+                : {}),
+            })}</p>
           {recommendation.warning && (
-            <Alert tone="danger" className="mt-3" title="Safety">
+            <Alert tone="danger" className="mt-3" title={t('Safety')}>
               {recommendation.warning}
             </Alert>
           )}
           {recommendation.schedulingNote && (
-            <p className="text-xs text-cool mt-2 leading-relaxed">{recommendation.schedulingNote}</p>
+            <p className="text-xs text-cool mt-2 leading-relaxed">{t(recommendation.schedulingNoteTemplate ?? '', recommendation.schedulingNoteVars)}</p>
           )}
 
           <ul className="mt-3 space-y-1.5">
@@ -130,17 +137,16 @@ export default function RunLogger() {
                         : ''}
                   </span>
                 </div>
-                <p className="text-xs text-ash mt-1.5 leading-snug">{session.description}</p>
+                <p className="text-xs text-ash mt-1.5 leading-snug">{t(session.descriptionTemplate, session.descriptionVars)}</p>
               </li>
             ))}
           </ul>
 
           <div className="mt-3 space-y-2">
-            <Disclosure summary="Rule used" tone="quiet">
+            <Disclosure summary={t('Rule used')} tone="quiet">
               <p className="font-mono text-[11px] leading-relaxed text-parchment/90">{recommendation.rule}</p>
               <p className="mt-2 text-xs">
-                FORGED does not apply a blanket 10% rule. The cap scales with your experience, and it only applies at
-                all when last week was actually completed with no pain flags.
+                {t('FORGED does not apply a blanket 10% rule. The cap scales with your experience, and it only applies at all when last week was actually completed with no pain flags.')}
               </p>
             </Disclosure>
             {recommendation.missingData.length > 0 && (
@@ -152,17 +158,17 @@ export default function RunLogger() {
                 </ul>
               </Disclosure>
             )}
-            <Disclosure summary="Evidence" tone="quiet">
+            <Disclosure summary={t('Evidence')} tone="quiet">
               <CitationList ids={recommendation.citationIds} />
             </Disclosure>
           </div>
         </Card>
 
         <div className="grid grid-cols-3 gap-2">
-          <Stat label="This week" value={formatDistance(thisWeek.distanceKm, units)} tone="ember" />
-          <Stat label="Longest run" value={formatDistance(longest, units)} />
+          <Stat label={t('This week')} value={formatDistance(thisWeek.distanceKm, units)} tone="ember" />
+          <Stat label={t('Longest run')} value={formatDistance(longest, units)} />
           <Stat
-            label="Benchmark"
+            label={t('Benchmark')}
             value={benchmark ? formatDuration(benchmark.currentSec) : '—'}
             tone={benchmark?.improved ? 'good' : 'neutral'}
             sub={benchmark?.improved ? 'Improved' : undefined}
@@ -170,16 +176,16 @@ export default function RunLogger() {
         </div>
 
         {benchmark && (
-          <Alert tone={benchmark.improved ? 'good' : 'info'} title="Benchmark">
-            {benchmark.detail}
+          <Alert tone={benchmark.improved ? 'good' : 'info'} title={t('Benchmark')}>
+            {t(benchmark.detailTemplate, benchmark.detailVars)}
           </Alert>
         )}
 
         <div>
-          <SectionHeading title="Weekly volume" hint="Last six weeks of completed running." />
+          <SectionHeading title={t('Weekly volume')} hint={t('Last six weeks of completed running.')} />
           <Card>
             <BarChart
-              ariaLabel="Weekly running distance"
+              ariaLabel={t('Weekly running distance')}
               bars={weeks.map((week, i) => ({
                 label: i === weeks.length - 1 ? 'Now' : `−${weeks.length - 1 - i}w`,
                 value: metric ? week.distanceKm : kmToMiles(week.distanceKm),
@@ -192,10 +198,10 @@ export default function RunLogger() {
         </div>
 
         <div>
-          <SectionHeading title="Log a run" />
+          <SectionHeading title={t('Log a run')} />
           <Card>
             <div className="space-y-4">
-              <Field label="Date" htmlFor="run-date">
+              <Field label={t('Date')} htmlFor="run-date">
                 <input
                   id="run-date"
                   type="date"
@@ -206,9 +212,9 @@ export default function RunLogger() {
                 />
               </Field>
 
-              <Field label="Run type">
+              <Field label={t('Run type')}>
                 <SegmentedControl<RunType>
-                  label="Run type"
+                  label={t('Run type')}
                   columns={4}
                   value={type}
                   onChange={setType}
@@ -234,7 +240,7 @@ export default function RunLogger() {
               */}
               <Field label={`Distance (${metric ? 'km' : 'mi'})`}>
                 <NumberStepper
-                  label="Distance"
+                  label={t('Distance')}
                   value={distance}
                   min={0}
                   max={200}
@@ -243,20 +249,20 @@ export default function RunLogger() {
                   onChange={setDistance}
                 />
               </Field>
-              <Field label="Duration">
+              <Field label={t('Duration')}>
                 <div className="grid grid-cols-2 gap-2">
-                  <NumberStepper label="Minutes" value={minutes} min={0} max={600} onChange={setMinutes} suffix="m" />
-                  <NumberStepper label="Seconds" value={seconds} min={0} max={59} step={5} onChange={setSeconds} suffix="s" />
+                  <NumberStepper label={t('Minutes')} value={minutes} min={0} max={600} onChange={setMinutes} suffix="m" />
+                  <NumberStepper label={t('Seconds')} value={seconds} min={0} max={59} step={5} onChange={setSeconds} suffix="s" />
                 </div>
               </Field>
 
               <div className="rounded-lg bg-coal/70 border border-slate px-3 py-2 flex items-center justify-between">
-                <span className="text-xs text-smoke">Pace</span>
+                <span className="text-xs text-smoke">{t('Pace')}</span>
                 <span className="font-display text-lg text-ember-400 tabular">{formatPace(pace, units)}</span>
               </div>
 
               <Slider
-                label="Session effort (RPE 1–10)"
+                label={t('Session effort (RPE 1–10)')}
                 value={rpe}
                 min={1}
                 max={10}
@@ -265,7 +271,7 @@ export default function RunLogger() {
               />
 
               <Slider
-                label="Pain during or after (0–10)"
+                label={t('Pain during or after (0–10)')}
                 value={pain}
                 min={0}
                 max={10}
@@ -274,26 +280,26 @@ export default function RunLogger() {
                 onChange={setPain}
               />
               {pain >= 6 && (
-                <Alert tone="danger" title="Stop running on this">
+                <Alert tone="danger" title={t('Stop running on this')}>
                   Pain at {pain}/10 needs assessment, not another run. See a physiotherapist or physician — especially
                   if it is sharp, localised to bone, or worsening as you run.
                 </Alert>
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Average heart rate" hint="Optional — enter it manually if you have it.">
+                <Field label={t('Average heart rate')} hint={t('Optional — enter it manually if you have it.')}>
                   <NumberStepper
-                    label="Average heart rate"
+                    label={t('Average heart rate')}
                     value={hr ?? 0}
                     min={0}
                     max={230}
                     onChange={(v) => setHr(v || null)}
-                    suffix="bpm"
+                    suffix={t('bpm')}
                   />
                 </Field>
-                <Field label="Surface">
+                <Field label={t('Surface')}>
                   <SegmentedControl<RunSurface>
-                    label="Surface"
+                    label={t('Surface')}
                     columns={2}
                     value={surface}
                     onChange={setSurface}
@@ -307,19 +313,19 @@ export default function RunLogger() {
                 </Field>
               </div>
 
-              <Field label="Notes">
-                <TextArea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Conditions, how it felt…" />
+              <Field label={t('Notes')}>
+                <TextArea value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('Conditions, how it felt…')} />
               </Field>
 
               <Button variant="primary" size="lg" full disabled={distanceKm <= 0 || durationSec <= 0} onClick={submit}>
-                Save run
+                {t('Save run')}
               </Button>
             </div>
           </Card>
         </div>
 
         <div>
-          <SectionHeading title="Run history" />
+          <SectionHeading title={t('Run history')} />
           {data.runs.length ? (
             <ul className="space-y-2">
               {[...data.runs]
@@ -347,7 +353,7 @@ export default function RunLogger() {
                         <button
                           type="button"
                           onClick={() => setConfirmDelete(run.id)}
-                          aria-label="Delete run"
+                          aria-label={t('Delete run')}
                           className={cx('touch-target shrink-0 text-smoke hover:text-danger px-2')}
                         >
                           <span aria-hidden>🗑</span>
@@ -359,7 +365,7 @@ export default function RunLogger() {
             </ul>
           ) : (
             <Card>
-              <p className="text-sm text-ash text-center py-2">No runs logged yet.</p>
+              <p className="text-sm text-ash text-center py-2">{t('No runs logged yet.')}</p>
             </Card>
           )}
         </div>
@@ -368,9 +374,9 @@ export default function RunLogger() {
       <ConfirmDialog
         open={confirmDelete !== null}
         destructive
-        title="Delete this run?"
-        body="It will be removed from your weekly totals and from the running recommendation. This cannot be undone."
-        confirmLabel="Delete"
+        title={t('Delete this run?')}
+        body={t('It will be removed from your weekly totals and from the running recommendation. This cannot be undone.')}
+        confirmLabel={t('Delete')}
         onCancel={() => setConfirmDelete(null)}
         onConfirm={() => {
           if (confirmDelete) deleteRun(confirmDelete)

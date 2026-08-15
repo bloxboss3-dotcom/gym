@@ -313,6 +313,16 @@ export function generateProgram(
     id: newId('prog'),
     name: `${profile.name || 'Your'} Starter Plan`,
     description: `${templates.length} sessions a week, ${perSession} movements each, built for ${goalLabel(profile.goal)}. Volume starts near the bottom of the ${range.min}–${range.max} weekly-sets-per-muscle range for a ${profile.experience} lifter — there is no advantage in starting where you want to finish.`,
+    descriptionTemplate:
+      '{sessions} sessions a week, {movements} movements each, built for {goal}. Volume starts near the bottom of the {min}–{max} weekly-sets-per-muscle range for a {experience} lifter — there is no advantage in starting where you want to finish.',
+    descriptionVars: {
+      sessions: templates.length,
+      movements: perSession,
+      goal: goalLabel(profile.goal),
+      min: range.min,
+      max: range.max,
+      experience: profile.experience,
+    },
     days,
     createdAt: Date.now(),
     generated: true,

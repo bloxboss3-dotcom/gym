@@ -36,6 +36,8 @@ export interface MuscleVolumeAssessment extends MuscleVolume {
   range: { min: number; max: number }
   status: VolumeStatus
   message: string
+  messageTemplate: string
+  messageVars: Record<string, string | number>
 }
 
 function emptyVolume(muscle: MuscleKey): MuscleVolume {
@@ -142,25 +144,38 @@ export function assessMuscleVolume(
   const sets = volume.hardSets
   let status: VolumeStatus
   let message: string
+  let messageTemplate: string
+  let messageVars: Record<string, string | number> = {}
 
   if (sets === 0) {
     status = 'below'
     message = 'No hard sets logged for this muscle this week.'
+    messageTemplate = 'No hard sets logged for this muscle this week.'
   } else if (sets < range.min) {
     status = 'below'
     message = `Below your starting range of ${range.min}–${range.max} sets. Adding a set or two is reasonable if recovery is good.`
+    messageTemplate = 'Below your starting range of {min}–{max} sets. Adding a set or two is reasonable if recovery is good.'
+    messageVars = { min: range.min, max: range.max }
   } else if (sets <= range.max) {
     status = 'within'
     message = `Inside your ${range.min}–${range.max} set starting range for a ${experience} lifter. Progress the load before you add more sets.`
+    messageTemplate =
+      'Inside your {min}–{max} set starting range for a {experience} lifter. Progress the load before you add more sets.'
+    messageVars = { min: range.min, max: range.max, experience }
   } else if (sets <= RULES.volume.autoCeiling) {
     status = 'above'
     message = `Above your starting range. That is fine if you are recovering well — but extra sets are not free, and FORGED will not push you higher automatically.`
+    messageTemplate =
+      'Above your starting range. That is fine if you are recovering well — but extra sets are not free, and FORGED will not push you higher automatically.'
   } else {
     status = 'high'
     message = `Past ${RULES.volume.autoCeiling} hard sets in a week. Very high volumes raise the recovery cost sharply without a guaranteed payoff. Consider whether quality is holding up.`
+    messageTemplate =
+      'Past {ceiling} hard sets in a week. Very high volumes raise the recovery cost sharply without a guaranteed payoff. Consider whether quality is holding up.'
+    messageVars = { ceiling: RULES.volume.autoCeiling }
   }
 
-  return { ...volume, plannedSets: planned, range, status, message }
+  return { ...volume, plannedSets: planned, range, status, message, messageTemplate, messageVars }
 }
 
 export function assessAllMuscles(
@@ -180,6 +195,8 @@ export interface VolumeProgressionSuggestion {
   muscle: MuscleKey
   addSets: number
   reason: string
+  reasonTemplate: string
+  reasonVars: Record<string, string | number>
 }
 
 /**
@@ -200,6 +217,14 @@ export function suggestVolumeProgression(
       muscle: a.muscle,
       addSets: Math.min(RULES.volume.weeklyAddCap, Math.ceil(range.min - a.hardSets)),
       reason: `${a.hardSets} hard sets last week, below your ${range.min}–${range.max} starting range, and you completed the week. Adding up to ${RULES.volume.weeklyAddCap} sets is a small, recoverable step.`,
+      reasonTemplate:
+        '{sets} hard sets last week, below your {min}–{max} starting range, and you completed the week. Adding up to {cap} sets is a small, recoverable step.',
+      reasonVars: {
+        sets: a.hardSets,
+        min: range.min,
+        max: range.max,
+        cap: RULES.volume.weeklyAddCap,
+      },
     }))
     .filter((s) => s.addSets > 0)
 }

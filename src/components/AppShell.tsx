@@ -207,6 +207,7 @@ export function Screen({
 }
 
 export function ToastHost() {
+  const { t } = useT()
   const { toasts, dismissToast } = useStore()
   if (!toasts.length) return null
   const tones = {
@@ -233,9 +234,9 @@ export function ToastHost() {
         >
           <p className="font-semibold text-sm flex items-center gap-2">
             {toast.icon && <span aria-hidden>{toast.icon}</span>}
-            {toast.title}
+            {t(toast.title)}
           </p>
-          {toast.body && <p className="text-xs text-parchment/80 mt-0.5 leading-snug">{toast.body}</p>}
+          {toast.body && <p className="text-xs text-parchment/80 mt-0.5 leading-snug">{t(toast.body, toast.bodyVars)}</p>}
         </button>
       ))}
     </div>

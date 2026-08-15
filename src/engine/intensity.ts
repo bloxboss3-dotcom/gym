@@ -408,8 +408,13 @@ export interface HypertrophyLever {
   status: LeverStatus
   /** What the app measured, in plain words. Empty when unknown. */
   finding: string
+  /** The same line as a template plus its numbers, for translation. */
+  findingTemplate: string
+  findingVars: Record<string, string | number>
   /** What to do about it. */
   advice: string
+  adviceTemplate: string
+  adviceVars: Record<string, string | number>
   citationIds: string[]
 }
 
@@ -507,7 +512,11 @@ export function auditHypertrophy(input: HypertrophyAuditInput): HypertrophyLever
       label: 'Weekly volume',
       status: 'unknown',
       finding: '',
+      findingTemplate: '',
+      findingVars: {},
       advice: 'Log a full week of training and this fills in.',
+      adviceTemplate: 'Log a full week of training and this fills in.',
+      adviceVars: {},
       citationIds: ['schoenfeld-2017-volume'],
     })
   } else {
@@ -518,9 +527,15 @@ export function auditHypertrophy(input: HypertrophyAuditInput): HypertrophyLever
       label: 'Weekly volume',
       status: ok ? 'good' : 'attention',
       finding: `${inRange} of ${input.musclesAssessed} muscles are inside their weekly set range.`,
+      findingTemplate: '{inRange} of {assessed} muscles are inside their weekly set range.',
+      findingVars: { inRange, assessed: input.musclesAssessed },
       advice: ok
         ? 'Hold here. Volume is the strongest lever you have, and it is doing its job.'
         : `Add sets to the muscles below range, no more than ${RULES.volume.weeklyAddCap} per muscle per week.`,
+      adviceTemplate: ok
+        ? 'Hold here. Volume is the strongest lever you have, and it is doing its job.'
+        : 'Add sets to the muscles below range, no more than {cap} per muscle per week.',
+      adviceVars: { cap: RULES.volume.weeklyAddCap },
       citationIds: ['schoenfeld-2017-volume'],
     })
   }
@@ -532,7 +547,11 @@ export function auditHypertrophy(input: HypertrophyAuditInput): HypertrophyLever
           label: 'Proximity to failure',
           status: 'unknown',
           finding: '',
+          findingTemplate: '',
+          findingVars: {},
           advice: 'Log reps in reserve on your sets and this fills in.',
+          adviceTemplate: 'Log reps in reserve on your sets and this fills in.',
+          adviceVars: {},
           citationIds: ['refalo-2023-failure', 'zourdos-2016-rir'],
         }
       : {
@@ -540,10 +559,20 @@ export function auditHypertrophy(input: HypertrophyAuditInput): HypertrophyLever
           label: 'Proximity to failure',
           status: input.hardSetFraction >= 0.7 ? 'good' : 'attention',
           finding: `${Math.round(input.hardSetFraction * 100)}% of your working sets finished within ${RULES.volume.hardSetRirCutoff} reps of failure.`,
+          findingTemplate: '{pct}% of your working sets finished within {rir} reps of failure.',
+          findingVars: {
+            pct: Math.round(input.hardSetFraction * 100),
+            rir: RULES.volume.hardSetRirCutoff,
+          },
           advice:
             input.hardSetFraction >= 0.7
               ? 'That is the window. Sets close to failure count; comfortable ones mostly do not.'
               : 'Take more sets to within 1–3 reps of failure. A set you could have doubled is not a hard set.',
+          adviceTemplate:
+            input.hardSetFraction >= 0.7
+              ? 'That is the window. Sets close to failure count; comfortable ones mostly do not.'
+              : 'Take more sets to within 1–3 reps of failure. A set you could have doubled is not a hard set.',
+          adviceVars: {},
           citationIds: ['refalo-2023-failure', 'zourdos-2016-rir'],
         },
   )
@@ -561,8 +590,16 @@ export function auditHypertrophy(input: HypertrophyAuditInput): HypertrophyLever
       input.musclesAssessed === 0
         ? ''
         : `${input.musclesTrainedTwice} of ${input.musclesAssessed} muscles were trained on two or more days.`,
+    findingTemplate:
+      input.musclesAssessed === 0
+        ? ''
+        : '{twice} of {assessed} muscles were trained on two or more days.',
+    findingVars: { twice: input.musclesTrainedTwice, assessed: input.musclesAssessed },
     advice:
       'Split the same weekly sets across two days per muscle rather than one. It is the cheapest change on this list.',
+    adviceTemplate:
+      'Split the same weekly sets across two days per muscle rather than one. It is the cheapest change on this list.',
+    adviceVars: {},
     citationIds: ['schoenfeld-2016-frequency', 'acsm-2011-quantity'],
   })
 
@@ -573,7 +610,11 @@ export function auditHypertrophy(input: HypertrophyAuditInput): HypertrophyLever
           label: 'Rest between sets',
           status: 'unknown',
           finding: '',
+          findingTemplate: '',
+          findingVars: {},
           advice: 'Use the rest timer on your compound lifts and this fills in.',
+          adviceTemplate: 'Use the rest timer on your compound lifts and this fills in.',
+          adviceVars: {},
           citationIds: ['schoenfeld-2016-rest'],
         }
       : {
@@ -581,10 +622,17 @@ export function auditHypertrophy(input: HypertrophyAuditInput): HypertrophyLever
           label: 'Rest between sets',
           status: input.medianCompoundRestSec >= 120 ? 'good' : 'attention',
           finding: `You typically rest about ${Math.round(input.medianCompoundRestSec / 15) * 15}s between compound sets.`,
+          findingTemplate: 'You typically rest about {seconds}s between compound sets.',
+          findingVars: { seconds: Math.round(input.medianCompoundRestSec / 15) * 15 },
           advice:
             input.medianCompoundRestSec >= 120
               ? 'Long enough. Rushing compounds costs you reps on the later sets, and lost reps are lost volume.'
               : 'Rest two to three minutes on compound lifts. Short rest is not a shortcut — it just costs you reps later in the exercise.',
+          adviceTemplate:
+            input.medianCompoundRestSec >= 120
+              ? 'Long enough. Rushing compounds costs you reps on the later sets, and lost reps are lost volume.'
+              : 'Rest two to three minutes on compound lifts. Short rest is not a shortcut — it just costs you reps later in the exercise.',
+          adviceVars: {},
           citationIds: ['schoenfeld-2016-rest'],
         },
   )
@@ -594,8 +642,13 @@ export function auditHypertrophy(input: HypertrophyAuditInput): HypertrophyLever
     label: 'Range of motion',
     status: 'good',
     finding: 'Every movement in the library is prescribed at full range.',
+    findingTemplate: 'Every movement in the library is prescribed at full range.',
+    findingVars: {},
     advice:
       'Keep the stretch. Full range matches or beats partial range, and if you do shorten a movement, shorten the top — never the bottom.',
+    adviceTemplate:
+      'Keep the stretch. Full range matches or beats partial range, and if you do shorten a movement, shorten the top — never the bottom.',
+    adviceVars: {},
     citationIds: ['kassiano-2023-rom', 'maeo-2021-long-length'],
   })
 

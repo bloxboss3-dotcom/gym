@@ -124,7 +124,15 @@ export default function Train() {
             <div>
               <SectionHeading
                 title={program.name}
-                hint={program.description}
+                hint={t(program.descriptionTemplate ?? program.description, {
+                  ...program.descriptionVars,
+                  ...(program.descriptionVars?.goal
+                    ? { goal: t(String(program.descriptionVars.goal)) }
+                    : {}),
+                  ...(program.descriptionVars?.experience
+                    ? { experience: t(String(program.descriptionVars.experience)) }
+                    : {}),
+                })}
                 action={
                   <Link
                     to={`/train/program/${program.id}`}
@@ -435,7 +443,7 @@ function UsualSessions() {
                 {t('Start this session')}
               </Button>
               <p className="text-[11px] text-smoke mt-2 leading-relaxed">
-                {usual.reason}{' '}
+                {t(usual.reasonTemplate, usual.reasonVars)}{' '}
                 {t(
                   'Loads come from your progression history for each movement, not from this pattern.',
                 )}

@@ -7,6 +7,7 @@ import { ITEMS_BY_SLOT, ITEM_BY_ID, RARITY_META, SLOT_LABEL, SLOT_ORDER } from '
 import { useStore } from '@/state/store'
 import type { Figure, Slot } from '@/types'
 import { ECONOMY, buildFromXp, levelFromXp } from '@/config/economy'
+import { useT } from '@/i18n/useT'
 
 const FIGURES: { key: Figure; label: string }[] = [
   { key: 'masculine', label: 'Masculine' },
@@ -20,6 +21,7 @@ const FIGURES: { key: Figure; label: string }[] = [
  * item and the warrior changes immediately.
  */
 export default function CharacterCustomize() {
+  const { t } = useT()
   const store = useStore()
   const { data } = store
   const [slot, setSlot] = useState<Slot>('weapon')
@@ -35,7 +37,7 @@ export default function CharacterCustomize() {
   const build = buildFromXp(data.game.xp)
 
   return (
-    <Screen title="Your warrior" subtitle={equippedTitle?.name ?? data.profile?.name} back="/forge">
+    <Screen title={t('Your warrior')} subtitle={equippedTitle?.name ?? data.profile?.name} back="/forge">
       <div className="space-y-4">
         <Card raised>
           <div className="grid place-items-center">
@@ -52,7 +54,7 @@ export default function CharacterCustomize() {
               and you can change your mind whenever. */}
           <div
             role="radiogroup"
-            aria-label="Figure"
+            aria-label={t('Figure')}
             className="flex gap-2 mt-2 justify-center"
           >
             {FIGURES.map(({ key, label }) => (
@@ -74,14 +76,14 @@ export default function CharacterCustomize() {
             ))}
           </div>
           <p className="text-center font-display text-2xl uppercase tracking-wide mt-1">{data.profile?.name}</p>
-          {equippedTitle && <p className="text-center text-sm text-gold-300">{equippedTitle.name}</p>}
+          {equippedTitle && <p className="text-center text-sm text-gold-300">{t(equippedTitle.name)}</p>}
 
           {/* The build bar. Deliberately not purchasable and deliberately
               explained: the figure is a record of training, so the only way to
               move this is to train. */}
           <div className="mt-3 border-t border-slate/70 pt-3">
             <div className="flex items-center justify-between gap-2 mb-1">
-              <p className="text-[11px] uppercase tracking-wider text-smoke">Build</p>
+              <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Build')}</p>
               <p className="text-[11px] text-ash tabular">
                 level {level.level} of {ECONOMY.character.fullBuildLevel}
               </p>
@@ -94,8 +96,10 @@ export default function CharacterCustomize() {
             />
             <p className="text-[11px] text-smoke mt-1.5 leading-relaxed">
               {build >= 1
-                ? 'Fully built. Everything from here is gear.'
-                : 'Your warrior puts on muscle as you level, and levels come only from logged training. Nothing in the Forge can buy this.'}
+                ? t('Fully built. Everything from here is gear.')
+                : t(
+                    'Your warrior puts on muscle as you level, and levels come only from logged training. Nothing in the Forge can buy this.',
+                  )}
             </p>
           </div>
         </Card>
@@ -117,7 +121,7 @@ export default function CharacterCustomize() {
               >
                 <span className="block text-[10px] uppercase tracking-wider text-smoke">{SLOT_LABEL[key]}</span>
                 <span data-testid={`equipped-${key}`} className="block text-xs text-parchment whitespace-nowrap">
-                  {item?.name ?? 'Empty'}
+                  {item ? t(item.name) : t('Empty')}
                 </span>
               </button>
             )
@@ -161,7 +165,7 @@ export default function CharacterCustomize() {
                         <ItemPreview item={item} frame={figure} className="w-12 h-auto" />
                       </span>
                     )}
-                    <span className="block text-[11px] text-parchment leading-tight mt-1">{item.name}</span>
+                    <span className="block text-[11px] text-parchment leading-tight mt-1">{t(item.name)}</span>
                     <span className="block text-[9px] uppercase tracking-wider" style={{ color: meta.color }}>
                       {meta.label}
                     </span>
@@ -174,10 +178,10 @@ export default function CharacterCustomize() {
           <EmptyState
             icon="◇"
             title={`No ${SLOT_LABEL[slot].toLowerCase()} earned yet`}
-            body="Open packs in the Forge to find gear for this slot. Every item is earned through training."
+            body={t('Open packs in the Forge to find gear for this slot. Every item is earned through training.')}
             action={
               <Link to="/forge">
-                <Button variant="primary">Go to the Forge</Button>
+                <Button variant="primary">{t('Go to the Forge')}</Button>
               </Link>
             }
           />
@@ -185,8 +189,7 @@ export default function CharacterCustomize() {
 
         <Card>
           <p className="text-sm text-ash leading-relaxed">
-            Your warrior changes only through work you actually did. Nothing here affects a single training
-            recommendation — it is the reward, not the mechanism.
+            {t('Your warrior changes only through work you actually did. Nothing here affects a single training recommendation — it is the reward, not the mechanism.')}
           </p>
           <div className="flex flex-wrap gap-1.5 mt-2">
             <Chip tone="ember">{data.game.owned.length} items owned</Chip>

@@ -49,6 +49,8 @@ export interface UsualSession {
   confidence: Confidence
   /** Plain-language justification, shown in the UI rather than hidden. */
   reason: string
+  reasonTemplate: string
+  reasonVars: Record<string, string | number>
 }
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -240,6 +242,13 @@ export function findUsualSessions(input: {
         reason:
           `You have trained this combination ${members.length} times in the last ${windowDays} days, ` +
           `most recently ${daysSince === 0 ? 'today' : daysSince === 1 ? 'yesterday' : `${daysSince} days ago`}.`,
+        reasonTemplate:
+          daysSince === 0
+            ? 'You have trained this combination {times} times in the last {days} days, most recently today.'
+            : daysSince === 1
+              ? 'You have trained this combination {times} times in the last {days} days, most recently yesterday.'
+              : 'You have trained this combination {times} times in the last {days} days, most recently {since} days ago.',
+        reasonVars: { times: members.length, days: windowDays, since: daysSince },
       } satisfies UsualSession
     })
     .filter((usual) => usual.exercises.length > 0)

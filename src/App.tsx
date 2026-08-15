@@ -10,6 +10,7 @@ import Today from '@/screens/Today'
 import Train from '@/screens/Train'
 import SessionPlayer from '@/screens/SessionPlayer'
 import Progress from '@/screens/Progress'
+import { useT } from '@/i18n/useT'
 
 // Lazy: everything reachable in a second tap. Keeps the first paint small
 // without hurting offline use — the service worker precaches every chunk.
@@ -39,6 +40,7 @@ function ScrollToTop() {
 }
 
 export default function App() {
+  const { t } = useT()
   const { data, ready } = useStore()
   const location = useLocation()
   const onboarded = Boolean(data.profile?.onboardedAt)
@@ -51,8 +53,8 @@ export default function App() {
     return (
       <div className="min-h-dvh grid place-items-center bg-void">
         <div className="text-center">
-          <p className="font-display text-4xl tracking-[0.3em] text-ember-500">FORGED</p>
-          <Spinner label="Opening the forge" />
+          <p className="font-display text-4xl tracking-[0.3em] text-ember-500">{t('FORGED')}</p>
+          <Spinner label={t('Opening the forge')} />
         </div>
       </div>
     )
@@ -65,7 +67,7 @@ export default function App() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-ember-500 focus:text-black focus:px-3 focus:py-2 focus:rounded-lg"
       >
-        Skip to content
+        {t('Skip to content')}
       </a>
       <div id="main-content">
         {!onboarded ? (
@@ -75,7 +77,7 @@ export default function App() {
           </Routes>
         ) : (
           <>
-            <Suspense fallback={<Spinner label="Loading" />}>
+            <Suspense fallback={<Spinner label={t('Loading')} />}>
               <Routes>
                 <Route path="/" element={<Today />} />
                 <Route path="/onboarding" element={<Navigate to="/" replace />} />

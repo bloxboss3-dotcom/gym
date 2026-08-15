@@ -1,4 +1,70 @@
 import type { Dict } from '@/i18n'
 
 /** Spanish for the nutrition surface. Keys are the exact English source strings. */
-export const NUTRITION: Dict = {}
+export const NUTRITION: Dict = {
+  // --- Nutrition -----------------------------------------------------------
+  'Food': 'Comida',
+  'Nutrition settings': 'Ajustes de nutrición',
+  'Protein left today': 'Proteína que te queda hoy',
+  'Protein': 'Proteína',
+  'Carbs': 'Carbohidratos',
+  'Fat': 'Grasa',
+  'Something logged today has protein but no calories — usually a quick-add or an older custom food. The calorie total below-counts until you fill it in.':
+    'Algo registrado hoy tiene proteína pero no calorías: suele ser un registro rápido o un alimento propio antiguo. El total de calorías se queda corto hasta que lo completes.',
+  'Log food': 'Registrar comida',
+  'Nothing logged — tap to add': 'Nada registrado: toca para añadir',
+  'Reusable meals': 'Comidas reutilizables',
+  'New meal': 'Nueva comida',
+  'Build a meal once — “post-gym shake and chicken wrap” — and log the whole thing with one tap from then on. It is the fastest way to log the food you actually eat every week.':
+    'Crea una comida una vez —«batido de después del gimnasio y wrap de pollo»— y a partir de ahí regístrala entera con un toque. Es la forma más rápida de anotar lo que realmente comes cada semana.',
+  'This week': 'Esta semana',
+  'Why these targets': 'Por qué estos objetivos',
+  'Meal-by-meal protein split': 'Reparto de proteína por comida',
+  'Where these numbers come from': 'De dónde salen estos números',
+  'Budget-friendly protein': 'Proteína económica',
+  'These targets are estimates, not measurements. FORGED does not diagnose anything and is not a substitute for a registered dietitian — especially if you have a medical condition or any history of disordered eating. If counting calories is not good for you, switch to protein-only mode in the settings above and the app will never show you a calorie number again.':
+    'Estos objetivos son estimaciones, no mediciones. FORGED no diagnostica nada y no sustituye a un dietista titulado, y menos si tienes alguna condición médica o antecedentes de trastornos alimentarios. Si contar calorías no te sienta bien, cambia al modo de solo proteína en los ajustes de arriba y la aplicación no volverá a mostrarte una cifra de calorías.',
+  'Custom food': 'Alimento propio',
+  'Build a meal': 'Crear una comida',
+  'What to track': 'Qué registrar',
+  'Nutrition mode': 'Modo de nutrición',
+  'Meals per day': 'Comidas al día',
+  'Preferred final meal time': 'Hora preferida de la última comida',
+  'Foods to avoid': 'Alimentos que evitar',
+  'e.g. whey, shellfish': 'p. ej. suero de leche, marisco',
+  'Protein target override (g/day)': 'Cambiar el objetivo de proteína (g/día)',
+  'Calorie target override (kcal/day)': 'Cambiar el objetivo de calorías (kcal/día)',
+  'Done': 'Hecho',
+  '← Back to list': '← Volver a la lista',
+  'Servings': 'Raciones',
+  'kcal': 'kcal',
+  'Meal': 'Comida',
+  'Search foods': 'Buscar alimentos',
+  'Search foods…': 'Buscar alimentos…',
+  'Food list': 'Lista de alimentos',
+  'Nothing logged yet. Search above, or browse the list — anything you log shows up here for one-tap repeats.':
+    'Todavía no hay nada. Busca arriba o mira la lista: lo que registres aparecerá aquí para repetirlo con un toque.',
+  'Create a custom food': 'Crear un alimento propio',
+  'No custom foods yet. Add the things you eat that are not on the list once, and they stay one tap away forever.':
+    'Aún no hay alimentos propios. Añade una vez lo que comes y no está en la lista, y se queda a un toque para siempre.',
+  'No searching. Put in the numbers you already know — a packet label, a restaurant estimate, a guess you are happy with.':
+    'Sin buscar. Pon los números que ya sabes: la etiqueta de un paquete, un cálculo de un restaurante o una estimación que te convenza.',
+  'Quick protein grams': 'Gramos de proteína rápidos',
+  'Calories': 'Calorías',
+  'Quick calories': 'Calorías rápidas',
+  'Food name': 'Nombre del alimento',
+  'e.g. My protein bowl': 'p. ej. Mi bol de proteína',
+  'Serving description': 'Descripción de la ración',
+  'Protein per serving': 'Proteína por ración',
+  'Protein grams': 'Gramos de proteína',
+  'Calories per serving': 'Calorías por ración',
+  'Carb grams': 'Gramos de carbohidratos',
+  'Fat grams': 'Gramos de grasa',
+  'Budget friendly': 'Económico',
+  'Save food': 'Guardar alimento',
+  'Meal name': 'Nombre de la comida',
+  'e.g. Post-gym': 'p. ej. Después del gimnasio',
+  'Add items': 'Añadir elementos',
+  'Save meal': 'Guardar comida',
+  'Remove {item}': 'Quitar {item}',
+}

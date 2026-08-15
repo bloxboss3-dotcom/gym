@@ -13,6 +13,7 @@ import {
   type Position,
 } from '@/engine/chess'
 import { useStore } from '@/state/store'
+import { useT } from '@/i18n/useT'
 
 /**
  * A chess puzzle for the rest interval.
@@ -40,6 +41,7 @@ function pieceLabel(piece: Piece): string {
 }
 
 export function RestPuzzle({ seed, onClose }: { seed: number; onClose: () => void }) {
+  const { t } = useT()
   const { data, solvePuzzle } = useStore()
   const solvedIds = useMemo(() => data.game.solvedPuzzleIds ?? [], [data.game.solvedPuzzleIds])
 
@@ -100,23 +102,23 @@ export function RestPuzzle({ seed, onClose }: { seed: number; onClose: () => voi
   }
 
   return (
-    <section className="forge-panel p-3" aria-label="Rest-timer chess puzzle">
+    <section className="forge-panel p-3" aria-label={t('Rest-timer chess puzzle')}>
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-wider text-smoke">Between sets</p>
+          <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Between sets')}</p>
           <p className="font-display text-lg uppercase tracking-wide leading-none">
             {solved ? puzzle.theme : 'White to play — mate in one'}
           </p>
         </div>
         <button type="button" onClick={onClose} className="touch-target px-2 text-sm text-ash shrink-0">
-          Hide
+          {t('Hide')}
         </button>
       </div>
 
       <div
         className="grid grid-cols-8 rounded-lg overflow-hidden border border-slate"
         role="grid"
-        aria-label="Chess board"
+        aria-label={t('Chess board')}
       >
         {position.board.map((piece, index) => {
           const rank = Math.floor(index / 8)
@@ -155,12 +157,12 @@ export function RestPuzzle({ seed, onClose }: { seed: number; onClose: () => voi
       {solved ? (
         <div className="mt-2.5">
           <div className="flex items-center gap-2">
-            <Chip tone="good">Solved</Chip>
+            <Chip tone="good">{t('Solved')}</Chip>
             <span className="text-xs text-ash">{puzzle.theme}</span>
           </div>
           <p className="text-xs text-ash mt-1.5 leading-relaxed">{puzzle.lesson}</p>
           <Button size="sm" full className="mt-2.5" onClick={nextPuzzle}>
-            Another one
+            {t('Another one')}
           </Button>
         </div>
       ) : (
@@ -168,21 +170,20 @@ export function RestPuzzle({ seed, onClose }: { seed: number; onClose: () => voi
           {wrong && <p className="text-xs text-caution leading-relaxed">{wrong}</p>}
           {revealed && (
             <p className="text-xs text-ember-300 leading-relaxed mt-1">
-              The move is <strong>{toSan(parseFen(puzzle.fen), moveOf(puzzle))}</strong> — {puzzle.theme}.{' '}
+              {t('The move is')} <strong>{toSan(parseFen(puzzle.fen), moveOf(puzzle))}</strong> — {puzzle.theme}.{' '}
               {puzzle.lesson}
             </p>
           )}
           <div className="flex gap-2 mt-2">
             <Button size="sm" className="flex-1" onClick={() => reset(puzzle)}>
-              Reset
+              {t('Reset')}
             </Button>
             <Button size="sm" className="flex-1" onClick={() => setRevealed(true)} disabled={revealed}>
-              Show me
+              {t('Show me')}
             </Button>
           </div>
           <p className="text-[11px] text-smoke mt-2 leading-relaxed">
-            Solving pays a few coins, capped well below what training pays — and only while you are actually
-            resting mid-session.
+            {t('Solving pays a few coins, capped well below what training pays — and only while you are actually resting mid-session.')}
           </p>
         </div>
       )}

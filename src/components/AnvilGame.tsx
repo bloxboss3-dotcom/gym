@@ -83,9 +83,9 @@ export function AnvilGame({ seed, onClose }: { seed: number; onClose: () => void
 
   return (
     // The section's aria-label stays English: the browser suite finds the game
-    // with `section[aria-label="The Anvil"]`, so it is test API, not prose.
+    // with `section[aria-label={t('The Anvil')}]`, so it is test API, not prose.
     <section
-      aria-label="The Anvil"
+      aria-label={t('The Anvil')}
       className="rounded-xl border border-ember-500/35 bg-coal/85 p-3"
     >
       <div className="flex items-center justify-between gap-2 mb-2">

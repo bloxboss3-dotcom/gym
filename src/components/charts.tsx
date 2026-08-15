@@ -1,6 +1,7 @@
 import { useId, useMemo } from 'react'
 import { cx } from '@/components/ui'
 import { formatDateLabel } from '@/lib/date'
+import { useT } from '@/i18n/useT'
 
 /**
  * Hand-rolled SVG charts.
@@ -47,6 +48,7 @@ export function LineChart({
   ariaLabel: string
   className?: string
 }) {
+  const { t } = useT()
   const gradientId = useId()
   const width = 320
   const padL = 34
@@ -63,7 +65,7 @@ export function LineChart({
   if (series.length === 0) {
     return (
       <div className={cx('h-40 grid place-items-center text-sm text-smoke forge-panel', className)}>
-        Not enough data yet.
+        {t('Not enough data yet.')}
       </div>
     )
   }
@@ -172,6 +174,7 @@ export function BarChart({
   format?: (value: number) => string
   className?: string
 }) {
+  const { t } = useT()
   const max = Math.max(1, ...bars.map((b) => b.value))
   const tones = {
     ember: 'bg-gradient-to-t from-ember-700 to-ember-400',
@@ -181,7 +184,7 @@ export function BarChart({
     cool: 'bg-gradient-to-t from-cool/40 to-cool',
   }
   if (!bars.length) {
-    return <div className={cx('h-32 grid place-items-center text-sm text-smoke forge-panel', className)}>No data yet.</div>
+    return <div className={cx('h-32 grid place-items-center text-sm text-smoke forge-panel', className)}>{t('No data yet.')}</div>
   }
   return (
     <div className={className} role="img" aria-label={`${ariaLabel}: ${bars.map((b) => `${b.label} ${format(b.value)}`).join(', ')}`}>
@@ -225,6 +228,7 @@ export function TargetBar({
   tone?: 'ember' | 'good' | 'caution' | 'danger'
   onClick?: () => void
 }) {
+  const { t } = useT()
   const scale = Math.max(ceiling, target.max, value) || 1
   const pct = (n: number) => `${Math.min(100, (n / scale) * 100)}%`
   const tones = {
@@ -242,7 +246,7 @@ export function TargetBar({
       <div className="flex justify-between items-baseline gap-2 mb-1">
         <span className="text-sm text-parchment truncate">{label}</span>
         <span className="text-sm tabular text-ash shrink-0">
-          {Number(value.toFixed(1))} <span className="text-smoke text-xs">sets</span>
+          {Number(value.toFixed(1))} <span className="text-smoke text-xs">{t('sets')}</span>
         </span>
       </div>
       <div className="relative h-3 rounded-full bg-steel overflow-hidden">

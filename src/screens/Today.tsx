@@ -164,8 +164,8 @@ export default function Today() {
                     ? t('Today’s run')
                     : t('Today’s session')}
               </p>
-              <h2 className="font-display text-3xl uppercase leading-none mt-1 text-balance">{plan.title}</h2>
-              <p className="text-sm text-ash mt-1">{plan.subtitle}</p>
+              <h2 className="font-display text-3xl uppercase leading-none mt-1 text-balance">{t(plan.title)}</h2>
+              <p className="text-sm text-ash mt-1">{t(plan.subtitleTemplate, plan.subtitleVars)}</p>
             </div>
             <Chip tone="ember" className="shrink-0">
               {t('~{minutes} min', { minutes: plan.estimatedMinutes })}
@@ -192,8 +192,8 @@ export default function Today() {
                 ▾
               </span>
             </button>
-            <p className={cx('text-sm text-parchment/90 leading-relaxed', !showWhy && 'line-clamp-2')}>{plan.why}</p>
-            {showWhy && <p className="text-xs text-ember-200 mt-2 leading-relaxed">{plan.progressNote}</p>}
+            <p className={cx('text-sm text-parchment/90 leading-relaxed', !showWhy && 'line-clamp-2')}>{t(plan.whyTemplate, plan.whyVars)}</p>
+            {showWhy && <p className="text-xs text-ember-200 mt-2 leading-relaxed">{t(plan.progressNoteTemplate, plan.progressNoteVars)}</p>}
           </div>
 
           <Button variant="primary" size="lg" full className="mt-3" onClick={start}>
@@ -220,7 +220,7 @@ export default function Today() {
         {/* ---------------------------------------------------------------- */}
         {deload.suggested && (
           <Alert tone="warn" title={t('Deload worth considering')}>
-            <p className="leading-relaxed">{deload.reason}</p>
+            <p className="leading-relaxed">{t(deload.reasonTemplate, deload.reasonVars)}</p>
             <Link
               to="/progress"
               className="mt-2 inline-flex text-sm font-medium text-caution underline underline-offset-2 touch-target items-center"
@@ -265,7 +265,7 @@ export default function Today() {
                 <>
                   <p className="font-display text-3xl text-ember-400 mt-0.5 tabular">
                     {Math.max(0, remainingKcal(macroPlan.targets.kcal, nutritionToday.kcal))}
-                    <span className="text-base text-ash">kcal</span>
+                    <span className="text-base text-ash">{t('kcal')}</span>
                   </p>
                   <ProgressBar
                     value={nutritionToday.kcal}
@@ -342,7 +342,7 @@ export default function Today() {
             </div>
           </div>
           {consistency.shieldsUsed > 0 && (
-            <p className="text-xs text-cool mt-3 leading-relaxed">🛡 {consistency.message}</p>
+            <p className="text-xs text-cool mt-3 leading-relaxed">🛡 {t(consistency.messageTemplate, consistency.messageVars)}</p>
           )}
         </Card>
 
@@ -357,8 +357,8 @@ export default function Today() {
                   <p className="text-[11px] uppercase tracking-wider text-smoke">
                     {activeQuest.def.period === 'daily' ? t('Daily quest') : t('Weekly quest')}
                   </p>
-                  <p className="font-medium text-parchment mt-0.5">{activeQuest.def.title}</p>
-                  <p className="text-xs text-ash mt-0.5 leading-snug">{activeQuest.def.description}</p>
+                  <p className="font-medium text-parchment mt-0.5">{t(activeQuest.def.title)}</p>
+                  <p className="text-xs text-ash mt-0.5 leading-snug">{t(activeQuest.def.description)}</p>
                 </div>
                 {activeQuest.complete && !activeQuest.claimed ? (
                   <Chip tone="gold">{t('Claim →')}</Chip>
@@ -406,7 +406,7 @@ export default function Today() {
             <div className="mt-4">
               <p className="text-[11px] uppercase tracking-wider text-smoke mb-1.5">{t('Last 28 days')}</p>
               <ConsistencyStrip days={consistency.days} />
-              <p className="text-xs text-ash mt-2 leading-relaxed">{consistency.message}</p>
+              <p className="text-xs text-ash mt-2 leading-relaxed">{t(consistency.messageTemplate, consistency.messageVars)}</p>
             </div>
           </Card>
         </div>
@@ -425,10 +425,15 @@ export default function Today() {
               }
             />
             <Card>
-              <p className="font-display text-lg uppercase tracking-wide">{running.headline}</p>
-              <p className="text-sm text-ash mt-1.5 leading-relaxed">{running.reason}</p>
+              <p className="font-display text-lg uppercase tracking-wide">{t(running.headlineTemplate, running.headlineVars)}</p>
+              <p className="text-sm text-ash mt-1.5 leading-relaxed">{t(running.reasonTemplate, {
+                  ...running.reasonVars,
+                  ...(running.reasonVars.experience
+                    ? { experience: t(String(running.reasonVars.experience)) }
+                    : {}),
+                })}</p>
               {running.schedulingNote && (
-                <p className="text-xs text-cool mt-2 leading-relaxed">{running.schedulingNote}</p>
+                <p className="text-xs text-cool mt-2 leading-relaxed">{t(running.schedulingNoteTemplate ?? '', running.schedulingNoteVars)}</p>
               )}
               <ul className="mt-3 space-y-1.5">
                 {running.sessions.map((session, i) => (
@@ -438,7 +443,7 @@ export default function Today() {
                     </span>
                     <span className="text-ash leading-snug">
                       {session.distanceKm ? `${session.distanceKm} km — ` : session.durationMin ? `${session.durationMin} min — ` : ''}
-                      {session.description}
+                      {t(session.descriptionTemplate, session.descriptionVars)}
                     </span>
                   </li>
                 ))}

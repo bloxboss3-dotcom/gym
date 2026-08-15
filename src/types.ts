@@ -282,6 +282,15 @@ export interface Program {
   id: string
   name: string
   description: string
+  /*
+    The description again, as a template plus its numbers.
+
+    Optional because a program the user wrote themselves has a description
+    they typed, which is already in their language and has nothing to
+    interpolate. Only the generated ones carry a template.
+  */
+  descriptionTemplate?: string
+  descriptionVars?: Record<string, string | number>
   days: ProgramDay[]
   createdAt: Millis
   generated: boolean

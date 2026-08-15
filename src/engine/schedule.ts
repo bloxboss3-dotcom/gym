@@ -27,6 +27,20 @@ export interface TodayPlan {
   subtitle: string
   /** Why this, today. */
   why: string
+  /*
+    The same prose, as a template plus its numbers.
+
+    `why` and the rest stay finished English so nothing that already reads
+    them breaks; the template is what the UI translates. Splitting them is
+    the only way a sentence with a number in it can be translated at all —
+    "3 movements" cannot be a translation key, "{n} movements" can.
+  */
+  whyTemplate: string
+  whyVars?: Record<string, string | number>
+  subtitleTemplate: string
+  subtitleVars?: Record<string, string | number>
+  progressNoteTemplate: string
+  progressNoteVars?: Record<string, string | number>
   estimatedMinutes: number
   programDay: ProgramDay | null
   run: PlannedRun | null
@@ -54,12 +68,16 @@ export function resolveToday(input: TodayInput): TodayPlan {
       kind: 'resume',
       title: active.title,
       subtitle: 'Session in progress',
+      subtitleTemplate: 'Session in progress',
       why: 'You have an unfinished session. Pick up exactly where you left off — every set you already logged is saved.',
+      whyTemplate:
+        'You have an unfinished session. Pick up exactly where you left off — every set you already logged is saved.',
       estimatedMinutes: 20,
       programDay: program?.days.find((d) => d.id === active.programDayId) ?? null,
       run: null,
       activeSessionId: active.id,
       progressNote: 'Finishing an interrupted session still counts in full.',
+      progressNoteTemplate: 'Finishing an interrupted session still counts in full.',
       rescheduledFrom: null,
     }
   }
@@ -70,12 +88,16 @@ export function resolveToday(input: TodayInput): TodayPlan {
       kind: 'setup',
       title: 'Build your plan',
       subtitle: 'No program yet',
+      subtitleTemplate: 'No program yet',
       why: 'FORGED needs a program before it can tell you what to train. Generate one from your profile or build a custom routine — it takes about a minute.',
+      whyTemplate:
+        'FORGED needs a program before it can tell you what to train. Generate one from your profile or build a custom routine — it takes about a minute.',
       estimatedMinutes: 2,
       programDay: null,
       run: null,
       activeSessionId: null,
       progressNote: 'A plan turns training into something FORGED can progress for you.',
+      progressNoteTemplate: 'A plan turns training into something FORGED can progress for you.',
       rescheduledFrom: null,
     }
   }
@@ -119,12 +141,16 @@ export function resolveToday(input: TodayInput): TodayPlan {
         kind: 'deload_workout',
         title: `${programDay.name} — deload`,
         subtitle: 'Lighter on purpose',
+        subtitleTemplate: 'Lighter on purpose',
         why: 'You are in a planned deload. Same movements, roughly 60% of the usual load, fewer sets, and every set stopped well short of failure. This counts as a completed session — backing off on purpose is training, not time off.',
+        whyTemplate:
+          'You are in a planned deload. Same movements, roughly 60% of the usual load, fewer sets, and every set stopped well short of failure. This counts as a completed session — backing off on purpose is training, not time off.',
         estimatedMinutes: Math.round(minutes * 0.6),
         programDay,
         run: null,
         activeSessionId: null,
         progressNote: 'Finishing the deload clears accumulated fatigue so the next block actually moves.',
+        progressNoteTemplate: 'Finishing the deload clears accumulated fatigue so the next block actually moves.',
         rescheduledFrom,
       }
     }
@@ -133,14 +159,23 @@ export function resolveToday(input: TodayInput): TodayPlan {
       kind: 'workout',
       title: programDay.name,
       subtitle: `${programDay.slots.length} movements · ${sets} working sets`,
+      subtitleTemplate: '{movements} movements · {sets} working sets',
+      subtitleVars: { movements: programDay.slots.length, sets },
       why: rescheduledFrom
         ? `This is the session you missed on ${rescheduledFrom}, moved to today rather than stacked on top of another day.`
         : `${programDay.name} is scheduled for today in your plan. FORGED has a specific target for every movement based on what you did last time.`,
+      whyTemplate: rescheduledFrom
+        ? 'This is the session you missed on {date}, moved to today rather than stacked on top of another day.'
+        : '{day} is scheduled for today in your plan. FORGED has a specific target for every movement based on what you did last time.',
+      whyVars: rescheduledFrom ? { date: rescheduledFrom } : { day: programDay.name },
       estimatedMinutes: minutes,
       programDay,
       run: null,
       activeSessionId: null,
       progressNote: `${sets} hard sets toward this week's volume, and a fresh recommendation for every lift you log.`,
+      progressNoteTemplate:
+        "{sets} hard sets toward this week's volume, and a fresh recommendation for every lift you log.",
+      progressNoteVars: { sets },
       rescheduledFrom,
     }
   }
@@ -152,12 +187,19 @@ export function resolveToday(input: TodayInput): TodayPlan {
       kind: 'run',
       title: runTitle(plannedRun),
       subtitle: plannedRun.distanceKm ? `${plannedRun.distanceKm} km` : `${plannedRun.durationMin} min`,
+      subtitleTemplate: plannedRun.distanceKm ? '{km} km' : '{min} min',
+      subtitleVars: plannedRun.distanceKm
+        ? { km: plannedRun.distanceKm }
+        : { min: plannedRun.durationMin ?? 0 },
       why: 'No lifting scheduled today, which makes it the cheapest possible day to run — endurance work sits furthest from your hard lower-body sessions here.',
+      whyTemplate:
+        'No lifting scheduled today, which makes it the cheapest possible day to run — endurance work sits furthest from your hard lower-body sessions here.',
       estimatedMinutes: plannedRun.durationMin ?? Math.round((plannedRun.distanceKm ?? 5) * 6.5),
       programDay: null,
       run: plannedRun,
       activeSessionId: null,
       progressNote: 'Adds to this week’s running volume without competing with a lifting session.',
+      progressNoteTemplate: 'Adds to this week’s running volume without competing with a lifting session.',
       rescheduledFrom: null,
     }
   }
@@ -171,7 +213,11 @@ function restPlan(today: IsoDate, note: string | null): TodayPlan {
     kind: 'rest',
     title: 'Recovery day',
     subtitle: 'Prescribed, not skipped',
+    subtitleTemplate: 'Prescribed, not skipped',
     why:
+      note ??
+      'Nothing is scheduled today. Adaptation happens between sessions, not during them — a recovery day is part of the plan and counts toward your consistency exactly like a training day.',
+    whyTemplate:
       note ??
       'Nothing is scheduled today. Adaptation happens between sessions, not during them — a recovery day is part of the plan and counts toward your consistency exactly like a training day.',
     estimatedMinutes: 5,
@@ -179,6 +225,7 @@ function restPlan(today: IsoDate, note: string | null): TodayPlan {
     run: null,
     activeSessionId: null,
     progressNote: 'Log a check-in and hit your protein target to bank the day.',
+    progressNoteTemplate: 'Log a check-in and hit your protein target to bank the day.',
     rescheduledFrom: null,
   }
 }

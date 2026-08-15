@@ -81,37 +81,41 @@ export default function VolumeDashboard() {
   }, [data.sessions, data.exercises, program, profile.experience, today])
 
   return (
-    <Screen title="Muscle volume" subtitle="Weekly hard sets, and where they came from" back="/progress">
+    <Screen title={t('Muscle volume')} subtitle={t('Weekly hard sets, and where they came from')} back="/progress">
       <div className="space-y-4">
         <SegmentedControl
-          label="Week"
+          label={t('Week')}
           value={String(weekOffset)}
           onChange={(v) => setWeekOffset(Number(v))}
           options={[
-            { value: '0', label: 'This week' },
-            { value: '1', label: 'Last week' },
-            { value: '2', label: '2 weeks ago' },
+            { value: '0', label: t('This week') },
+            { value: '1', label: t('Last week') },
+            { value: '2', label: t('2 weeks ago') },
           ]}
         />
 
         <div className="grid grid-cols-3 gap-2">
-          <Stat label="Hard sets" value={Number(totalHardSets.toFixed(0))} tone="ember" />
-          <Stat label="Completed" value={`${completion.completedSets}/${completion.plannedSets}`} sub="vs planned" />
-          <Stat label="Volume load" value={`${Math.round(totalVolumeLoad / 1000)}t`} sub="weight × reps" />
+          <Stat label={t('Hard sets')} value={Number(totalHardSets.toFixed(0))} tone="ember" />
+          <Stat label={t('Completed')} value={`${completion.completedSets}/${completion.plannedSets}`} sub={t('vs planned')} />
+          <Stat label={t('Volume load')} value={`${Math.round(totalVolumeLoad / 1000)}t`} sub={t('weight × reps')} />
         </div>
 
-        <Alert tone="info" title="How to read this">
-          A “hard set” is a working set taken close enough to failure to matter (RIR ≤{' '}
-          {RULES.volume.hardSetRirCutoff}). The shaded band is the starting range for a {profile.experience} lifter (
-          {RULES.volume.startingRange[profile.experience].min}–{RULES.volume.startingRange[profile.experience].max}{' '}
-          sets). Around 10 sets per muscle per week is a common reference point in the research — an average, not a
-          personal requirement, and not something to escalate past just because you can.
+        <Alert tone="info" title={t('How to read this')}>
+          {t(
+            'A “hard set” is a working set taken close enough to failure to matter (RIR ≤ {rir}). The shaded band is the starting range for a {experience} lifter ({min}–{max} sets). Around 10 sets per muscle per week is a common reference point in the research — an average, not a personal requirement, and not something to escalate past just because you can.',
+            {
+              rir: RULES.volume.hardSetRirCutoff,
+              experience: t(profile.experience),
+              min: RULES.volume.startingRange[profile.experience].min,
+              max: RULES.volume.startingRange[profile.experience].max,
+            },
+          )}
         </Alert>
 
         <Card>
-          <SectionHeading title="Total hard sets by week" />
+          <SectionHeading title={t('Total hard sets by week')} />
           <BarChart
-            ariaLabel="Total weekly hard sets over the last six weeks"
+            ariaLabel={t('Total weekly hard sets over the last six weeks')}
             bars={history.map((h) => ({ label: h.label, value: h.value, tone: 'ember' }))}
           />
         </Card>
@@ -121,8 +125,8 @@ export default function VolumeDashboard() {
             inventing a grade — a made-up green tick is worse than a blank. */}
         <Card>
           <SectionHeading
-            title="Hypertrophy check"
-            hint="Volume, effort, frequency and rest — in that order of importance."
+            title={t('Hypertrophy check')}
+            hint={t('Volume, effort, frequency and rest — in that order of importance.')}
           />
           <ul className="space-y-2.5 mt-1">
             {levers.map((lever) => (
@@ -135,40 +139,41 @@ export default function VolumeDashboard() {
                     {lever.status === 'good' ? 'On track' : lever.status === 'attention' ? 'Worth a look' : 'No data yet'}
                   </Chip>
                 </div>
-                {lever.finding && <p className="text-xs text-ash mt-1 leading-relaxed">{t(lever.finding)}</p>}
-                <p className="text-xs text-smoke mt-1 leading-relaxed">{t(lever.advice)}</p>
+                {lever.finding && <p className="text-xs text-ash mt-1 leading-relaxed">{t(lever.findingTemplate, lever.findingVars)}</p>}
+                <p className="text-xs text-smoke mt-1 leading-relaxed">{t(lever.adviceTemplate, lever.adviceVars)}</p>
                 <div className="mt-1.5">
                   <CitationList ids={lever.citationIds} />
                 </div>
               </li>
             ))}
           </ul>
-          <p className="text-xs text-smoke mt-3 leading-relaxed">{LOAD_RANGE_NOTE}</p>
+          <p className="text-xs text-smoke mt-3 leading-relaxed">{t(LOAD_RANGE_NOTE)}</p>
         </Card>
 
         {suggestions.length > 0 && (
           <Card className="border-vital/40">
-            <p className="font-display text-lg uppercase tracking-wide text-vital">Room to add a little</p>
+            <p className="font-display text-lg uppercase tracking-wide text-vital">{t('Room to add a little')}</p>
             <ul className="mt-2 space-y-2">
               {suggestions.map((s) => (
                 <li key={s.muscle} className="text-sm">
                   <span className="text-parchment font-medium">
                     {t(MUSCLE_LABEL[s.muscle])} — add up to {s.addSets} set{s.addSets === 1 ? '' : 's'}
                   </span>
-                  <span className="block text-xs text-ash mt-0.5 leading-snug">{s.reason}</span>
+                  <span className="block text-xs text-ash mt-0.5 leading-snug">{t(s.reasonTemplate, s.reasonVars)}</span>
                 </li>
               ))}
             </ul>
             <p className="text-xs text-smoke mt-2 leading-relaxed">
-              FORGED caps volume increases at {RULES.volume.weeklyAddCap} sets per muscle per week and will never
-              auto-escalate past {RULES.volume.autoCeiling}. More work is not automatically better — it has to be
-              recovered from before it counts for anything.
+              {t(
+                'FORGED caps volume increases at {cap} sets per muscle per week and will never auto-escalate past {ceiling}. More work is not automatically better — it has to be recovered from before it counts for anything.',
+                { cap: RULES.volume.weeklyAddCap, ceiling: RULES.volume.autoCeiling },
+              )}
             </p>
           </Card>
         )}
 
         <div>
-          <SectionHeading title="By muscle" hint="Tap a muscle to see the exact exercises that fed it." />
+          <SectionHeading title={t('By muscle')} hint={t('Tap a muscle to see the exact exercises that fed it.')} />
           <div className="space-y-2">
             {assessments
               .filter((a) => a.hardSets > 0 || a.plannedSets > 0)
@@ -179,19 +184,16 @@ export default function VolumeDashboard() {
             {assessments.every((a) => a.hardSets === 0 && a.plannedSets === 0) && (
               <Card>
                 <p className="text-sm text-ash text-center py-3">
-                  No completed sets in this week. Volume appears as soon as you finish a session.
+                  {t('No completed sets in this week. Volume appears as soon as you finish a session.')}
                 </p>
               </Card>
             )}
           </div>
         </div>
 
-        <Disclosure summary="Where these numbers come from" tone="quiet">
+        <Disclosure summary={t('Where these numbers come from')} tone="quiet">
           <p className="mb-2">
-            Each exercise declares a fractional contribution to each muscle in one central data file. A set of barbell
-            rows counts 1.0 toward the upper back and lats and 0.5 toward biceps and rear delts. Those fractions are
-            summed across every completed hard set in the week. Nothing is inferred or hidden — you can see and edit
-            them on any custom exercise.
+            {t('Each exercise declares a fractional contribution to each muscle in one central data file. A set of barbell rows counts 1.0 toward the upper back and lats and 0.5 toward biceps and rear delts. Those fractions are summed across every completed hard set in the week. Nothing is inferred or hidden — you can see and edit them on any custom exercise.')}
           </p>
           <CitationList ids={['schoenfeld-2017-volume', 'acsm-2011-quantity', 'refalo-2023-failure']} />
         </Disclosure>
@@ -225,7 +227,12 @@ function MuscleRow({
         target={assessment.range}
         ceiling={RULES.volume.autoCeiling}
         tone={tone}
-        sub={assessment.message}
+        sub={t(assessment.messageTemplate, {
+          ...assessment.messageVars,
+          ...(assessment.messageVars.experience
+            ? { experience: t(String(assessment.messageVars.experience)) }
+            : {}),
+        })}
         onClick={() => setOpen((v) => !v)}
       />
       <div className="flex flex-wrap gap-1.5 mt-2">
@@ -247,7 +254,7 @@ function MuscleRow({
               </li>
             ))
           ) : (
-            <li className="text-sm text-smoke">No completed sets contributed to this muscle in this week.</li>
+            <li className="text-sm text-smoke">{t('No completed sets contributed to this muscle in this week.')}</li>
           )}
         </ul>
       )}

@@ -15,9 +15,11 @@ import {
 import { collectionProgress } from '@/engine/packs'
 import { useStore } from '@/state/store'
 import type { CosmeticItem, Rarity, Slot } from '@/types'
+import { useT } from '@/i18n/useT'
 
 /** Everything you own, everything you don't, and what each item looks like. */
 export default function Inventory() {
+  const { t } = useT()
   const store = useStore()
   const { data } = store
   const [slot, setSlot] = useState<Slot | 'all'>('all')
@@ -51,10 +53,10 @@ export default function Inventory() {
   const secretsLeft = collection.byRarity.secret.total - collection.byRarity.secret.owned
 
   return (
-    <Screen title="Inventory" subtitle={`${collection.owned} of ${collection.total} collected`} back="/forge">
+    <Screen title={t('Inventory')} subtitle={`${collection.owned} of ${collection.total} collected`} back="/forge">
       <div className="space-y-4">
         <Card>
-          <ProgressBar value={collection.owned} max={collection.total} tone="gold" label="Collection" showValue />
+          <ProgressBar value={collection.owned} max={collection.total} tone="gold" label={t('Collection')} showValue />
           <ul className="grid grid-cols-4 gap-1.5 mt-3">
             {RARITY_ORDER.map((rarity) => (
               <li key={rarity} className="text-center">
@@ -118,8 +120,8 @@ export default function Inventory() {
                       <span className="text-[10px] uppercase tracking-wider" style={{ color: meta.color }}>
                         {meta.label}
                       </span>
-                      {owned?.new && <span className="text-[10px] text-ember-400">NEW</span>}
-                      {equipped && <span className="text-[10px] text-ember-400">EQUIPPED</span>}
+                      {owned?.new && <span className="text-[10px] text-ember-400">{t('NEW')}</span>}
+                      {equipped && <span className="text-[10px] text-ember-400">{t('EQUIPPED')}</span>}
                     </span>
                     {/* Not earned yet means not spoiled yet.
                         The grid used to show every unearned item at full
@@ -133,9 +135,9 @@ export default function Inventory() {
                     </span>
                     <span className="block text-sm leading-tight">
                       {owned ? (
-                        <span className="text-parchment">{item.name}</span>
+                        <span className="text-parchment">{t(item.name)}</span>
                       ) : (
-                        <span className="text-smoke">Not earned yet</span>
+                        <span className="text-smoke">{t('Not earned yet')}</span>
                       )}
                     </span>
                     <span className="block text-[11px] text-smoke">{SLOT_LABEL[item.slot]}</span>
@@ -162,8 +164,8 @@ export default function Inventory() {
                       {SECRET_PLACEHOLDER}
                     </span>
                   </span>
-                  <span className="block text-sm text-ash leading-tight">Unrecorded</span>
-                  <span className="block text-[11px] text-smoke">Not in any catalogue</span>
+                  <span className="block text-sm text-ash leading-tight">{t('Unrecorded')}</span>
+                  <span className="block text-[11px] text-smoke">{t('Not in any catalogue')}</span>
                 </button>
               </li>
             )}
@@ -171,8 +173,8 @@ export default function Inventory() {
         ) : (
           <EmptyState
             icon="◇"
-            title="Nothing here yet"
-            body="Open a pack in the Forge, or complete quests to earn one."
+            title={t('Nothing here yet')}
+            body={t('Open a pack in the Forge, or complete quests to earn one.')}
           />
         )}
       </div>
@@ -181,14 +183,13 @@ export default function Inventory() {
         <div className="space-y-4 text-center">
           <p aria-hidden className="font-display text-6xl text-slate leading-none">{SECRET_PLACEHOLDER}</p>
           <p className="text-sm text-ash leading-relaxed">
-            Something is in the tables that is not in this list. It has no entry, no odds shown against it,
-            and no name until it is yours — the only way to find out what it is, is to pull one.
+            {t('Something is in the tables that is not in this list. It has no entry, no odds shown against it, and no name until it is yours — the only way to find out what it is, is to pull one.')}
           </p>
           <p className="text-xs text-smoke leading-relaxed">
-            The deeper the pack, the better the chance. Nothing you can do makes it more likely than that.
+            {t('The deeper the pack, the better the chance. Nothing you can do makes it more likely than that.')}
           </p>
           <Button full onClick={() => setSecretSheet(false)}>
-            Close
+            {t('Close')}
           </Button>
         </div>
       </Sheet>
@@ -212,8 +213,7 @@ export default function Inventory() {
                 <p className="text-sm text-ash italic leading-relaxed">{preview.lore}</p>
               ) : (
                 <p className="text-sm text-smoke leading-relaxed">
-                  You have not pulled this one. Its name and what it looks like are the reward
-                  for finding it, so they stay behind the pack.
+                  {t('You have not pulled this one. Its name and what it looks like are the reward for finding it, so they stay behind the pack.')}
                 </p>
               )}
             </div>
