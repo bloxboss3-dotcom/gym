@@ -97,24 +97,29 @@ export default function RunLogger() {
   }
 
   return (
-    <Screen title={t('Running')} subtitle={`${formatDistance(thisWeek.distanceKm, units)} this week`} back="/train">
+    <Screen title={t('Running')} subtitle={t('{distance} this week', { distance: formatDistance(thisWeek.distanceKm, units) })} back="/train">
       <div className="space-y-4">
         <Card raised>
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-wider text-ember-400">{t('This week')}</p>
-              <p className="font-display text-2xl uppercase leading-tight mt-0.5">{recommendation.headline}</p>
+              <p className="font-display text-2xl uppercase leading-tight mt-0.5">{t(recommendation.headlineTemplate, recommendation.headlineVars)}</p>
             </div>
             <ConfidenceChip confidence={recommendation.confidence} />
           </div>
-          <p className="text-sm text-ash mt-2 leading-relaxed">{recommendation.reason}</p>
+          <p className="text-sm text-ash mt-2 leading-relaxed">{t(recommendation.reasonTemplate, {
+              ...recommendation.reasonVars,
+              ...(recommendation.reasonVars.experience
+                ? { experience: t(String(recommendation.reasonVars.experience)) }
+                : {}),
+            })}</p>
           {recommendation.warning && (
             <Alert tone="danger" className="mt-3" title={t('Safety')}>
               {recommendation.warning}
             </Alert>
           )}
           {recommendation.schedulingNote && (
-            <p className="text-xs text-cool mt-2 leading-relaxed">{recommendation.schedulingNote}</p>
+            <p className="text-xs text-cool mt-2 leading-relaxed">{t(recommendation.schedulingNoteTemplate ?? '', recommendation.schedulingNoteVars)}</p>
           )}
 
           <ul className="mt-3 space-y-1.5">
@@ -132,7 +137,7 @@ export default function RunLogger() {
                         : ''}
                   </span>
                 </div>
-                <p className="text-xs text-ash mt-1.5 leading-snug">{session.description}</p>
+                <p className="text-xs text-ash mt-1.5 leading-snug">{t(session.descriptionTemplate, session.descriptionVars)}</p>
               </li>
             ))}
           </ul>
@@ -172,7 +177,7 @@ export default function RunLogger() {
 
         {benchmark && (
           <Alert tone={benchmark.improved ? 'good' : 'info'} title={t('Benchmark')}>
-            {benchmark.detail}
+            {t(benchmark.detailTemplate, benchmark.detailVars)}
           </Alert>
         )}
 

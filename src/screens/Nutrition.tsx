@@ -202,13 +202,13 @@ export default function Nutrition() {
                       key={entry.id}
                       className="flex items-center gap-2 px-3.5 py-2 border-b border-slate/40 last:border-0"
                     >
-                      <span className="flex-1 min-w-0 text-sm text-parchment truncate">{entry.label}</span>
+                      <span className="flex-1 min-w-0 text-sm text-parchment truncate">{t(entry.label)}</span>
                       <span className="text-xs text-ash tabular shrink-0">
                         {fullMode && entry.kcal != null && <>{entry.kcal} kcal · </>}
                         {Math.round(entry.grams)} g P
                       </span>
                       <IconButton
-                        label={`Remove ${entry.label}`}
+                        label={t('Remove {item}', { item: t(entry.label) })}
                         onClick={() => store.deleteProtein(entry.id)}
                         className="shrink-0"
                       >
@@ -331,8 +331,20 @@ export default function Nutrition() {
           />
           <p className="text-xs text-ash mt-2 leading-relaxed">
             {proteinWeek.daysTracked === 0
-              ? 'Nothing logged this week yet.'
-              : `Averaging ${proteinWeek.averageG} g of protein${fullMode && kcalWeek.averageKcal ? ` and ${kcalWeek.averageKcal} kcal` : ''} on the ${proteinWeek.daysTracked} days you tracked. Days with nothing logged count as unknown, not as failures.`}
+              ? t('Nothing logged this week yet.')
+              : fullMode && kcalWeek.averageKcal
+                ? t(
+                    'Averaging {protein} g of protein and {kcal} kcal on the {days} days you tracked. Days with nothing logged count as unknown, not as failures.',
+                    {
+                      protein: proteinWeek.averageG,
+                      kcal: kcalWeek.averageKcal,
+                      days: proteinWeek.daysTracked,
+                    },
+                  )
+                : t(
+                    'Averaging {protein} g of protein on the {days} days you tracked. Days with nothing logged count as unknown, not as failures.',
+                    { protein: proteinWeek.averageG, days: proteinWeek.daysTracked },
+                  )}
           </p>
         </Card>
 
@@ -348,12 +360,23 @@ export default function Nutrition() {
                     ? { direction: t(String(energy.reasonVars.direction)) }
                     : {}),
                 })}</p>}
-          <p className="text-sm text-ash leading-relaxed mt-2">{plan.proteinRationale}</p>
+          <p className="text-sm text-ash leading-relaxed mt-2">{t(plan.proteinRationaleTemplate, {
+              ...plan.proteinRationaleVars,
+              ...(plan.proteinRationaleVars.weightKind
+                ? { weightKind: t(String(plan.proteinRationaleVars.weightKind)) }
+                : {}),
+            })}</p>
           {fullMode && energy.deltaKcal !== 0 && (
             <p className="text-xs text-smoke mt-2 leading-relaxed">
-              At this intake the arithmetic implies roughly {Math.abs(energy.projectedWeeklyKg)} kg
-              {energy.projectedWeeklyKg < 0 ? ' lost' : ' gained'} per week. Real bodies do not follow the
-              arithmetic exactly — check it against your own weight trend after two or three weeks and adjust.
+              {energy.projectedWeeklyKg < 0
+                ? t(
+                    'At this intake the arithmetic implies roughly {kg} kg lost per week. Real bodies do not follow the arithmetic exactly — check it against your own weight trend after two or three weeks and adjust.',
+                    { kg: Math.abs(energy.projectedWeeklyKg) },
+                  )
+                : t(
+                    'At this intake the arithmetic implies roughly {kg} kg gained per week. Real bodies do not follow the arithmetic exactly — check it against your own weight trend after two or three weeks and adjust.',
+                    { kg: Math.abs(energy.projectedWeeklyKg) },
+                  )}
             </p>
           )}
           {energy.warning && (
@@ -801,7 +824,7 @@ function AddFoodSheet({
                       }
                       className="w-full touch-target flex items-center gap-2 rounded-xl border border-slate bg-coal px-3.5 py-2.5 text-left"
                     >
-                      <span className="flex-1 min-w-0 text-sm text-parchment truncate">{entry.label}</span>
+                      <span className="flex-1 min-w-0 text-sm text-parchment truncate">{t(entry.label)}</span>
                       <span className="text-xs text-ash tabular shrink-0">
                         {fullMode && entry.kcal != null ? `${entry.kcal} kcal` : `${Math.round(entry.grams)} g`}
                       </span>

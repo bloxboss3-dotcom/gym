@@ -78,19 +78,19 @@ export default function Quests() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium text-parchment truncate">{achievement.def.title}</p>
+                        <p className="font-medium text-parchment truncate">{t(achievement.def.title)}</p>
                         {achievement.unlocked ? (
                           <Chip tone="gold">{t('Unlocked')}</Chip>
                         ) : (
                           <Chip tone="neutral">{Math.round(achievement.progress * 100)}%</Chip>
                         )}
                       </div>
-                      <p className="text-xs text-ash mt-0.5 leading-snug">{achievement.def.description}</p>
+                      <p className="text-xs text-ash mt-0.5 leading-snug">{t(achievement.def.description)}</p>
                       {!achievement.unlocked && (
                         <ProgressBar value={achievement.progress} max={1} className="mt-2" tone="gold" />
                       )}
                       <p className="text-[11px] text-smoke mt-1">
-                        {achievement.detail}
+                        {t(achievement.detailTemplate, achievement.detailVars)}
                         {achievement.unlockedAt ? ` · ${formatDateLabel(new Date(achievement.unlockedAt).toISOString().slice(0, 10))}` : ''}
                       </p>
                     </div>
@@ -116,8 +116,10 @@ export default function Quests() {
               ))}
           </ul>
           <p className="text-xs text-smoke mt-2 leading-relaxed">
-            Capped at {ECONOMY.limits.dailyXpCap} XP and {ECONOMY.limits.dailyCoinCap} coins per day, with each reward
-            payable once per source. That is why splitting one workout into six will not earn six payouts.
+            {t('Capped at {xp} XP and {coins} coins per day, with each reward payable once per source. That is why splitting one workout into six will not earn six payouts.', {
+              xp: ECONOMY.limits.dailyXpCap,
+              coins: ECONOMY.limits.dailyCoinCap,
+            })}
           </p>
         </Card>
       </div>
@@ -138,8 +140,8 @@ function QuestRow({
       <Card className={cx(quest.complete && !quest.claimed && 'border-gold-500/50')}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="font-medium text-parchment">{quest.def.title}</p>
-            <p className="text-xs text-ash mt-0.5 leading-snug">{quest.def.description}</p>
+            <p className="font-medium text-parchment">{t(quest.def.title)}</p>
+            <p className="text-xs text-ash mt-0.5 leading-snug">{t(quest.def.description)}</p>
             <div className="flex flex-wrap gap-1.5 mt-1.5">
               <Chip tone="ember">+{quest.def.xp} XP</Chip>
               <Chip tone="gold">+{quest.def.coins} ◈</Chip>

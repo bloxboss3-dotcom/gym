@@ -88,9 +88,9 @@ export default function VolumeDashboard() {
           value={String(weekOffset)}
           onChange={(v) => setWeekOffset(Number(v))}
           options={[
-            { value: '0', label: 'This week' },
-            { value: '1', label: 'Last week' },
-            { value: '2', label: '2 weeks ago' },
+            { value: '0', label: t('This week') },
+            { value: '1', label: t('Last week') },
+            { value: '2', label: t('2 weeks ago') },
           ]}
         />
 
@@ -101,11 +101,15 @@ export default function VolumeDashboard() {
         </div>
 
         <Alert tone="info" title={t('How to read this')}>
-          A “hard set” is a working set taken close enough to failure to matter (RIR ≤{' '}
-          {RULES.volume.hardSetRirCutoff}). The shaded band is the starting range for a {profile.experience} lifter (
-          {RULES.volume.startingRange[profile.experience].min}–{RULES.volume.startingRange[profile.experience].max}{' '}
-          sets). Around 10 sets per muscle per week is a common reference point in the research — an average, not a
-          personal requirement, and not something to escalate past just because you can.
+          {t(
+            'A “hard set” is a working set taken close enough to failure to matter (RIR ≤ {rir}). The shaded band is the starting range for a {experience} lifter ({min}–{max} sets). Around 10 sets per muscle per week is a common reference point in the research — an average, not a personal requirement, and not something to escalate past just because you can.',
+            {
+              rir: RULES.volume.hardSetRirCutoff,
+              experience: t(profile.experience),
+              min: RULES.volume.startingRange[profile.experience].min,
+              max: RULES.volume.startingRange[profile.experience].max,
+            },
+          )}
         </Alert>
 
         <Card>
@@ -135,15 +139,15 @@ export default function VolumeDashboard() {
                     {lever.status === 'good' ? 'On track' : lever.status === 'attention' ? 'Worth a look' : 'No data yet'}
                   </Chip>
                 </div>
-                {lever.finding && <p className="text-xs text-ash mt-1 leading-relaxed">{t(lever.finding)}</p>}
-                <p className="text-xs text-smoke mt-1 leading-relaxed">{t(lever.advice)}</p>
+                {lever.finding && <p className="text-xs text-ash mt-1 leading-relaxed">{t(lever.findingTemplate, lever.findingVars)}</p>}
+                <p className="text-xs text-smoke mt-1 leading-relaxed">{t(lever.adviceTemplate, lever.adviceVars)}</p>
                 <div className="mt-1.5">
                   <CitationList ids={lever.citationIds} />
                 </div>
               </li>
             ))}
           </ul>
-          <p className="text-xs text-smoke mt-3 leading-relaxed">{LOAD_RANGE_NOTE}</p>
+          <p className="text-xs text-smoke mt-3 leading-relaxed">{t(LOAD_RANGE_NOTE)}</p>
         </Card>
 
         {suggestions.length > 0 && (
@@ -155,14 +159,15 @@ export default function VolumeDashboard() {
                   <span className="text-parchment font-medium">
                     {t(MUSCLE_LABEL[s.muscle])} — add up to {s.addSets} set{s.addSets === 1 ? '' : 's'}
                   </span>
-                  <span className="block text-xs text-ash mt-0.5 leading-snug">{s.reason}</span>
+                  <span className="block text-xs text-ash mt-0.5 leading-snug">{t(s.reasonTemplate, s.reasonVars)}</span>
                 </li>
               ))}
             </ul>
             <p className="text-xs text-smoke mt-2 leading-relaxed">
-              FORGED caps volume increases at {RULES.volume.weeklyAddCap} sets per muscle per week and will never
-              auto-escalate past {RULES.volume.autoCeiling}. More work is not automatically better — it has to be
-              recovered from before it counts for anything.
+              {t(
+                'FORGED caps volume increases at {cap} sets per muscle per week and will never auto-escalate past {ceiling}. More work is not automatically better — it has to be recovered from before it counts for anything.',
+                { cap: RULES.volume.weeklyAddCap, ceiling: RULES.volume.autoCeiling },
+              )}
             </p>
           </Card>
         )}
@@ -222,7 +227,12 @@ function MuscleRow({
         target={assessment.range}
         ceiling={RULES.volume.autoCeiling}
         tone={tone}
-        sub={assessment.message}
+        sub={t(assessment.messageTemplate, {
+          ...assessment.messageVars,
+          ...(assessment.messageVars.experience
+            ? { experience: t(String(assessment.messageVars.experience)) }
+            : {}),
+        })}
         onClick={() => setOpen((v) => !v)}
       />
       <div className="flex flex-wrap gap-1.5 mt-2">

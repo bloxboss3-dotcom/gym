@@ -25,6 +25,8 @@ export interface DeloadSignal {
   label: string
   triggered: boolean
   detail: string
+  detailTemplate: string
+  detailVars: Record<string, string | number>
 }
 
 export interface DeloadAssessment {
@@ -148,6 +150,11 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
         decline.tracked < 3
           ? 'Not enough repeated exercises in the last 10 days to judge.'
           : `${decline.declining} of ${decline.tracked} tracked lifts went backwards.`,
+      detailTemplate:
+        decline.tracked < 3
+          ? 'Not enough repeated exercises in the last 10 days to judge.'
+          : '{declining} of {tracked} tracked lifts went backwards.',
+      detailVars: { declining: decline.declining, tracked: decline.tracked },
     },
     {
       key: 'soreness',
@@ -157,6 +164,11 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
         soreness === null
           ? 'No check-ins logged recently.'
           : `Average soreness ${soreness}/5 (flag at ${RULES.deload.sorenessThreshold}).`,
+      detailTemplate:
+        soreness === null
+          ? 'No check-ins logged recently.'
+          : 'Average soreness {value}/5 (flag at {threshold}).',
+      detailVars: { value: soreness ?? 0, threshold: RULES.deload.sorenessThreshold },
     },
     {
       key: 'readiness',
@@ -166,6 +178,11 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
         readiness === null
           ? 'No check-ins logged recently.'
           : `Average readiness ${readiness}/5 (flag at ${RULES.deload.readinessThreshold}).`,
+      detailTemplate:
+        readiness === null
+          ? 'No check-ins logged recently.'
+          : 'Average readiness {value}/5 (flag at {threshold}).',
+      detailVars: { value: readiness ?? 0, threshold: RULES.deload.readinessThreshold },
     },
     {
       key: 'joint_pain',
@@ -175,18 +192,33 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
         jointPain === null
           ? 'No check-ins logged recently.'
           : `Average joint pain ${jointPain}/10 (flag at ${RULES.deload.jointPainThreshold}).`,
+      detailTemplate:
+        jointPain === null
+          ? 'No check-ins logged recently.'
+          : 'Average joint pain {value}/10 (flag at {threshold}).',
+      detailVars: { value: jointPain ?? 0, threshold: RULES.deload.jointPainThreshold },
     },
     {
       key: 'hard_sessions',
       label: 'Sessions harder than prescribed',
       triggered: hardSessions >= RULES.deload.hardSessionsThreshold,
       detail: `${hardSessions} session${hardSessions === 1 ? '' : 's'} in the last ${window} days ran well past the target effort.`,
+      detailTemplate:
+        hardSessions === 1
+          ? '1 session in the last {days} days ran well past the target effort.'
+          : '{sessions} sessions in the last {days} days ran well past the target effort.',
+      detailVars: { sessions: hardSessions, days: window },
     },
     {
       key: 'accumulated_weeks',
       label: 'Weeks of accumulated hard training',
       triggered: hardWeeks >= RULES.deload.weeksBeforeDeload,
       detail: `${hardWeeks} consecutive week${hardWeeks === 1 ? '' : 's'} of training without a planned back-off (flag at ${RULES.deload.weeksBeforeDeload}).`,
+      detailTemplate:
+        hardWeeks === 1
+          ? '1 consecutive week of training without a planned back-off (flag at {threshold}).'
+          : '{weeks} consecutive weeks of training without a planned back-off (flag at {threshold}).',
+      detailVars: { weeks: hardWeeks, threshold: RULES.deload.weeksBeforeDeload },
     },
   ]
 

@@ -4,6 +4,7 @@ import { DEFAULT_LANG, LANGUAGES, interpolate, isLang, translate, translateWith 
 import { assessMovement } from '@/engine/coaching'
 import { BLOCK_EXPLANATION } from '@/engine/intensity'
 import { EXERCISE_BY_ID } from '@/data/exercises'
+import { CITATIONS } from '@/data/citations'
 import { addDays } from '@/lib/date'
 import type { Session } from '@/types'
 
@@ -77,6 +78,7 @@ describe('the catalogue', () => {
       // Units-only sentences the schedule builds for a planned run.
       '{km} km',
       '{min} min',
+      '{km}/50 km',
       'iPhone / iPad:',
       'Android:',
       'src/config/rules.ts',
@@ -204,5 +206,27 @@ describe('the engine prose is genuinely reachable', () => {
       (english) => translate(english, 'es') === english,
     )
     expect(untranslated, `no Spanish for: ${untranslated.join(' | ')}`).toEqual([])
+  })
+})
+
+describe('the catalogue keys match the strings the code actually holds', () => {
+  /*
+    A key extracted from TypeScript source rather than from a running value
+    keeps its escapes: `FORGED\'s` in the file is `FORGED's` at runtime, and a
+    key carrying the backslash silently never matches. One citation shipped
+    that way, translated and still rendering English.
+  */
+  it('has no key containing a stray backslash escape', () => {
+    const suspicious = Object.keys(ES).filter((k) => k.includes('\\'))
+    expect(suspicious, `keys with an escape in them: ${suspicious.join(' | ')}`).toEqual([])
+  })
+
+  it('translates every citation takeaway and caveat the app can show', () => {
+    const missing: string[] = []
+    for (const c of CITATIONS) {
+      if (translate(c.takeaway, 'es') === c.takeaway) missing.push(c.id)
+      if (c.caveat && translate(c.caveat, 'es') === c.caveat) missing.push(`${c.id} (caveat)`)
+    }
+    expect(missing, `untranslated evidence: ${missing.join(', ')}`).toEqual([])
   })
 })

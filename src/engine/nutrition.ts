@@ -64,6 +64,8 @@ export interface NutritionPlan {
   /** Percent of energy from each macro, for the ring labels. */
   split: { protein: number; carbs: number; fat: number }
   proteinRationale: string
+  proteinRationaleTemplate: string
+  proteinRationaleVars: Record<string, string | number>
   citationIds: string[]
 }
 
@@ -370,6 +372,8 @@ export function calculateMacroTargets(
       fat: Math.round(((fatG * kcalPerG.fat) / total) * 100),
     },
     proteinRationale: protein.rationale,
+    proteinRationaleTemplate: protein.rationaleTemplate,
+    proteinRationaleVars: protein.rationaleVars,
     citationIds: [...new Set([...energy.citationIds, ...protein.citationIds])],
   }
 }

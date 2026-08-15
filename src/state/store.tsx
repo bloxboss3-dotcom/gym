@@ -52,6 +52,15 @@ export interface Toast {
   id: string
   title: string
   body?: string
+  /*
+    Numbers for the body, kept apart from it.
+
+    A toast stores text and is rendered later, so anything interpolated at
+    push time freezes the language it was pushed in: switch to Spanish and the
+    toast still reads English, because the finished sentence is no longer a
+    key anything can look up.
+  */
+  bodyVars?: Record<string, string | number>
   tone: 'reward' | 'info' | 'warn' | 'error'
   icon?: string
 }

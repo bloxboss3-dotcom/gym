@@ -66,4 +66,5 @@ export const NUTRITION: Dict = {
   'e.g. Post-gym': 'p. ej. Después del gimnasio',
   'Add items': 'Añadir elementos',
   'Save meal': 'Guardar comida',
+  'Remove {item}': 'Quitar {item}',
 }

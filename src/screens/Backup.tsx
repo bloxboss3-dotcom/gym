@@ -181,7 +181,11 @@ export default function Backup() {
             store.pushToast({
               tone: 'info',
               title: 'Backup restored',
-              body: `${result.summary?.sessions ?? 0} sessions and ${result.summary?.runs ?? 0} runs imported.`,
+              body: '{sessions} sessions and {runs} runs imported.',
+              bodyVars: {
+                sessions: result.summary?.sessions ?? 0,
+                runs: result.summary?.runs ?? 0,
+              },
             })
           }
           setConfirmImport(false)

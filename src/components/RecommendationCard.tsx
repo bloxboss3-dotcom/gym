@@ -54,9 +54,13 @@ export function CitationList({ ids }: { ids: readonly string[] }) {
             rel="noreferrer noopener"
             className="text-cool underline underline-offset-2 font-medium"
           >
-            {citation.authors} ({citation.year}) — {citation.title}
+            <span data-bibliographic>
+              {citation.authors} ({citation.year}) — {citation.title}
+            </span>
           </a>
-          <p className="text-smoke mt-0.5">{citation.source}</p>
+          <p className="text-smoke mt-0.5" data-bibliographic>
+            {citation.source}
+          </p>
           <p className="text-ash mt-1">{t(citation.takeaway)}</p>
           {citation.caveat && (
             <p className="text-caution/90 mt-1">

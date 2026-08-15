@@ -1187,13 +1187,37 @@ if (langOffered) {
     if (/[áéíóúñ¿¡]|\b(sesión|entrenamiento|series|repeticiones|descanso|peso|comida|progreso)\b/i.test(body)) {
       translatedScreens += 1
     }
-    const found = [...new Set((body.match(ENGLISH_LEAK) ?? []).map((w) => w.toLowerCase()))]
+    /*
+      Two things stay English on purpose and are excluded rather than counted.
+
+      A citation is bibliographic: the paper's title, its authors and the
+      journal are what was printed, and a translated title cites a document
+      that does not exist. The takeaway and caveat under each one — the part
+      written for the reader — ARE translated.
+
+      The <noscript> line is served in the HTML shell before any JavaScript
+      runs, so there is nothing available to translate it with.
+    */
+    const bibliography = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-bibliographic]')].map((el) => el.textContent?.trim() ?? ''),
+    )
+    const scanned = body
+      .split('\n')
+      .filter((line) => !bibliography.some((b) => b.includes(line.trim())))
+      .filter((line) => !/needs JavaScript/.test(line))
+      // Institution names inside otherwise-Spanish prose. "Academy of
+      // Nutrition and Dietetics" is what the body is called; translating it
+      // would be wrong, and the "and" in it is not a leak.
+      .map((line) =>
+        line
+          .replace(/Academy of Nutrition and Dietetics/g, '')
+          .replace(/International Society of Sports Nutrition/g, ''),
+      )
+      .join('\n')
+    const found = [...new Set((scanned.match(ENGLISH_LEAK) ?? []).map((w) => w.toLowerCase()))]
     if (found.length) {
       leaks.push(`${route}: ${found.slice(0, 6).join(' ')}`)
-      const lines = await page.evaluate(() =>
-        [...document.querySelectorAll('body *')]
-          .filter((el) => el.children.length === 0 && el.textContent.trim())
-          .map((el) => el.textContent.trim()))
+      const lines = scanned.split('\n')
       const re = /\b(the|and|your|with|from|that|this|what|when|how|every|nothing|which)\b/i
       console.log(`LEAK ${route}:`)
       for (const l of [...new Set(lines.filter((x) => re.test(x)))].slice(0, 8)) console.log('   · ' + l.slice(0, 120))
@@ -1201,24 +1225,22 @@ if (langOffered) {
     await noOverflow(`spanish ${route}`)
   }
   /*
-    A ratchet, not a pass mark.
+    No English on any screen in Spanish.
 
-    Every string the UI itself owns is translated. What still leaks is prose
-    the ENGINES build with numbers in it — "Build to 27.4 km this week" — which
-    cannot be a translation key until the engine hands over a template and its
-    values separately. Several engines do that now; the rest are listed in the
-    commit that added this.
+    This started as a budget because engine-built prose — "Build to 27.4 km
+    this week" — cannot be a translation key until the engine hands over a
+    template and its numbers separately. Every engine does that now, so the
+    budget is zero and stays there.
 
-    The budget is the number of screens still showing engine English. It must
-    never go up, and the target is zero. Asserting "no English anywhere" while
-    knowing some remains would be the kind of green tick this project keeps
-    getting burned by.
+    Two things are excluded above rather than counted, both deliberate: a
+    citation's title, authors and journal are bibliographic and are cited as
+    printed, and the <noscript> line is served before any JavaScript exists to
+    translate it. Institution names inside Spanish prose are stripped too.
   */
-  const LEAK_BUDGET = 11
   record(
-    `English left on at most ${LEAK_BUDGET} screens, and shrinking`,
-    leaks.length <= LEAK_BUDGET,
-    `${leaks.length}/${SCREENS.length} screens still show engine-built English`,
+    'no English is left on any screen in Spanish',
+    leaks.length === 0,
+    leaks.length ? leaks.slice(0, 4).join(' · ') : `${SCREENS.length} screens clean`,
   )
   record(
     'Spanish reaches every main screen',

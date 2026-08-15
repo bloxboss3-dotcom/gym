@@ -31,6 +31,8 @@ export interface ConsistencyResult {
   shieldsUsed: number
   days: DayRecord[]
   message: string
+  messageTemplate: string
+  messageVars: Record<string, string | number>
 }
 
 export interface ConsistencyInput {
@@ -145,6 +147,20 @@ export function computeConsistency(input: ConsistencyInput): ConsistencyResult {
     : expectedDays.length === 0
       ? 'No planned training days yet. Your consistency score starts building with your first scheduled session.'
       : `Every planned day in the last ${days.length} accounted for. This is the part that actually drives progress.`
+  const messageTemplate = missed.length
+    ? shieldsUsed >= missed.length
+      ? missed.length === 1
+        ? 'You missed 1 planned day — streak protection covered it. Nothing lost.'
+        : 'You missed {missed} planned days — streak protection covered them. Nothing lost.'
+      : '{missed} planned days missed in the last {days}. {shields} covered by streak protection. Consistency is a rolling average, so a good week pulls it straight back up.'
+    : expectedDays.length === 0
+      ? 'No planned training days yet. Your consistency score starts building with your first scheduled session.'
+      : 'Every planned day in the last {days} accounted for. This is the part that actually drives progress.'
+  const messageVars: Record<string, string | number> = {
+    missed: missed.length,
+    days: days.length,
+    shields: shieldsUsed,
+  }
 
   return {
     score: Number(score.toFixed(3)),
@@ -153,6 +169,8 @@ export function computeConsistency(input: ConsistencyInput): ConsistencyResult {
     streakDays: streak,
     bestStreakDays: Math.max(input.bestStreakDays ?? 0, streak),
     shieldsRemaining,
+    messageTemplate,
+    messageVars,
     shieldsUsed,
     days,
     message,

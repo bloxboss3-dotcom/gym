@@ -275,4 +275,54 @@ export const MISC: Dict = {
     'Volumen, esfuerzo, frecuencia y descanso, en ese orden de importancia.',
   'Tap a muscle to see the exact exercises that fed it.':
     'Toca un músculo para ver los ejercicios exactos que lo alimentaron.',
+
+  // --- Science lists and the running header --------------------------------
+  '{distance} this week': '{distance} esta semana',
+  'A formula fitted to group data, adjusted for your reported reps in reserve. It moves with fatigue, sleep, and how honest your RIR ratings are.':
+    'Una fórmula ajustada sobre datos de grupo, corregida por las repeticiones en reserva que declaras. Se mueve con la fatiga, el sueño y lo honestas que sean tus valoraciones de RIR.',
+  'Inferred from performance changes and your self-reports. There is no validated consumer test for accumulated fatigue.':
+    'Se infiere de los cambios de rendimiento y de lo que tú reportas. No existe un test de consumo validado para la fatiga acumulada.',
+  'Scaled from body weight using population averages. Individual requirements vary.':
+    'Escalado desde el peso corporal usando medias poblacionales. Las necesidades individuales varían.',
+  'Only as accurate as your RIR ratings, which are a learned skill — most people underestimate how far from failure they are early on.':
+    'Tan preciso como tus valoraciones de RIR, que son una habilidad que se aprende: al principio la mayoría subestima lo lejos del fallo que está.',
+  'Predicted from a formula using your weight, height, age and sex, plus a coarse activity multiplier. Even the best predictive equation lands within 10% of measured resting expenditure for only about four people in five, and food labels carry their own error. Your own weight trend over two or three weeks is a far better measurement than the prediction.':
+    'Se predice con una fórmula que usa tu peso, estatura, edad y sexo, más un multiplicador de actividad aproximado. Incluso la mejor ecuación predictiva acierta dentro de un 10 % del gasto en reposo medido solo en unas cuatro de cada cinco personas, y las etiquetas de los alimentos traen su propio error. Tu propia tendencia de peso a lo largo de dos o tres semanas es una medida mucho mejor que la predicción.',
+  'before starting if you have known cardiovascular, metabolic or kidney disease, or symptoms suggestive of them. Immediately for chest pain, fainting or unusual breathlessness.':
+    'antes de empezar si tienes enfermedad cardiovascular, metabólica o renal conocida, o síntomas que la sugieran. De inmediato ante dolor en el pecho, desmayo o falta de aire poco habitual.',
+  'pain that persists beyond a session or two, recurs with a specific movement, or comes with numbness, tingling or weakness.':
+    'dolor que persiste más allá de una sesión o dos, que reaparece con un movimiento concreto o que viene con entumecimiento, hormigueo o debilidad.',
+  'managing a medical condition through diet, a history of disordered eating, pregnancy, or if you want an actual nutrition plan rather than a protein target.':
+    'manejar una condición médica con la dieta, antecedentes de trastornos alimentarios, embarazo, o si quieres un plan nutricional de verdad y no solo un objetivo de proteína.',
+  'to have your technique watched by a human. No app can see your bar path.':
+    'para que un humano mire tu técnica. Ninguna aplicación puede ver tu trayectoria de barra.',
+
+  // --- Science and reward economics ----------------------------------------
+  'Capped at {xp} XP and {coins} coins per day, with each reward payable once per source. That is why splitting one workout into six will not earn six payouts.':
+    'Con un tope de {xp} XP y {coins} monedas al día, y cada recompensa se paga una vez por fuente. Por eso partir un entrenamiento en seis no genera seis pagos.',
+  'Nothing in this app measures body composition. Not the estimated 1RM, not the volume dashboard, not your body weight trend. Muscle gain is slow, non-linear, and invisible to a phone. FORGED optimises the conditions under which muscle growth is likely — training stimulus, protein, recovery, consistency — and reports on those honestly. Any app that tells you it knows you gained 1.4 kg of muscle this month is guessing.':
+    'Nada en esta aplicación mide la composición corporal. Ni el 1RM estimado, ni el panel de volumen, ni tu tendencia de peso. La ganancia de músculo es lenta, no lineal e invisible para un teléfono. FORGED optimiza las condiciones bajo las que es probable que crezca el músculo —estímulo de entrenamiento, proteína, recuperación, constancia— e informa de ellas con honestidad. Cualquier aplicación que te diga que sabe que ganaste 1,4 kg de músculo este mes está adivinando.',
+  'FORGED targets {min}–{max} RIR on working sets. Sets stopped a couple of reps short appear to grow muscle about as well as sets taken to failure while costing considerably less fatigue — which matters when you have to come back and do it again in 48 hours.':
+    'FORGED apunta a {min}–{max} RIR en las series de trabajo. Las series paradas un par de repeticiones antes parecen hacer crecer el músculo casi igual que las llevadas al fallo, con bastante menos coste de fatiga, algo que importa cuando tienes que volver a hacerlo en 48 horas.',
+
+  // --- Volume notes, imports and demo data ---------------------------------
+  'Heavy and light loads grow muscle about equally as long as the set is taken close to failure — anywhere from roughly 6 to 30 reps. Pick the range you can load and recover from; do not chase a magic number.':
+    'Las cargas altas y las ligeras hacen crecer el músculo más o menos igual mientras la serie se lleve cerca del fallo, desde unas 6 hasta unas 30 repeticiones. Elige el rango que puedas cargar y recuperar; no persigas un número mágico.',
+  'FORGED caps volume increases at {cap} sets per muscle per week and will never auto-escalate past {ceiling}. More work is not automatically better — it has to be recovered from before it counts for anything.':
+    'FORGED limita los aumentos de volumen a {cap} series por músculo y semana, y nunca escalará solo más allá de {ceiling}. Más trabajo no es automáticamente mejor: hay que recuperarlo antes de que cuente para algo.',
+  '{sessions} sessions and {runs} runs imported.':
+    '{sessions} sesiones y {runs} carreras importadas.',
+  'Broad performance decline, elevated soreness and low readiness after a long build.':
+    'Caída general del rendimiento, agujetas elevadas y poca disposición tras un bloque largo.',
+  'Chicken, rice and veg': 'Pollo, arroz y verduras',
+  'Salmon and potatoes': 'Salmón y patatas',
+
+  // --- Science config note and week picker ---------------------------------
+  'Last week': 'La semana pasada',
+  '2 weeks ago': 'Hace 2 semanas',
+  'All the numbers the engine uses live in a single documented configuration file':
+    'Todos los números que usa el motor viven en un único archivo de configuración documentado',
+  'and a single reward economy file': 'y en un único archivo de economía de recompensas',
+  'Nothing is buried in the logic, and the unit tests assert behaviour against those values so a change to the config is a change to the app.':
+    'Nada está escondido en la lógica, y las pruebas unitarias comprueban el comportamiento contra esos valores, así que cambiar la configuración cambia la aplicación.',
 }

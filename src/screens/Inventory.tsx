@@ -135,7 +135,7 @@ export default function Inventory() {
                     </span>
                     <span className="block text-sm leading-tight">
                       {owned ? (
-                        <span className="text-parchment">{item.name}</span>
+                        <span className="text-parchment">{t(item.name)}</span>
                       ) : (
                         <span className="text-smoke">{t('Not earned yet')}</span>
                       )}

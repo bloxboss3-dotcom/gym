@@ -55,26 +55,24 @@ export default function Science() {
           <SectionHeading title={t('What FORGED can only estimate')} />
           <ul className="space-y-1.5 text-sm text-ash list-disc pl-4">
             <li>
-              <strong className="text-parchment">{t('Estimated 1RM.')}</strong> A formula fitted to group data, adjusted for
-              your reported reps in reserve. It moves with fatigue, sleep, and how honest your RIR ratings are.
+              <strong className="text-parchment">{t('Estimated 1RM.')}</strong>{' '}
+              {t('A formula fitted to group data, adjusted for your reported reps in reserve. It moves with fatigue, sleep, and how honest your RIR ratings are.')}
             </li>
             <li>
-              <strong className="text-parchment">{t('Fatigue.')}</strong> Inferred from performance changes and your
-              self-reports. There is no validated consumer test for accumulated fatigue.
+              <strong className="text-parchment">{t('Fatigue.')}</strong>{' '}
+              {t('Inferred from performance changes and your self-reports. There is no validated consumer test for accumulated fatigue.')}
             </li>
             <li>
-              <strong className="text-parchment">{t('Protein needs.')}</strong> Scaled from body weight using population
-              averages. Individual requirements vary.
+              <strong className="text-parchment">{t('Protein needs.')}</strong>{' '}
+              {t('Scaled from body weight using population averages. Individual requirements vary.')}
             </li>
             <li>
-              <strong className="text-parchment">{t('Effort.')}</strong> Only as accurate as your RIR ratings, which are a
-              learned skill — most people underestimate how far from failure they are early on.
+              <strong className="text-parchment">{t('Effort.')}</strong>{' '}
+              {t('Only as accurate as your RIR ratings, which are a learned skill — most people underestimate how far from failure they are early on.')}
             </li>
             <li>
-              <strong className="text-parchment">{t('Calorie needs.')}</strong> Predicted from a formula using your weight,
-              height, age and sex, plus a coarse activity multiplier. Even the best predictive equation lands within
-              10% of measured resting expenditure for only about four people in five, and food labels carry their own
-              error. Your own weight trend over two or three weeks is a far better measurement than the prediction.
+              <strong className="text-parchment">{t('Calorie needs.')}</strong>{' '}
+              {t('Predicted from a formula using your weight, height, age and sex, plus a coarse activity multiplier. Even the best predictive equation lands within 10% of measured resting expenditure for only about four people in five, and food labels carry their own error. Your own weight trend over two or three weeks is a far better measurement than the prediction.')}
             </li>
           </ul>
         </Card>
@@ -82,11 +80,10 @@ export default function Science() {
         <Card className="border-caution/40">
           <SectionHeading title={t('What FORGED cannot know')} />
           <p className="text-sm text-ash leading-relaxed">
-            <strong className="text-parchment">{t('How much muscle you gained.')}</strong> Nothing in this app measures body
-            composition. Not the estimated 1RM, not the volume dashboard, not your body weight trend. Muscle gain is
-            slow, non-linear, and invisible to a phone. FORGED optimises the conditions under which muscle growth is
-            likely — training stimulus, protein, recovery, consistency — and reports on those honestly. Any app that
-            tells you it knows you gained 1.4 kg of muscle this month is guessing.
+            <strong className="text-parchment">{t('How much muscle you gained.')}</strong>{' '}
+            {t(
+              'Nothing in this app measures body composition. Not the estimated 1RM, not the volume dashboard, not your body weight trend. Muscle gain is slow, non-linear, and invisible to a phone. FORGED optimises the conditions under which muscle growth is likely — training stimulus, protein, recovery, consistency — and reports on those honestly. Any app that tells you it knows you gained 1.4 kg of muscle this month is guessing.',
+            )}
           </p>
         </Card>
 
@@ -95,9 +92,10 @@ export default function Science() {
             {t('RIR is how many more reps you could have done with good form before failure. Finishing a set of 10 with 2 RIR means you believe you could have managed 12.')}
           </p>
           <p className="mb-2">
-            FORGED targets {RULES.progression.rirWindow.min}–{RULES.progression.rirWindow.max} RIR on working sets.
-            Sets stopped a couple of reps short appear to grow muscle about as well as sets taken to failure while
-            costing considerably less fatigue — which matters when you have to come back and do it again in 48 hours.
+            {t(
+              'FORGED targets {min}–{max} RIR on working sets. Sets stopped a couple of reps short appear to grow muscle about as well as sets taken to failure while costing considerably less fatigue — which matters when you have to come back and do it again in 48 hours.',
+              { min: RULES.progression.rirWindow.min, max: RULES.progression.rirWindow.max },
+            )}
           </p>
           <p>
             {t('Your estimates will be wrong at first, usually in the direction of thinking you are closer to failure than you are. That is fine. Log them anyway; the accuracy improves and every recommendation gets sharper.')}
@@ -112,11 +110,15 @@ export default function Science() {
             {t('Example: you press 3 × 8–12 and log 12, 12, 11 at about 2 RIR. FORGED keeps the load and asks for 12, 12, 12. Once you hit that, it adds a plate.')}
           </p>
           <p>
-            The rep drop after a load increase is the system working, not a regression. Upper-body jumps are kept
-            around {Math.round(RULES.progression.upperBodyStepPct.min * 100)}–
-            {Math.round(RULES.progression.upperBodyStepPct.max * 100)}%; lower body around{' '}
-            {Math.round(RULES.progression.lowerBodyStepPct.min * 100)}–
-            {Math.round(RULES.progression.lowerBodyStepPct.max * 100)}%, limited by what your gym actually stocks.
+            {t(
+              'The rep drop after a load increase is the system working, not a regression. Upper-body jumps are kept around {upperMin}–{upperMax}%; lower body around {lowerMin}–{lowerMax}%, limited by what your gym actually stocks.',
+              {
+                upperMin: Math.round(RULES.progression.upperBodyStepPct.min * 100),
+                upperMax: Math.round(RULES.progression.upperBodyStepPct.max * 100),
+                lowerMin: Math.round(RULES.progression.lowerBodyStepPct.min * 100),
+                lowerMax: Math.round(RULES.progression.lowerBodyStepPct.max * 100),
+              },
+            )}
           </p>
         </Disclosure>
 
@@ -228,22 +230,20 @@ export default function Science() {
         <Disclosure summary={t('When to see a professional')}>
           <ul className="list-disc pl-4 space-y-1.5">
             <li>
-              <strong className="text-parchment">{t('Physician:')}</strong> before starting if you have known cardiovascular,
-              metabolic or kidney disease, or symptoms suggestive of them. Immediately for chest pain, fainting or
-              unusual breathlessness.
+              <strong className="text-parchment">{t('Physician:')}</strong>{' '}
+              {t('before starting if you have known cardiovascular, metabolic or kidney disease, or symptoms suggestive of them. Immediately for chest pain, fainting or unusual breathlessness.')}
             </li>
             <li>
-              <strong className="text-parchment">{t('Physiotherapist:')}</strong> pain that persists beyond a session or two,
-              recurs with a specific movement, or comes with numbness, tingling or weakness.
+              <strong className="text-parchment">{t('Physiotherapist:')}</strong>{' '}
+              {t('pain that persists beyond a session or two, recurs with a specific movement, or comes with numbness, tingling or weakness.')}
             </li>
             <li>
-              <strong className="text-parchment">{t('Registered dietitian:')}</strong> managing a medical condition through
-              diet, a history of disordered eating, pregnancy, or if you want an actual nutrition plan rather than a
-              protein target.
+              <strong className="text-parchment">{t('Registered dietitian:')}</strong>{' '}
+              {t('managing a medical condition through diet, a history of disordered eating, pregnancy, or if you want an actual nutrition plan rather than a protein target.')}
             </li>
             <li>
-              <strong className="text-parchment">{t('Qualified coach:')}</strong> to have your technique watched by a human.
-              No app can see your bar path.
+              <strong className="text-parchment">{t('Qualified coach:')}</strong>{' '}
+              {t('to have your technique watched by a human. No app can see your bar path.')}
             </li>
           </ul>
         </Disclosure>
@@ -275,10 +275,11 @@ export default function Science() {
                     target="_blank"
                     rel="noreferrer noopener"
                     className="text-sm font-medium text-cool underline underline-offset-2"
+                    data-bibliographic
                   >
                     {citation.title}
                   </a>
-                  <p className="text-xs text-smoke mt-1">
+                  <p className="text-xs text-smoke mt-1" data-bibliographic>
                     {citation.authors} · {citation.source} · {citation.year}
                   </p>
                   <p className="text-sm text-ash mt-2 leading-relaxed">{t(citation.takeaway)}</p>
@@ -303,10 +304,11 @@ export default function Science() {
         <Card>
           <SectionHeading title={t('Every threshold, in one place')} />
           <p className="text-sm text-ash leading-relaxed">
-            All the numbers the engine uses live in a single documented configuration file
-            (<code className="text-ember-300">{t('src/config/rules.ts')}</code>) and a single reward economy file
-            (<code className="text-ember-300">{t('src/config/economy.ts')}</code>). Nothing is buried in the logic, and the
-            unit tests assert behaviour against those values so a change to the config is a change to the app.
+            {t('All the numbers the engine uses live in a single documented configuration file')}{' '}
+            (<code className="text-ember-300">{t('src/config/rules.ts')}</code>){' '}
+            {t('and a single reward economy file')}{' '}
+            (<code className="text-ember-300">{t('src/config/economy.ts')}</code>).{' '}
+            {t('Nothing is buried in the logic, and the unit tests assert behaviour against those values so a change to the config is a change to the app.')}
           </p>
         </Card>
       </div>

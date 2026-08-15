@@ -536,8 +536,21 @@ export default function Onboarding() {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-ash mt-2.5 leading-relaxed">{nutritionPreview.energy.reason}</p>
-              <p className="text-xs text-ash mt-1.5 leading-relaxed">{proteinPreview.rationale}</p>
+              <p className="text-xs text-ash mt-2.5 leading-relaxed">{t(nutritionPreview.energy.reasonTemplate, {
+                  ...nutritionPreview.energy.reasonVars,
+                  ...(nutritionPreview.energy.reasonVars.goal
+                    ? { goal: t(String(nutritionPreview.energy.reasonVars.goal)) }
+                    : {}),
+                  ...(nutritionPreview.energy.reasonVars.direction
+                    ? { direction: t(String(nutritionPreview.energy.reasonVars.direction)) }
+                    : {}),
+                })}</p>
+              <p className="text-xs text-ash mt-1.5 leading-relaxed">{t(proteinPreview.rationaleTemplate, {
+                ...proteinPreview.rationaleVars,
+                ...(proteinPreview.rationaleVars.weightKind
+                  ? { weightKind: t(String(proteinPreview.rationaleVars.weightKind)) }
+                  : {}),
+              })}</p>
               <p className="text-[11px] text-smoke mt-2 leading-relaxed">
                 {t('Calorie targets are estimates from a prediction equation, not measurements of your metabolism. Treat this as a starting point and adjust it from your own weight trend after a few weeks.')}
               </p>
@@ -659,7 +672,15 @@ export default function Onboarding() {
           <StepCard title={t('Your starter plan')} blurb={t('Generated from everything you just told FORGED. You can edit or rebuild it at any time.')}>
             <Card raised>
               <p className="font-display text-xl uppercase tracking-wide">{programPreview.name}</p>
-              <p className="text-xs text-ash mt-1 leading-relaxed">{programPreview.description}</p>
+              <p className="text-xs text-ash mt-1 leading-relaxed">{t(programPreview.descriptionTemplate ?? programPreview.description, {
+                  ...programPreview.descriptionVars,
+                  ...(programPreview.descriptionVars?.goal
+                    ? { goal: t(String(programPreview.descriptionVars.goal)) }
+                    : {}),
+                  ...(programPreview.descriptionVars?.experience
+                    ? { experience: t(String(programPreview.descriptionVars.experience)) }
+                    : {}),
+                })}</p>
               <ul className="mt-3 space-y-2">
                 {programPreview.days.map((day) => (
                   <li key={day.id} className="rounded-lg border border-slate/70 p-2.5">

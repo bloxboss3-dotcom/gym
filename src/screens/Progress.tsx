@@ -217,7 +217,7 @@ export default function Progress() {
                   )}
                 />
                 <span className={signal.triggered ? 'text-caution' : 'text-smoke'}>
-                  <span className="font-medium">{signal.label}</span> — {signal.detail}
+                  <span className="font-medium">{t(signal.label)}</span> — {t(signal.detailTemplate, signal.detailVars)}
                 </span>
               </li>
             ))}
@@ -292,7 +292,7 @@ export default function Progress() {
             <Chip tone="good">{t('Rest logged')}</Chip>
             <Chip tone="danger">{t('Missed')}</Chip>
           </div>
-          <p className="text-xs text-ash mt-2 leading-relaxed">{consistency.message}</p>
+          <p className="text-xs text-ash mt-2 leading-relaxed">{t(consistency.messageTemplate, consistency.messageVars)}</p>
         </Card>
 
         {/* Volume ----------------------------------------------------------- */}
@@ -609,7 +609,7 @@ export default function Progress() {
                   <li key={d.id} className="text-sm flex items-start justify-between gap-2">
                     <span className="min-w-0">
                       <span className="block text-parchment">{formatDateLabel(d.startDate)}</span>
-                      <span className="block text-xs text-smoke line-clamp-2">{d.reason}</span>
+                      <span className="block text-xs text-smoke line-clamp-2">{t(d.reason)}</span>
                     </span>
                     <Chip tone={d.status === 'completed' ? 'good' : d.status === 'declined' ? 'neutral' : 'ember'}>
                       {d.status}

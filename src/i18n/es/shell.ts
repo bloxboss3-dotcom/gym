@@ -27,4 +27,23 @@ export const SHELL: Dict = {
   'FORGED': 'FORGED',
   'Opening the forge': 'Abriendo la fragua',
   'Skip to content': 'Saltar al contenido',
+
+  // --- Toasts --------------------------------------------------------------
+  'Demo data loaded': 'Datos de demostración cargados',
+  'Six weeks of realistic training. Reset any time from Profile.':
+    'Seis semanas de entrenamiento realista. Reinícialo cuando quieras desde Perfil.',
+  'Backup restored': 'Copia restaurada',
+  'Rewards capped': 'Recompensas al tope',
+  'Plan rebuilt': 'Plan reconstruido',
+  'Generated from your current profile.': 'Generado a partir de tu perfil actual.',
+  'Session saved': 'Sesión guardada',
+  'Run saved': 'Carrera guardada',
+  'Deload started': 'Descarga iniciada',
+  'Lighter loads, fewer sets. This still counts as training.':
+    'Cargas más suaves, menos series. Esto sigue contando como entrenamiento.',
+  'Duplicates converted to coins.': 'Duplicados convertidos en monedas.',
+  'Not enough coins': 'No tienes monedas suficientes',
+  'Pack earned': 'Sobre conseguido',
+  'Waiting for you in the Forge.': 'Te espera en la Fragua.',
+  'Freestyle session': 'Sesión libre',
 }

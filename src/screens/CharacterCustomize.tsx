@@ -76,7 +76,7 @@ export default function CharacterCustomize() {
             ))}
           </div>
           <p className="text-center font-display text-2xl uppercase tracking-wide mt-1">{data.profile?.name}</p>
-          {equippedTitle && <p className="text-center text-sm text-gold-300">{equippedTitle.name}</p>}
+          {equippedTitle && <p className="text-center text-sm text-gold-300">{t(equippedTitle.name)}</p>}
 
           {/* The build bar. Deliberately not purchasable and deliberately
               explained: the figure is a record of training, so the only way to
@@ -96,8 +96,10 @@ export default function CharacterCustomize() {
             />
             <p className="text-[11px] text-smoke mt-1.5 leading-relaxed">
               {build >= 1
-                ? 'Fully built. Everything from here is gear.'
-                : 'Your warrior puts on muscle as you level, and levels come only from logged training. Nothing in the Forge can buy this.'}
+                ? t('Fully built. Everything from here is gear.')
+                : t(
+                    'Your warrior puts on muscle as you level, and levels come only from logged training. Nothing in the Forge can buy this.',
+                  )}
             </p>
           </div>
         </Card>
@@ -119,7 +121,7 @@ export default function CharacterCustomize() {
               >
                 <span className="block text-[10px] uppercase tracking-wider text-smoke">{SLOT_LABEL[key]}</span>
                 <span data-testid={`equipped-${key}`} className="block text-xs text-parchment whitespace-nowrap">
-                  {item?.name ?? 'Empty'}
+                  {item ? t(item.name) : t('Empty')}
                 </span>
               </button>
             )
@@ -163,7 +165,7 @@ export default function CharacterCustomize() {
                         <ItemPreview item={item} frame={figure} className="w-12 h-auto" />
                       </span>
                     )}
-                    <span className="block text-[11px] text-parchment leading-tight mt-1">{item.name}</span>
+                    <span className="block text-[11px] text-parchment leading-tight mt-1">{t(item.name)}</span>
                     <span className="block text-[9px] uppercase tracking-wider" style={{ color: meta.color }}>
                       {meta.label}
                     </span>

@@ -132,7 +132,7 @@ export const DATA: Dict = {
     'El peso corporal responde a un desequilibrio energético sostenido, pero la respuesta es dinámica: el gasto energético baja según se pierde peso, así que un déficit fijo de calorías no produce un ritmo de pérdida fijo ni lineal. Por eso FORGED llama estimación a su proyección semanal y espera que la contrastes con datos reales de peso.',
   'Losing weight at roughly 0.7% of body weight per week preserved lean mass and improved strength outcomes relative to a faster ~1.4%/week loss in trained athletes eating adequate protein and continuing to lift. This is the basis for the deficit cap in the FORGED rules file.':
     'Perder peso a un ritmo de en torno al 0,7 % del peso corporal por semana preservó la masa magra y mejoró los resultados de fuerza frente a una pérdida más rápida de ~1,4 %/semana en atletas entrenados que comían suficiente proteína y seguían levantando. Esta es la base del tope de déficit en el archivo de reglas de FORGED.',
-  'Hypertrophy scales with weekly hard-set volume in a graded fashion, with roughly 10+ weekly sets per muscle outperforming lower volumes on average. That average is where FORGED\\\'s ~10-set reference point comes from.':
+  'Hypertrophy scales with weekly hard-set volume in a graded fashion, with roughly 10+ weekly sets per muscle outperforming lower volumes on average. That average is where FORGED\'s ~10-set reference point comes from.':
     'La hipertrofia escala con el volumen semanal de series duras de forma gradual, y unas 10+ series semanales por músculo superan de media a volúmenes menores. De esa media sale el punto de referencia de ~10 series de FORGED.',
   'Sets taken close to — but not necessarily to — momentary failure produce similar hypertrophy to sets taken to failure, while costing less fatigue. Stopping with roughly 1–3 reps in reserve is a reasonable working target for most sets.':
     'Las series llevadas cerca del fallo momentáneo —pero no necesariamente hasta él— producen una hipertrofia similar a las llevadas al fallo, con menos coste de fatiga. Parar con unas 1–3 repeticiones en reserva es un objetivo razonable para la mayoría de series.',
@@ -215,4 +215,74 @@ export const DATA: Dict = {
   'FORGED is not a screening tool. If any of those symptoms appear, stop training and contact a clinician.':
     'FORGED no es una herramienta de cribado. Si aparece alguno de esos síntomas, deja de entrenar y acude a un profesional sanitario.',
   'Caveat:': 'Matiz:',
+
+  // --- Quests and achievements ---------------------------------------------
+  'Read the Forge': 'Lee la Fragua',
+  'Feed the Fire': 'Alimenta el fuego',
+  'Honest Steel': 'Acero honesto',
+  'Hold the Line': 'Mantén la línea',
+  'The Long Road': 'El camino largo',
+  'Provisioned': 'Aprovisionado',
+  'Bank the Heat': 'Guarda el calor',
+  'Never Cold': 'Nunca frío',
+  'First Heat': 'Primer fuego',
+  'Ten Sessions Deep': 'Diez sesiones dentro',
+  'Tempered': 'Templado',
+  'Unbroken Month': 'Mes sin romper',
+  'Boots On': 'Botas puestas',
+  'Fifty Kilometres': 'Cincuenta kilómetros',
+  'Well Provisioned': 'Bien aprovisionado',
+  'Cooled Steel': 'Acero enfriado',
+  'New Ceiling': 'Nuevo techo',
+  'Faster Than Before': 'Más rápido que antes',
+  'Warband Rank': 'Rango de la hueste',
+  'Log today’s readiness check-in.': 'Registra tu control de hoy.',
+  'Reach your daily protein target.': 'Alcanza tu objetivo diario de proteína.',
+  'Log reps in reserve on at least 6 working sets today.':
+    'Registra las repeticiones en reserva en al menos 6 series de trabajo hoy.',
+  'Complete 3 planned training sessions this week.':
+    'Completa 3 sesiones de entrenamiento planificadas esta semana.',
+  'Complete 2 runs this week.': 'Completa 2 carreras esta semana.',
+  'Hit your protein target on 5 days this week.':
+    'Llega a tu objetivo de proteína en 5 días de esta semana.',
+  'Take your prescribed recovery day. Rest is training.':
+    'Tómate tu día de recuperación prescrito. Descansar es entrenar.',
+  'Be active — lift, run, or recover on purpose — on 5 days.':
+    'Muévete —pesas, carrera o recuperación a propósito— en 5 días.',
+  'Complete your first FORGED session.': 'Completa tu primera sesión de FORGED.',
+  'Complete 10 training sessions.': 'Completa 10 sesiones de entrenamiento.',
+  'Complete 30 training sessions.': 'Completa 30 sesiones de entrenamiento.',
+  'Keep a consistency score above 80% for four weeks.':
+    'Mantén una puntuación de constancia por encima del 80 % durante cuatro semanas.',
+  'Log your first run.': 'Registra tu primera carrera.',
+  'Accumulate 50 km of running.': 'Acumula 50 km de carrera.',
+  'Hit your protein target 5 days in one week.':
+    'Llega a tu objetivo de proteína 5 días en una semana.',
+  'Complete a deload week. Backing off on purpose is training.':
+    'Completa una semana de descarga. Bajar el pie a propósito es entrenar.',
+  'Set a personal record on any lift.': 'Consigue un récord personal en cualquier ejercicio.',
+  'Improve a running benchmark.': 'Mejora una marca de referencia en carrera.',
+  'Reach level 10.': 'Llega al nivel 10.',
+  'Log reps in reserve on 100 working sets.':
+    'Registra las repeticiones en reserva en 100 series de trabajo.',
+
+  // --- Titles and deload signal labels -------------------------------------
+  'the Recruit': 'el Recluta',
+  'the Steady': 'el Constante',
+  'the Unbroken': 'el Inquebrantable',
+  'Ironbound': 'Ferrado',
+  'Longstrider': 'Zancada Larga',
+  'Emberborn': 'Nacido de la Brasa',
+  'Warden of the Forge': 'Guardián de la Fragua',
+  'the Unyielding': 'el Indoblegable',
+  'Forgemaster': 'Maestro Forjador',
+  'Tidebound': 'Atado a la Marea',
+  'Rimewalker': 'Caminante de Escarcha',
+  'the Rōnin': 'el Rōnin',
+  'Nine-Tailed': 'Nueve Colas',
+  'the Nameless': 'el Sin Nombre',
+  'Empty': 'Vacío',
+  'Sessions harder than prescribed': 'Sesiones más duras de lo prescrito',
+  'Broad performance decline, elevated soreness and low readiness after a long build.':
+    'Caída general del rendimiento, agujetas elevadas y poca disposición tras un bloque largo.',
 }
