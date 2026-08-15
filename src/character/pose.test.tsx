@@ -183,47 +183,70 @@ describe('poses move the body, not just the picture', () => {
     expect(off, off.join('; ')).toEqual([])
   })
 
-  it('carries the gloves and the weapon with the arm holding them', () => {
+  it('carries each glove with the arm holding it', () => {
     /*
       The failure this guards against is the one that makes articulation look
-      broken rather than absent: an arm swings up and its glove stays behind
-      in mid-air. Gear is drawn outside the body, so the only thing keeping it
-      attached is that it is given the same transform as the forearm.
+      broken rather than absent: an arm swings and its glove stays behind in
+      mid-air. Gloves are drawn outside the body, so the only thing keeping
+      one attached is that it is given the same transform as its forearm.
 
-      Which side is which is checked too, by reading the clip rectangle each
-      group is cut by — the left half starts off-canvas at x = -200, the right
-      at the centre line. Swapping the two would hand the left glove to the
-      right arm, and every "does the gear move" assertion would still pass.
+      An earlier version drew BOTH gloves twice and clipped each copy to half
+      the canvas. The clip silently removed nothing, so every posed figure
+      carried two of everything — including a second sword through its own
+      head. Each hand is drawn once, by side, which cannot fail that way.
+    */
+    for (const pose of POSES) {
+      const doc = render(pose.id)
+      for (const side of ['left', 'right'] as const) {
+        const glove = doc.querySelector(`[data-part="glove-${side}"]`)
+        expect(glove, `${pose.id}: no ${side} glove`).toBeTruthy()
+        const carried = chainOf(glove as Element)
+        const arm = chainOf(forearm(doc, side))
+        expect(
+          carried.every((v, i) => Math.abs(v - arm[i]) < 1e-9),
+          `${pose.id}: the ${side} glove does not sit on the ${side} arm`,
+        ).toBe(true)
+      }
+      expect(
+        doc.querySelectorAll('[data-part^="glove-"]').length,
+        `${pose.id}: expected exactly two gloves`,
+      ).toBe(2)
+      expect(
+        doc.querySelectorAll('[data-part="weapon"]').length,
+        `${pose.id}: expected exactly one weapon`,
+      ).toBe(1)
+    }
+  })
+
+  it('does not swing the weapon by however far the shoulder moved', () => {
+    /*
+      The weapon is drawn in the hand's frame, so inheriting the arm's rotation
+      swings a sword through the shoulder's whole arc — which put the blade
+      through the figure's own head, and forced every arm angle to stay too
+      small to read as a stance. It takes its angle from the pose instead, and
+      only its position from the hand.
     */
     for (const pose of POSES) {
       if (pose.art === 'ready') continue
       const doc = render(pose.id)
-      const groups = [...doc.querySelectorAll('g[clip-path]')]
-      expect(groups.length, `${pose.id}: expected a left and a right gear group`).toBe(2)
-
-      for (const group of groups) {
-        const clipId = group.getAttribute('clip-path')!.replace(/^url\(#|\)$/g, '')
-        const rect = doc.getElementById(clipId)?.querySelector('rect')
-        expect(rect, `${pose.id}: clip ${clipId} has no rectangle`).toBeTruthy()
-        const side = Number(rect!.getAttribute('x')) < 0 ? 'left' : 'right'
-        const gear = chainOf(group.parentElement as Element)
-        const arm = chainOf(forearm(doc, side))
-        expect(
-          gear.every((v, i) => Math.abs(v - arm[i]) < 1e-9),
-          `${pose.id}: ${side} gear sits at [${gear.map((v) => v.toFixed(2))}] but its arm is at [${arm.map((v) => v.toFixed(2))}]`,
-        ).toBe(true)
-      }
+      const weapon = doc.querySelector('[data-part="weapon"]') as Element
+      const held = chainOf(weapon)
+      const arm = chainOf(forearm(doc, 'right'))
+      const same = held.every((v, i) => Math.abs(v - arm[i]) < 1e-9)
+      expect(same, `${pose.id}: the weapon inherited the arm's transform`).toBe(false)
     }
   })
 
-  it('leaves the unposed figure exactly as it was, with no clipping at all', () => {
+  it('draws the resting figure with nothing hung off it', () => {
     // `ready` is the default on a new account, so it is the drawing almost
     // everybody sees. It must not pay for the machinery the others need.
-    const markup = renderToStaticMarkup(
-      <Warrior equipped={LOADOUT} frame="masculine" build={0.5} still />,
-    )
-    expect(markup).not.toContain('clipPath')
-    expect(markup).not.toContain('clip-path')
+    // (Art variants carry rotations of their own — a sword is drawn at an
+    // angle — so this asks only that the POSE adds none.)
+    const doc = render('pose-ready')
+    expect(doc.querySelectorAll('clipPath')).toHaveLength(0)
+    for (const part of doc.querySelectorAll('[data-part]')) {
+      expect(part.getAttribute('transform'), part.getAttribute('data-part') ?? '').toBeNull()
+    }
   })
 
   it('turns the head with whatever is worn on it', () => {
@@ -270,7 +293,12 @@ describe('poses move the body, not just the picture', () => {
   })
 
   it('keeps every pose standing on the floor', () => {
-    // Whatever else moves, the feet do not leave the ground plane.
+    /*
+      Whatever else moves, the feet stay on the ground. Measured against the
+      ground plane rather than against where an unposed shin ends: a braced
+      stance legitimately settles the figure lower, and comparing the two
+      called that floating.
+    */
     for (const pose of POSES) {
       const doc = render(pose.id)
       const shin = [...doc.querySelectorAll('path')].find(
@@ -278,7 +306,8 @@ describe('poses move the body, not just the picture', () => {
       )
       expect(shin, `${pose.id}: no right shin`).toBeTruthy()
       const foot = at(chainOf(shin as Element), 115, 238)
-      expect(Math.abs(foot.y - 238), `${pose.id} floats: y ${foot.y.toFixed(1)}`).toBeLessThan(14)
+      expect(foot.y, `${pose.id} hovers: y ${foot.y.toFixed(1)}`).toBeGreaterThan(230)
+      expect(foot.y, `${pose.id} sinks: y ${foot.y.toFixed(1)}`).toBeLessThan(258)
     }
   })
 })

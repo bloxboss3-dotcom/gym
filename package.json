@@ -12,10 +12,11 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run typecheck && npm run lint && npm run test && npm run i18n && npm run build",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run i18n && npm run poses && npm run build",
     "i18n": "node scripts/i18n-coverage.mjs",
     "smoke": "node scripts/smoke-test.mjs",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "poses": "node scripts/pose-check.mjs"
   },
   "dependencies": {
     "react": "^19.1.1",
