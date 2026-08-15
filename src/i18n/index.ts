@@ -1,4 +1,5 @@
 import { ES } from '@/i18n/es'
+import { interpolate } from '@/lib/interpolate'
 
 /**
  * Translation.
@@ -55,13 +56,8 @@ export function translate(english: string, lang: Lang): string {
   return found && found.length > 0 ? found : english
 }
 
-/** Fill `{placeholders}` after translating. */
-export function interpolate(text: string, vars?: Record<string, string | number>): string {
-  if (!vars) return text
-  return text.replace(/\{(\w+)\}/g, (whole, key: string) =>
-    key in vars ? String(vars[key]) : whole,
-  )
-}
+/** Fill `{placeholders}` after translating. Re-exported; see the note there. */
+export { interpolate } from '@/lib/interpolate'
 
 export function translateWith(
   english: string,

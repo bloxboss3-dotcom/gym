@@ -37,6 +37,7 @@ import { formatDateLabel, lastNDays, toIsoDate } from '@/lib/date'
 import { newId } from '@/lib/id'
 import { useStore } from '@/state/store'
 import type { FoodItem, Meal, MealSlot, ProteinEntry } from '@/types'
+import { useT } from '@/i18n/useT'
 
 /**
  * Nutrition.
@@ -54,6 +55,7 @@ import type { FoodItem, Meal, MealSlot, ProteinEntry } from '@/types'
 type Tab = 'recent' | 'browse' | 'mine' | 'quick'
 
 export default function Nutrition() {
+  const { t } = useT()
   const store = useStore()
   const { data } = store
   const profile = data.profile!
@@ -93,14 +95,14 @@ export default function Nutrition() {
 
   return (
     <Screen
-      title="Food"
+      title={t('Food')}
       subtitle={
         fullMode
           ? `${Math.round(totals.kcal)} of ${targets.kcal} kcal today`
           : `${Math.round(totals.proteinG)} of ${targets.proteinG} g protein today`
       }
       action={
-        <IconButton label="Nutrition settings" onClick={() => setSettingsOpen(true)}>
+        <IconButton label={t('Nutrition settings')} onClick={() => setSettingsOpen(true)}>
           <span aria-hidden>⚙</span>
         </IconButton>
       }
@@ -130,7 +132,7 @@ export default function Nutrition() {
             </div>
           ) : (
             <div>
-              <p className="text-[11px] uppercase tracking-wider text-smoke">Protein left today</p>
+              <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Protein left today')}</p>
               <p className="font-display text-5xl text-ember-400 tabular leading-none mt-1">
                 {Math.max(0, Math.round(targets.proteinG - totals.proteinG))}
                 <span className="text-xl text-ash">g</span>
@@ -140,23 +142,22 @@ export default function Nutrition() {
 
           <div className={cx('grid gap-2.5 mt-4', fullMode ? 'grid-cols-3' : 'grid-cols-1')}>
             <MacroBar
-              label="Protein"
+              label={t('Protein')}
               value={totals.proteinG}
               target={targets.proteinG}
               tone="ember"
             />
             {fullMode && (
-              <MacroBar label="Carbs" value={totals.carbsG} target={targets.carbsG} tone="cool" />
+              <MacroBar label={t('Carbs')} value={totals.carbsG} target={targets.carbsG} tone="cool" />
             )}
             {fullMode && (
-              <MacroBar label="Fat" value={totals.fatG} target={targets.fatG} tone="gold" />
+              <MacroBar label={t('Fat')} value={totals.fatG} target={targets.fatG} tone="gold" />
             )}
           </div>
 
           {fullMode && totals.hasUnknownEnergy && (
             <p className="text-[11px] text-caution mt-2.5 leading-relaxed">
-              Something logged today has protein but no calories — usually a quick-add or an older custom food. The
-              calorie total below-counts until you fill it in.
+              {t('Something logged today has protein but no calories — usually a quick-add or an older custom food. The calorie total below-counts until you fill it in.')}
             </p>
           )}
         </Card>
@@ -168,7 +169,7 @@ export default function Nutrition() {
           size="lg"
           onClick={() => setAddFor(defaultMealSlot(new Date().getHours()))}
         >
-          Log food
+          {t('Log food')}
         </Button>
 
         {/* The day, by meal ---------------------------------------------- */}
@@ -222,7 +223,7 @@ export default function Nutrition() {
                   onClick={() => setAddFor(group.slot)}
                   className="w-full touch-target px-3.5 py-3 text-left text-sm text-smoke hover:text-ash"
                 >
-                  Nothing logged — tap to add
+                  {t('Nothing logged — tap to add')}
                 </button>
               )}
             </section>
@@ -232,15 +233,15 @@ export default function Nutrition() {
         {/* Reusable meals ------------------------------------------------ */}
         <div>
           <SectionHeading
-            title="Reusable meals"
-            hint="Build once, log with one tap"
+            title={t('Reusable meals')}
+            hint={t('Build once, log with one tap')}
             action={
               <button
                 type="button"
                 onClick={() => setMealOpen(true)}
                 className="text-sm text-ember-400 touch-target flex items-center"
               >
-                New meal
+                {t('New meal')}
               </button>
             }
           />
@@ -292,8 +293,7 @@ export default function Nutrition() {
           ) : (
             <Card>
               <p className="text-sm text-ash">
-                Build a meal once — “post-gym shake and chicken wrap” — and log the whole thing with one tap from
-                then on. It is the fastest way to log the food you actually eat every week.
+                {t('Build a meal once — “post-gym shake and chicken wrap” — and log the whole thing with one tap from then on. It is the fastest way to log the food you actually eat every week.')}
               </p>
             </Card>
           )}
@@ -302,7 +302,7 @@ export default function Nutrition() {
         {/* This week ------------------------------------------------------ */}
         <Card>
           <SectionHeading
-            title="This week"
+            title={t('This week')}
             hint={
               fullMode
                 ? `${kcalWeek.daysOnTarget} of 7 days within ${Math.round(RULES.energy.kcalAdherenceTolerance * 100)}% of target`
@@ -338,8 +338,16 @@ export default function Nutrition() {
 
         {/* How the targets were reached ---------------------------------- */}
         <Card>
-          <SectionHeading title="Why these targets" hint={`Confidence: ${energy.confidence}`} />
-          {fullMode && <p className="text-sm text-ash leading-relaxed">{energy.reason}</p>}
+          <SectionHeading title={t('Why these targets')} hint={`Confidence: ${energy.confidence}`} />
+          {fullMode && <p className="text-sm text-ash leading-relaxed">{t(energy.reasonTemplate, {
+                  ...energy.reasonVars,
+                  // Two of the values are words, not numbers, so they need
+                  // translating as well as slotting in.
+                  ...(energy.reasonVars.goal ? { goal: t(String(energy.reasonVars.goal)) } : {}),
+                  ...(energy.reasonVars.direction
+                    ? { direction: t(String(energy.reasonVars.direction)) }
+                    : {}),
+                })}</p>}
           <p className="text-sm text-ash leading-relaxed mt-2">{plan.proteinRationale}</p>
           {fullMode && energy.deltaKcal !== 0 && (
             <p className="text-xs text-smoke mt-2 leading-relaxed">
@@ -362,7 +370,7 @@ export default function Nutrition() {
               ))}
             </ul>
           )}
-          <Disclosure summary="Meal-by-meal protein split" tone="quiet">
+          <Disclosure summary={t('Meal-by-meal protein split')} tone="quiet">
             <ul className="space-y-1.5">
               {mealPlan.meals.map((m) => (
                 <li key={m.index} className="flex items-center justify-between gap-3">
@@ -377,7 +385,7 @@ export default function Nutrition() {
               quality protein per meal and stop optimising after that. Last meal around {data.settings.finalMealTime}.
             </p>
           </Disclosure>
-          <Disclosure summary="Where these numbers come from" tone="quiet">
+          <Disclosure summary={t('Where these numbers come from')} tone="quiet">
             <p className="mb-2">
               Protein: baseline {RULES.protein.baselineGPerKg} g/kg/day with a practical{' '}
               {RULES.protein.rangeGPerKg.min}–{RULES.protein.rangeGPerKg.max} g/kg/day range. Energy: Mifflin-St Jeor
@@ -388,7 +396,7 @@ export default function Nutrition() {
           </Disclosure>
         </Card>
 
-        <Disclosure summary="Budget-friendly protein" tone="quiet">
+        <Disclosure summary={t('Budget-friendly protein')} tone="quiet">
           <ul className="list-disc pl-4 space-y-1">
             {BUDGET_PICKS.map((pick) => (
               <li key={pick}>{pick}</li>
@@ -397,10 +405,7 @@ export default function Nutrition() {
         </Disclosure>
 
         <Alert tone="info">
-          These targets are estimates, not measurements. FORGED does not diagnose anything and is not a substitute
-          for a registered dietitian — especially if you have a medical condition or any history of disordered
-          eating. If counting calories is not good for you, switch to protein-only mode in the settings above and
-          the app will never show you a calorie number again.
+          {t('These targets are estimates, not measurements. FORGED does not diagnose anything and is not a substitute for a registered dietitian — especially if you have a medical condition or any history of disordered eating. If counting calories is not good for you, switch to protein-only mode in the settings above and the app will never show you a calorie number again.')}
         </Alert>
       </div>
 
@@ -418,7 +423,7 @@ export default function Nutrition() {
         }}
       />
 
-      <Sheet open={foodOpen} onClose={() => setFoodOpen(false)} title="Custom food">
+      <Sheet open={foodOpen} onClose={() => setFoodOpen(false)} title={t('Custom food')}>
         <CustomFoodForm
           fullMode={fullMode}
           onSave={(food) => {
@@ -428,7 +433,7 @@ export default function Nutrition() {
         />
       </Sheet>
 
-      <Sheet open={mealOpen} onClose={() => setMealOpen(false)} title="Build a meal">
+      <Sheet open={mealOpen} onClose={() => setMealOpen(false)} title={t('Build a meal')}>
         <MealForm
           foods={data.foods}
           onSave={(meal) => {
@@ -438,14 +443,14 @@ export default function Nutrition() {
         />
       </Sheet>
 
-      <Sheet open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Nutrition settings">
+      <Sheet open={settingsOpen} onClose={() => setSettingsOpen(false)} title={t('Nutrition settings')}>
         <div className="space-y-4">
           <Field
-            label="What to track"
-            hint="Protein only hides every calorie and carb/fat number in the app."
+            label={t('What to track')}
+            hint={t('Protein only hides every calorie and carb/fat number in the app.')}
           >
             <SegmentedControl
-              label="Nutrition mode"
+              label={t('Nutrition mode')}
               value={fullMode ? 'full' : 'protein'}
               onChange={(v) => store.updateSettings({ nutritionMode: v })}
               options={[
@@ -454,16 +459,16 @@ export default function Nutrition() {
               ]}
             />
           </Field>
-          <Field label="Meals per day" hint="Only used for the suggested split — it does not change your target.">
+          <Field label={t('Meals per day')} hint={t('Only used for the suggested split — it does not change your target.')}>
             <NumberStepper
-              label="Meals per day"
+              label={t('Meals per day')}
               value={data.settings.mealsPerDay}
               min={1}
               max={8}
               onChange={(v) => store.updateSettings({ mealsPerDay: v })}
             />
           </Field>
-          <Field label="Preferred final meal time" htmlFor="final-meal">
+          <Field label={t('Preferred final meal time')} htmlFor="final-meal">
             <input
               id="final-meal"
               type="time"
@@ -472,10 +477,10 @@ export default function Nutrition() {
               className="w-full h-12 rounded-xl bg-coal border border-slate px-3.5 text-parchment"
             />
           </Field>
-          <Field label="Foods to avoid" hint="Comma separated. Matching foods are hidden from the list.">
+          <Field label={t('Foods to avoid')} hint={t('Comma separated. Matching foods are hidden from the list.')}>
             <TextInput
               value={data.settings.avoidFoods.join(', ')}
-              placeholder="e.g. whey, shellfish"
+              placeholder={t('e.g. whey, shellfish')}
               onChange={(e) =>
                 store.updateSettings({
                   avoidFoods: e.target.value
@@ -486,7 +491,7 @@ export default function Nutrition() {
               }
             />
           </Field>
-          <Field label="Protein target override (g/day)" hint="Leave blank to use the calculated target.">
+          <Field label={t('Protein target override (g/day)')} hint={t('Leave blank to use the calculated target.')}>
             <TextInput
               type="number"
               inputMode="numeric"
@@ -499,7 +504,7 @@ export default function Nutrition() {
           </Field>
           {fullMode && (
             <Field
-              label="Calorie target override (kcal/day)"
+              label={t('Calorie target override (kcal/day)')}
               hint={`Leave blank to use the calculated target. Estimated maintenance is ${energy.maintenanceKcal} kcal.`}
             >
               <TextInput
@@ -514,7 +519,7 @@ export default function Nutrition() {
             </Field>
           )}
           <Button variant="primary" full onClick={() => setSettingsOpen(false)}>
-            Done
+            {t('Done')}
           </Button>
         </div>
       </Sheet>
@@ -600,6 +605,7 @@ function AddFoodSheet({
   onAdd: (entry: Omit<ProteinEntry, 'id' | 'createdAt'>) => void
   onNewFood: () => void
 }) {
+  const { t } = useT()
   const { data } = useStore()
   const profile = data.profile!
   const today = toIsoDate()
@@ -695,11 +701,11 @@ function AddFoodSheet({
             onClick={() => setPicked(null)}
             className="touch-target flex items-center text-sm text-ember-400"
           >
-            ← Back to list
+            {t('← Back to list')}
           </button>
-          <Field label="Servings" hint={picked.serving}>
+          <Field label={t('Servings')} hint={picked.serving}>
             <NumberStepper
-              label="Servings"
+              label={t('Servings')}
               value={servings}
               min={0.25}
               max={20}
@@ -726,14 +732,14 @@ function AddFoodSheet({
             ))}
           </div>
           <div className="grid grid-cols-4 gap-2 text-center">
-            <Macro label="kcal" value={fullMode ? (scaled.kcal ?? null) : null} />
-            <Macro label="Protein" value={scaled.proteinG} suffix="g" />
-            <Macro label="Carbs" value={fullMode ? (scaled.carbsG ?? null) : null} suffix="g" />
-            <Macro label="Fat" value={fullMode ? (scaled.fatG ?? null) : null} suffix="g" />
+            <Macro label={t('kcal')} value={fullMode ? (scaled.kcal ?? null) : null} />
+            <Macro label={t('Protein')} value={scaled.proteinG} suffix="g" />
+            <Macro label={t('Carbs')} value={fullMode ? (scaled.carbsG ?? null) : null} suffix="g" />
+            <Macro label={t('Fat')} value={fullMode ? (scaled.fatG ?? null) : null} suffix="g" />
           </div>
-          <Field label="Meal">
+          <Field label={t('Meal')}>
             <SegmentedControl
-              label="Meal"
+              label={t('Meal')}
               value={targetSlot}
               onChange={setTargetSlot}
               columns={4}
@@ -741,20 +747,19 @@ function AddFoodSheet({
             />
           </Field>
         </div>
-      ) : (
-        /* ---- Step 1: pick ------------------------------------------- */
+      ) : ( /* ---- Step 1: pick ------------------------------------------- */
         <div className="space-y-3">
           <TextInput
             type="search"
             value={query}
-            aria-label="Search foods"
-            placeholder="Search foods…"
+            aria-label={t('Search foods')}
+            placeholder={t('Search foods…')}
             onChange={(e) => setQuery(e.target.value)}
           />
 
           {!searching && (
             <SegmentedControl
-              label="Food list"
+              label={t('Food list')}
               value={tab}
               onChange={setTab}
               columns={4}
@@ -777,9 +782,7 @@ function AddFoodSheet({
                   Create “{query.trim().slice(0, 24)}”
                 </Button>
               </div>
-            )
-          ) : tab === 'recent' ? (
-            recents.length ? (
+            ) ) : tab === 'recent' ? ( recents.length ? (
               <ul className="space-y-1.5">
                 {recents.map((entry) => (
                   <li key={entry.id}>
@@ -811,11 +814,9 @@ function AddFoodSheet({
               </ul>
             ) : (
               <p className="text-sm text-ash text-center py-6">
-                Nothing logged yet. Search above, or browse the list — anything you log shows up here for one-tap
-                repeats.
+                {t('Nothing logged yet. Search above, or browse the list — anything you log shows up here for one-tap repeats.')}
               </p>
-            )
-          ) : tab === 'browse' ? (
+            ) ) : tab === 'browse' ? (
             <div className="space-y-4">
               {CATEGORY_ORDER.map((category) => {
                 const foods = visible.filter((f) => f.category === category)
@@ -833,7 +834,7 @@ function AddFoodSheet({
           ) : tab === 'mine' ? (
             <div className="space-y-3">
               <Button full onClick={onNewFood}>
-                Create a custom food
+                {t('Create a custom food')}
               </Button>
               {visible.filter((f) => f.custom).length ? (
                 <FoodList
@@ -843,17 +844,14 @@ function AddFoodSheet({
                 />
               ) : (
                 <p className="text-sm text-ash text-center py-4">
-                  No custom foods yet. Add the things you eat that are not on the list once, and they stay one tap
-                  away forever.
+                  {t('No custom foods yet. Add the things you eat that are not on the list once, and they stay one tap away forever.')}
                 </p>
               )}
             </div>
-          ) : (
-            /* ---- Quick add, for when you just know the number -------- */
+          ) : ( /* ---- Quick add, for when you just know the number -------- */
             <div className="space-y-3">
               <p className="text-sm text-ash leading-relaxed">
-                No searching. Put in the numbers you already know — a packet label, a restaurant estimate, a guess
-                you are happy with.
+                {t('No searching. Put in the numbers you already know — a packet label, a restaurant estimate, a guess you are happy with.')}
               </p>
               <div className="grid grid-cols-4 gap-2">
                 {[20, 25, 30, 40].map((g) => (
@@ -867,25 +865,25 @@ function AddFoodSheet({
                   </button>
                 ))}
               </div>
-              <Field label="Protein">
-                <NumberStepper label="Quick protein grams" value={quickG} min={1} max={300} step={5} suffix="g" onChange={setQuickG} />
+              <Field label={t('Protein')}>
+                <NumberStepper label={t('Quick protein grams')} value={quickG} min={1} max={300} step={5} suffix="g" onChange={setQuickG} />
               </Field>
               {fullMode && (
-                <Field label="Calories" hint="Optional — leave it if you only care about protein.">
+                <Field label={t('Calories')} hint={t('Optional — leave it if you only care about protein.')}>
                   <NumberStepper
-                    label="Quick calories"
+                    label={t('Quick calories')}
                     value={quickKcal}
                     min={0}
                     max={3000}
                     step={25}
-                    suffix="kcal"
+                    suffix={t('kcal')}
                     onChange={setQuickKcal}
                   />
                 </Field>
               )}
-              <Field label="Meal">
+              <Field label={t('Meal')}>
                 <SegmentedControl
-                  label="Meal"
+                  label={t('Meal')}
                   value={targetSlot}
                   onChange={setTargetSlot}
                   columns={4}
@@ -961,6 +959,7 @@ function Macro({ label, value, suffix = '' }: { label: string; value: number | n
 }
 
 function CustomFoodForm({ fullMode, onSave }: { fullMode: boolean; onSave: (food: FoodItem) => void }) {
+  const { t } = useT()
   const [name, setName] = useState('')
   const [protein, setProtein] = useState(25)
   const [kcal, setKcal] = useState(200)
@@ -970,31 +969,31 @@ function CustomFoodForm({ fullMode, onSave }: { fullMode: boolean; onSave: (food
   const [budget, setBudget] = useState(false)
   return (
     <div className="space-y-4">
-      <Field label="Food name" htmlFor="food-name" required>
+      <Field label={t('Food name')} htmlFor="food-name" required>
         <TextInput
           id="food-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. My protein bowl"
+          placeholder={t('e.g. My protein bowl')}
         />
       </Field>
-      <Field label="Serving description" htmlFor="food-serving">
+      <Field label={t('Serving description')} htmlFor="food-serving">
         <TextInput id="food-serving" value={serving} onChange={(e) => setServing(e.target.value)} />
       </Field>
-      <Field label="Protein per serving">
-        <NumberStepper label="Protein grams" value={protein} min={0} max={200} suffix="g" onChange={setProtein} />
+      <Field label={t('Protein per serving')}>
+        <NumberStepper label={t('Protein grams')} value={protein} min={0} max={200} suffix="g" onChange={setProtein} />
       </Field>
       {fullMode && (
         <>
-          <Field label="Calories per serving">
-            <NumberStepper label="Calories" value={kcal} min={0} max={2000} step={10} suffix="kcal" onChange={setKcal} />
+          <Field label={t('Calories per serving')}>
+            <NumberStepper label={t('Calories')} value={kcal} min={0} max={2000} step={10} suffix={t('kcal')} onChange={setKcal} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Carbs">
-              <NumberStepper label="Carb grams" value={carbs} min={0} max={300} step={5} suffix="g" onChange={setCarbs} />
+            <Field label={t('Carbs')}>
+              <NumberStepper label={t('Carb grams')} value={carbs} min={0} max={300} step={5} suffix="g" onChange={setCarbs} />
             </Field>
-            <Field label="Fat">
-              <NumberStepper label="Fat grams" value={fat} min={0} max={200} step={1} suffix="g" onChange={setFat} />
+            <Field label={t('Fat')}>
+              <NumberStepper label={t('Fat grams')} value={fat} min={0} max={200} step={1} suffix="g" onChange={setFat} />
             </Field>
           </div>
         </>
@@ -1002,8 +1001,8 @@ function CustomFoodForm({ fullMode, onSave }: { fullMode: boolean; onSave: (food
       <Toggle
         checked={budget}
         onChange={setBudget}
-        label="Budget friendly"
-        hint="Shows up in cheap-protein suggestions."
+        label={t('Budget friendly')}
+        hint={t('Shows up in cheap-protein suggestions.')}
       />
       <Button
         variant="primary"
@@ -1025,7 +1024,7 @@ function CustomFoodForm({ fullMode, onSave }: { fullMode: boolean; onSave: (food
           })
         }
       >
-        Save food
+        {t('Save food')}
       </Button>
     </div>
   )
@@ -1036,6 +1035,7 @@ function CustomFoodForm({ fullMode, onSave }: { fullMode: boolean; onSave: (food
  * a saved meal carries proper macros instead of a protein number in isolation.
  */
 function MealForm({ foods, onSave }: { foods: FoodItem[]; onSave: (meal: Meal) => void }) {
+  const { t } = useT()
   const [name, setName] = useState('')
   const [query, setQuery] = useState('')
   const [items, setItems] = useState<Meal['items']>([])
@@ -1048,12 +1048,12 @@ function MealForm({ foods, onSave }: { foods: FoodItem[]; onSave: (meal: Meal) =
 
   return (
     <div className="space-y-4">
-      <Field label="Meal name" htmlFor="meal-name" required>
+      <Field label={t('Meal name')} htmlFor="meal-name" required>
         <TextInput
           id="meal-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Post-gym"
+          placeholder={t('e.g. Post-gym')}
         />
       </Field>
 
@@ -1074,12 +1074,12 @@ function MealForm({ foods, onSave }: { foods: FoodItem[]; onSave: (meal: Meal) =
         </ul>
       )}
 
-      <Field label="Add items" htmlFor="meal-search">
+      <Field label={t('Add items')} htmlFor="meal-search">
         <TextInput
           id="meal-search"
           type="search"
           value={query}
-          placeholder="Search foods…"
+          placeholder={t('Search foods…')}
           onChange={(e) => setQuery(e.target.value)}
         />
       </Field>
@@ -1126,7 +1126,7 @@ function MealForm({ foods, onSave }: { foods: FoodItem[]; onSave: (meal: Meal) =
         disabled={!name.trim() || items.length === 0}
         onClick={() => onSave({ id: newId('meal'), name: name.trim(), items, custom: true })}
       >
-        Save meal
+        {t('Save meal')}
       </Button>
     </div>
   )

@@ -56,8 +56,8 @@ export default function ExerciseHistory() {
 
   if (!exercise) {
     return (
-      <Screen title="Exercise" back="/train">
-        <EmptyState title="Not found" body="This exercise is not in your library." />
+      <Screen title={t('Exercise')} back="/train">
+        <EmptyState title={t('Not found')} body={t('This exercise is not in your library.')} />
       </Screen>
     )
   }
@@ -66,7 +66,7 @@ export default function ExerciseHistory() {
     <Screen title={t(exercise.name)} subtitle={t(exercise.cue)} back="/train">
       <div className="space-y-4">
         <Card>
-          <p className="text-[11px] uppercase tracking-wider text-smoke">Muscle contributions</p>
+          <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Muscle contributions')}</p>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {Object.entries(exercise.contributions).map(([muscle, value]) => (
               <Chip key={muscle} tone={value === 1 ? 'ember' : 'neutral'}>
@@ -75,24 +75,23 @@ export default function ExerciseHistory() {
             ))}
           </div>
           <p className="text-xs text-smoke mt-2 leading-relaxed">
-            These are the exact numbers the weekly volume dashboard adds up. A 1.0 counts as a full hard set for that
-            muscle; a 0.5 counts as half.
+            {t('These are the exact numbers the weekly volume dashboard adds up. A 1.0 counts as a full hard set for that muscle; a 0.5 counts as half.')}
           </p>
         </Card>
 
         {records && (
           <div className="grid grid-cols-3 gap-2">
-            <Stat label="Top set" value={formatWeight(records.topWeightKg, units)} sub={`× ${records.topWeightReps}`} />
-            <Stat label="Est. 1RM" value={formatWeight(records.bestE1RM, units)} tone="ember" sub="Estimate only" />
-            <Stat label="Sessions" value={sessions.length} />
+            <Stat label={t('Top set')} value={formatWeight(records.topWeightKg, units)} sub={`× ${records.topWeightReps}`} />
+            <Stat label={t('Est. 1RM')} value={formatWeight(records.bestE1RM, units)} tone="ember" sub={t('Estimate only')} />
+            <Stat label={t('Sessions')} value={sessions.length} />
           </div>
         )}
 
         {trend.length > 1 && (
           <div>
             <SectionHeading
-              title="Estimated 1RM trend"
-              hint="Epley formula adjusted for reps in reserve. An estimate, not a measurement."
+              title={t('Estimated 1RM trend')}
+              hint={t('Epley formula adjusted for reps in reserve. An estimate, not a measurement.')}
             />
             <Card>
               <LineChart
@@ -113,13 +112,13 @@ export default function ExerciseHistory() {
 
         {recommendation && (
           <div>
-            <SectionHeading title="Next session" />
+            <SectionHeading title={t('Next session')} />
             <RecommendationCard recommendation={recommendation} />
           </div>
         )}
 
         <div>
-          <SectionHeading title="Every logged session" />
+          <SectionHeading title={t('Every logged session')} />
           {sessions.length ? (
             <ul className="space-y-2">
               {sessions.map((session) => {
@@ -162,8 +161,8 @@ export default function ExerciseHistory() {
           ) : (
             <EmptyState
               icon="◷"
-              title="No history yet"
-              body="Log this movement once and FORGED will start producing specific, explained targets for it."
+              title={t('No history yet')}
+              body={t('Log this movement once and FORGED will start producing specific, explained targets for it.')}
             />
           )}
         </div>

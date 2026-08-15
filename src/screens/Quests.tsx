@@ -5,6 +5,7 @@ import { ECONOMY } from '@/config/economy'
 import { evaluateAchievements, evaluateQuests } from '@/engine/quests'
 import { formatDateLabel, toIsoDate } from '@/lib/date'
 import { useStore } from '@/state/store'
+import { useT } from '@/i18n/useT'
 
 const ICONS: Record<string, string> = {
   anvil: '⚒',
@@ -19,6 +20,7 @@ const ICONS: Record<string, string> = {
 
 /** Quests and achievements — all behavioural, none performance-gated. */
 export default function Quests() {
+  const { t } = useT()
   const store = useStore()
   const { data } = store
   const today = toIsoDate()
@@ -32,18 +34,16 @@ export default function Quests() {
   const locked = achievements.filter((a) => !a.unlocked)
 
   return (
-    <Screen title="Quests" subtitle={`${unlocked.length}/${achievements.length} achievements`} back="/forge">
+    <Screen title={t('Quests')} subtitle={`${unlocked.length}/${achievements.length} achievements`} back="/forge">
       <div className="space-y-4">
         <Card>
           <p className="text-sm text-ash leading-relaxed">
-            Every quest here rewards something you fully control: showing up, logging honestly, eating enough protein,
-            and taking the recovery day you were prescribed. None of them reward adding weight recklessly, and a
-            planned deload completes one rather than breaking it.
+            {t('Every quest here rewards something you fully control: showing up, logging honestly, eating enough protein, and taking the recovery day you were prescribed. None of them reward adding weight recklessly, and a planned deload completes one rather than breaking it.')}
           </p>
         </Card>
 
         <div>
-          <SectionHeading title="Today" hint="Resets at midnight." />
+          <SectionHeading title={t('Today')} hint={t('Resets at midnight.')} />
           <ul className="space-y-2">
             {daily.map((quest) => (
               <QuestRow key={quest.def.id} quest={quest} onClaim={() => store.claimQuest(quest.def.id, quest.periodKey)} />
@@ -52,7 +52,7 @@ export default function Quests() {
         </div>
 
         <div>
-          <SectionHeading title="This week" hint="Resets Monday." />
+          <SectionHeading title={t('This week')} hint={t('Resets Monday.')} />
           <ul className="space-y-2">
             {weekly.map((quest) => (
               <QuestRow key={quest.def.id} quest={quest} onClaim={() => store.claimQuest(quest.def.id, quest.periodKey)} />
@@ -61,7 +61,7 @@ export default function Quests() {
         </div>
 
         <div>
-          <SectionHeading title="Achievements" />
+          <SectionHeading title={t('Achievements')} />
           <ul className="space-y-2">
             {[...unlocked, ...locked].map((achievement) => (
               <li key={achievement.def.id}>
@@ -80,7 +80,7 @@ export default function Quests() {
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-medium text-parchment truncate">{achievement.def.title}</p>
                         {achievement.unlocked ? (
-                          <Chip tone="gold">Unlocked</Chip>
+                          <Chip tone="gold">{t('Unlocked')}</Chip>
                         ) : (
                           <Chip tone="neutral">{Math.round(achievement.progress * 100)}%</Chip>
                         )}
@@ -102,7 +102,7 @@ export default function Quests() {
         </div>
 
         <Card>
-          <SectionHeading title="Reward economics" hint="Published, not hidden." />
+          <SectionHeading title={t('Reward economics')} hint={t('Published, not hidden.')} />
           <ul className="space-y-1.5 text-sm">
             {Object.entries(ECONOMY.rewards)
               .filter(([, value]) => value.xp > 0 || value.coins > 0)
@@ -132,6 +132,7 @@ function QuestRow({
   quest: ReturnType<typeof evaluateQuests>[number]
   onClaim: () => void
 }) {
+  const { t } = useT()
   return (
     <li>
       <Card className={cx(quest.complete && !quest.claimed && 'border-gold-500/50')}>
@@ -146,10 +147,10 @@ function QuestRow({
             </div>
           </div>
           {quest.claimed ? (
-            <Chip tone="good">Claimed</Chip>
+            <Chip tone="good">{t('Claimed')}</Chip>
           ) : quest.complete ? (
             <Button size="sm" variant="gold" onClick={onClaim}>
-              Claim
+              {t('Claim')}
             </Button>
           ) : (
             <Chip tone="neutral" className="tabular">

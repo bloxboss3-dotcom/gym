@@ -66,19 +66,19 @@ export default function RecommendationDetail() {
 
   if (!exercise || !recommendation) {
     return (
-      <Screen title="Recommendation" back="/progress">
-        <EmptyState title="Nothing to explain yet" body="This exercise is not in your library." />
+      <Screen title={t('Recommendation')} back="/progress">
+        <EmptyState title={t('Nothing to explain yet')} body={t('This exercise is not in your library.')} />
       </Screen>
     )
   }
 
   return (
-    <Screen title="Why this?" subtitle={t(exercise.name)} back={`/train/exercise/${exercise.id}`}>
+    <Screen title={t('Why this?')} subtitle={t(exercise.name)} back={`/train/exercise/${exercise.id}`}>
       <div className="space-y-4">
         <Card raised>
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wider text-smoke">Recommended action</p>
+              <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Recommended action')}</p>
               <p className="font-display text-2xl uppercase leading-tight mt-0.5">{recommendation.headline}</p>
               <Chip tone="ember" className="mt-2">
                 {ACTION_LABEL[recommendation.action]}
@@ -89,69 +89,77 @@ export default function RecommendationDetail() {
         </Card>
 
         <Card>
-          <SectionHeading title="Exact next-session target" />
+          <SectionHeading title={t('Exact next-session target')} />
           <p className="font-display text-xl text-ember-400">{recommendation.target.description}</p>
           <ul className="mt-2 grid grid-cols-2 gap-2 text-sm">
             <li className="text-ash">
-              Load:{' '}
+              {t('Load:')}{' '}
               <span className="text-parchment">
-                {recommendation.target.loadKg === null ? 'your choice' : formatWeight(recommendation.target.loadKg, units)}
+                {recommendation.target.loadKg === null
+                  ? t('your choice')
+                  : formatWeight(recommendation.target.loadKg, units)}
               </span>
             </li>
             <li className="text-ash">
-              Sets: <span className="text-parchment">{recommendation.target.sets}</span>
+              {t('Sets:')} <span className="text-parchment">{recommendation.target.sets}</span>
             </li>
             <li className="text-ash">
-              Reps:{' '}
+              {t('Reps:')}{' '}
               <span className="text-parchment">
                 {recommendation.target.repMin}–{recommendation.target.repMax}
               </span>
             </li>
             <li className="text-ash">
-              Target RIR: <span className="text-parchment">{recommendation.target.targetRIR}</span>
+              {t('Target RIR:')} <span className="text-parchment">{recommendation.target.targetRIR}</span>
             </li>
             {recommendation.target.totalRepsTarget !== null && (
               <li className="text-ash col-span-2">
-                Beat: <span className="text-parchment">{recommendation.target.totalRepsTarget} total reps</span>
+                {t('Beat:')}{' '}
+                <span className="text-parchment">
+                  {t('{reps} total reps', { reps: recommendation.target.totalRepsTarget })}
+                </span>
               </li>
             )}
           </ul>
         </Card>
 
         <Card>
-          <SectionHeading title="Plain-language reason" />
+          <SectionHeading title={t('Plain-language reason')} />
           <p className="text-sm text-ash leading-relaxed">{recommendation.reason}</p>
         </Card>
 
         <Card>
-          <SectionHeading title="Rule used" hint="Every threshold lives in one documented config file." />
+          <SectionHeading title={t('Rule used')} hint={t('Every threshold lives in one documented config file.')} />
           <p className="font-mono text-[11px] text-parchment/90 leading-relaxed bg-coal/70 border border-slate rounded-lg px-3 py-2.5">
             {recommendation.rule}
           </p>
           <ul className="mt-3 grid grid-cols-2 gap-2 text-xs">
             <li className="text-ash">
-              RIR window: <span className="text-parchment tabular">{RULES.progression.rirWindow.min}–{RULES.progression.rirWindow.max}</span>
+              {t('RIR window:')} <span className="text-parchment tabular">{RULES.progression.rirWindow.min}–{RULES.progression.rirWindow.max}</span>
             </li>
             <li className="text-ash">
-              Pain block: <span className="text-parchment tabular">≥ {RULES.progression.painBlockThreshold}/10</span>
+              {t('Pain block:')} <span className="text-parchment tabular">≥ {RULES.progression.painBlockThreshold}/10</span>
             </li>
             <li className="text-ash">
-              Stall after: <span className="text-parchment tabular">{RULES.plateau.sessionsToStall} sessions</span>
+              {t('Stall after:')}{' '}
+              <span className="text-parchment tabular">
+                {t('{n} sessions', { n: RULES.plateau.sessionsToStall })}
+              </span>
             </li>
             <li className="text-ash">
-              Back-off: <span className="text-parchment tabular">{Math.round(RULES.progression.backoffPct * 100)}%</span>
+              {t('Back-off:')} <span className="text-parchment tabular">{Math.round(RULES.progression.backoffPct * 100)}%</span>
             </li>
           </ul>
         </Card>
 
         {recommendation.warning && (
-          <Alert tone="danger" title="Safety">
+          <Alert tone="danger" title={t('Safety')}>
             {recommendation.warning}
           </Alert>
         )}
 
         <Card>
-          <SectionHeading title="Confidence" />
+          <SectionHeading title={t('Confidence')} />
           <div className="flex items-center gap-2">
             <ConfidenceChip confidence={recommendation.confidence} />
             <span className="text-sm text-ash">
@@ -160,7 +168,7 @@ export default function RecommendationDetail() {
           </div>
           {recommendation.missingData.length > 0 ? (
             <>
-              <p className="text-xs uppercase tracking-wider text-smoke mt-3 mb-1.5">Missing or uncertain</p>
+              <p className="text-xs uppercase tracking-wider text-smoke mt-3 mb-1.5">{t('Missing or uncertain')}</p>
               <ul className="list-disc pl-4 space-y-1 text-sm text-ash">
                 {recommendation.missingData.map((item) => (
                   <li key={item}>{item}</li>
@@ -168,16 +176,16 @@ export default function RecommendationDetail() {
               </ul>
             </>
           ) : (
-            <p className="text-sm text-ash mt-2">Nothing important is missing for this recommendation.</p>
+            <p className="text-sm text-ash mt-2">{t('Nothing important is missing for this recommendation.')}</p>
           )}
         </Card>
 
         <Card>
-          <SectionHeading title="What the engine looked at" />
+          <SectionHeading title={t('What the engine looked at')} />
           <div className="grid grid-cols-3 gap-2 mb-3">
-            <Stat label="Sessions" value={history.length} />
-            <Stat label="Stalled" value={plateau.stalledSessions} sub={plateau.stalled ? 'Plateau' : 'Progressing'} />
-            <Stat label="Run load" value={`${recentRunKm.toFixed(1)} km`} sub="last 7 days" />
+            <Stat label={t('Sessions')} value={history.length} />
+            <Stat label={t('Stalled')} value={plateau.stalledSessions} sub={plateau.stalled ? 'Plateau' : 'Progressing'} />
+            <Stat label={t('Run load')} value={`${recentRunKm.toFixed(1)} km`} sub={t('last 7 days')} />
           </div>
           <ul className="space-y-2">
             {history.map((performance) => {
@@ -202,27 +210,25 @@ export default function RecommendationDetail() {
                 </li>
               )
             })}
-            {!history.length && <li className="text-sm text-ash">No comparable sessions yet.</li>}
+            {!history.length && <li className="text-sm text-ash">{t('No comparable sessions yet.')}</li>}
           </ul>
           <p className="text-xs text-smoke mt-3 leading-relaxed">{plateau.detail}</p>
         </Card>
 
         <Card>
-          <SectionHeading title="Evidence" />
+          <SectionHeading title={t('Evidence')} />
           <CitationList ids={recommendation.citationIds} />
         </Card>
 
         <Alert tone="info">
-          FORGED cannot measure how much muscle you have gained, and it does not pretend to. It optimises what it can
-          see: load, reps, effort, pain, consistency and recovery inputs. Everything above is deterministic — no
-          language model made this decision, and the same inputs will always produce the same output.
+          {t('FORGED cannot measure how much muscle you have gained, and it does not pretend to. It optimises what it can see: load, reps, effort, pain, consistency and recovery inputs. Everything above is deterministic — no language model made this decision, and the same inputs will always produce the same output.')}
         </Alert>
 
         <Link
           to="/profile/science"
           className="block text-center text-sm text-ember-400 font-medium touch-target py-2"
         >
-          Read the Science &amp; Safety centre →
+          {t('Read the Science & Safety centre →')}
         </Link>
       </div>
     </Screen>

@@ -745,6 +745,7 @@ export function Sheet({
   footer?: ReactNode
   labelledBy?: string
 }) {
+  const { t } = useT()
   const ref = useRef<HTMLDivElement>(null)
   const headingId = useId()
 
@@ -792,7 +793,7 @@ export function Sheet({
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <button
         type="button"
-        aria-label="Close"
+        aria-label={t('Close')}
         onClick={onClose}
         className="absolute inset-0 bg-black/70 backdrop-blur-[2px]"
       />
@@ -809,7 +810,7 @@ export function Sheet({
           <h2 id={headingId} className="font-display text-lg uppercase tracking-wide pt-1">
             {title}
           </h2>
-          <IconButton label="Close" onClick={onClose} className="-mr-2">
+          <IconButton label={t('Close')} onClick={onClose} className="-mr-2">
             <span aria-hidden className="text-xl">
               ✕
             </span>

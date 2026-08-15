@@ -22,4 +22,9 @@ export const SHELL: Dict = {
   // Shared component-kit fallbacks.
   Loading: 'Cargando',
   Confirm: 'Confirmar',
+
+  // --- App shell -----------------------------------------------------------
+  'FORGED': 'FORGED',
+  'Opening the forge': 'Abriendo la fragua',
+  'Skip to content': 'Saltar al contenido',
 }

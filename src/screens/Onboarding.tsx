@@ -70,7 +70,7 @@ const STEP_COUNT = 11
 
 export default function Onboarding() {
   const { completeOnboarding, loadDemo, updateSettings, data } = useStore()
-  const { lang } = useT()
+  const { t, lang } = useT()
   const [figureChoice, setFigureChoice] = useState<Figure | null>(null)
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
@@ -164,9 +164,9 @@ export default function Onboarding() {
     <div className="min-h-dvh flex flex-col bg-void">
       <header className="safe-x px-4 pb-2" style={{ paddingTop: 'calc(var(--safe-top) + 1rem)' }}>
         <div className="max-w-lg mx-auto">
-          <p className="font-display text-3xl tracking-[0.35em] text-ember-500 text-center">FORGED</p>
+          <p className="font-display text-3xl tracking-[0.35em] text-ember-500 text-center">{t('FORGED')}</p>
           <p className="text-center text-[11px] uppercase tracking-[0.2em] text-smoke mt-1">
-            Train your body · Forge your warrior
+            {t('Train your body · Forge your warrior')}
           </p>
           {step > 0 && (
             <ProgressBar
@@ -186,15 +186,14 @@ export default function Onboarding() {
               <Warrior equipped={data.game.equipped} frame={data.game.figure ?? 'masculine'} className="w-44 h-auto" />
             </div>
             <h1 className="font-display text-3xl uppercase text-center leading-tight text-balance">
-              Real training. Real progress. A warrior that earns it.
+              {t('Real training. Real progress. A warrior that earns it.')}
             </h1>
             <p className="text-ash text-center leading-relaxed">
-              FORGED tracks your lifting, running, protein and recovery, then tells you exactly what to do next
-              — and why. Your warrior only grows through work you actually did.
+              {t('FORGED tracks your lifting, running, protein and recovery, then tells you exactly what to do next — and why. Your warrior only grows through work you actually did.')}
             </p>
-            <Alert tone="info" title="What FORGED can and cannot do">
+            <Alert tone="info" title={t('What FORGED can and cannot do')}>
               FORGED optimises the things you control: how much you train, how hard, how consistently, how much
-              protein you eat, and how you recover. It <strong>cannot</strong> guarantee or measure how much muscle
+              protein you eat, and how you recover. It <strong>{t('cannot')}</strong> guarantee or measure how much muscle
               you gain. Nobody can do that from a phone. Every recommendation comes with the rule it used, the
               evidence behind it, and a confidence level — so you can disagree with it.
             </Alert>
@@ -205,7 +204,7 @@ export default function Onboarding() {
                 recognised without reading the label. */}
             <div
               role="radiogroup"
-              aria-label="Language"
+              aria-label={t('Language')}
               className="flex gap-2 justify-center"
             >
               {LANGUAGES.map((l) => (
@@ -228,7 +227,7 @@ export default function Onboarding() {
             </div>
             <div className="space-y-2">
               <Button variant="primary" size="lg" full onClick={() => setStep(1)}>
-                Begin
+                {t('Begin')}
               </Button>
               <Button
                 variant="ghost"
@@ -238,33 +237,32 @@ export default function Onboarding() {
                   navigate('/', { replace: true })
                 }}
               >
-                Explore demo data instead
+                {t('Explore demo data instead')}
               </Button>
             </div>
             <p className="text-[11px] text-smoke text-center leading-relaxed">
-              No account. No email. Nothing leaves your phone — everything is stored locally and you can export a
-              backup at any time.
+              {t('No account. No email. Nothing leaves your phone — everything is stored locally and you can export a backup at any time.')}
             </p>
           </div>
         )}
 
         {step === 1 && (
           <StepCard
-            title="Who are we forging?"
-            blurb="Age and body size feed the protein maths and the starting volume. Nothing here is shared with anyone."
+            title={t('Who are we forging?')}
+            blurb={t('Age and body size feed the protein maths and the starting volume. Nothing here is shared with anyone.')}
           >
-            <Field label="Name or nickname" htmlFor="ob-name" hint="Shown on your profile and title card.">
+            <Field label={t('Name or nickname')} htmlFor="ob-name" hint={t('Shown on your profile and title card.')}>
               <TextInput
                 id="ob-name"
                 value={draft.name}
                 autoComplete="nickname"
-                placeholder="Warrior"
+                placeholder={t('Warrior')}
                 onChange={(e) => set('name', e.target.value)}
               />
             </Field>
-            <Field label="Units" htmlFor="ob-units">
+            <Field label={t('Units')} htmlFor="ob-units">
               <SegmentedControl<Units>
-                label="Unit preference"
+                label={t('Unit preference')}
                 value={draft.units}
                 onChange={(v) => set('units', v)}
                 options={[
@@ -273,23 +271,23 @@ export default function Onboarding() {
                 ]}
               />
             </Field>
-            <Field label="Age" htmlFor="ob-age">
-              <NumberStepper label="Age" value={draft.age} min={13} max={100} onChange={(v) => set('age', v)} suffix="yrs" />
+            <Field label={t('Age')} htmlFor="ob-age">
+              <NumberStepper label={t('Age')} value={draft.age} min={13} max={100} onChange={(v) => set('age', v)} suffix={t('yrs')} />
             </Field>
-            <Field label="Height">
+            <Field label={t('Height')}>
               {draft.units === 'kg' ? (
                 <NumberStepper
-                  label="Height in centimetres"
+                  label={t('Height in centimetres')}
                   value={draft.heightCm}
                   min={120}
                   max={230}
                   onChange={(v) => set('heightCm', v)}
-                  suffix="cm"
+                  suffix={t('cm')}
                 />
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <NumberStepper
-                    label="Height feet"
+                    label={t('Height feet')}
                     value={heightFeet}
                     min={3}
                     max={7}
@@ -297,10 +295,10 @@ export default function Onboarding() {
                       setHeightFeet(v)
                       set('heightCm', feetInchesToCm(v, heightInches))
                     }}
-                    suffix="ft"
+                    suffix={t('ft')}
                   />
                   <NumberStepper
-                    label="Height inches"
+                    label={t('Height inches')}
                     value={heightInches}
                     min={0}
                     max={11}
@@ -308,14 +306,14 @@ export default function Onboarding() {
                       setHeightInches(v)
                       set('heightCm', feetInchesToCm(heightFeet, v))
                     }}
-                    suffix="in"
+                    suffix={t('in')}
                   />
                 </div>
               )}
             </Field>
-            <Field label="Current body weight" hint="Used for protein targets and load estimates. Update it any time.">
+            <Field label={t('Current body weight')} hint={t('Used for protein targets and load estimates. Update it any time.')}>
               <NumberStepper
-                label="Body weight"
+                label={t('Body weight')}
                 value={displayWeight}
                 min={30}
                 max={400}
@@ -326,11 +324,11 @@ export default function Onboarding() {
               />
             </Field>
             <Field
-              label="Biological sex"
-              hint="Used for two things: the constant in the calorie equation, and which published strength standards you are read against. Skip it and FORGED uses the midpoint of both and widens the margin it quotes. It does not decide how your character looks — that is a separate choice, later."
+              label={t('Biological sex')}
+              hint={t('Used for two things: the constant in the calorie equation, and which published strength standards you are read against. Skip it and FORGED uses the midpoint of both and widens the margin it quotes. It does not decide how your character looks — that is a separate choice, later.')}
             >
               <SegmentedControl<Sex>
-                label="Biological sex"
+                label={t('Biological sex')}
                 value={draft.sex ?? 'unspecified'}
                 onChange={(v) => set('sex', v)}
                 options={[
@@ -341,11 +339,11 @@ export default function Onboarding() {
               />
             </Field>
             <Field
-              label="Your day, outside training"
-              hint="Workouts are counted separately, so answer for the other 23 hours."
+              label={t('Your day, outside training')}
+              hint={t('Workouts are counted separately, so answer for the other 23 hours.')}
             >
               <ChoiceList<ActivityLevel>
-                label="Daily activity"
+                label={t('Daily activity')}
                 value={draft.dailyActivity ?? 'desk'}
                 onChange={(v) => set('dailyActivity', v)}
                 options={[
@@ -361,11 +359,11 @@ export default function Onboarding() {
 
         {step === 2 && (
           <StepCard
-            title="How much lifting have you done?"
-            blurb="This sets your starting volume. Starting low is deliberate — there is nowhere to progress to if you begin at the ceiling."
+            title={t('How much lifting have you done?')}
+            blurb={t('This sets your starting volume. Starting low is deliberate — there is nowhere to progress to if you begin at the ceiling.')}
           >
             <ChoiceList<Experience>
-              label="Training experience"
+              label={t('Training experience')}
               value={draft.experience}
               onChange={(v) => set('experience', v)}
               options={[
@@ -378,26 +376,26 @@ export default function Onboarding() {
         )}
 
         {step === 3 && (
-          <StepCard title="How often, and for how long?" blurb="Be honest about the week you actually have, not the one you wish you had.">
-            <Field label="Training days per week">
-              <NumberStepper label="Days per week" value={draft.daysPerWeek} min={2} max={6} onChange={(v) => set('daysPerWeek', v)} suffix="days" />
+          <StepCard title={t('How often, and for how long?')} blurb={t('Be honest about the week you actually have, not the one you wish you had.')}>
+            <Field label={t('Training days per week')}>
+              <NumberStepper label={t('Days per week')} value={draft.daysPerWeek} min={2} max={6} onChange={(v) => set('daysPerWeek', v)} suffix={t('days')} />
             </Field>
-            <Field label="Typical session length" hint="Including warm-up and rest between sets.">
+            <Field label={t('Typical session length')} hint={t('Including warm-up and rest between sets.')}>
               <NumberStepper
-                label="Session minutes"
+                label={t('Session minutes')}
                 value={draft.sessionMinutes}
                 min={20}
                 max={120}
                 step={5}
                 onChange={(v) => set('sessionMinutes', v)}
-                suffix="min"
+                suffix={t('min')}
               />
             </Field>
           </StepCard>
         )}
 
         {step === 4 && (
-          <StepCard title="What can you train with?" blurb="Your plan will only use movements you can actually load.">
+          <StepCard title={t('What can you train with?')} blurb={t('Your plan will only use movements you can actually load.')}>
             <div className="grid grid-cols-2 gap-2">
               {EQUIPMENT_OPTIONS.map((option) => {
                 const active = draft.equipment.includes(option.value)
@@ -426,15 +424,15 @@ export default function Onboarding() {
               })}
             </div>
             {draft.equipment.length === 0 && (
-              <Alert tone="warn">Pick at least one. Bodyweight alone is a legitimate answer.</Alert>
+              <Alert tone="warn">{t('Pick at least one. Bodyweight alone is a legitimate answer.')}</Alert>
             )}
           </StepCard>
         )}
 
         {step === 5 && (
-          <StepCard title="What are you training for?" blurb="This shapes rep ranges, rest, and where your protein target sits.">
+          <StepCard title={t('What are you training for?')} blurb={t('This shapes rep ranges, rest, and where your protein target sits.')}>
             <ChoiceList<Goal>
-              label="Primary goal"
+              label={t('Primary goal')}
               value={draft.goal}
               onChange={(v) => set('goal', v)}
               options={[
@@ -450,12 +448,12 @@ export default function Onboarding() {
 
         {step === 6 && (
           <StepCard
-            title="Do you run?"
-            blurb="Running progression is managed separately from lifting, and FORGED schedules them so they interfere as little as possible."
+            title={t('Do you run?')}
+            blurb={t('Running progression is managed separately from lifting, and FORGED schedules them so they interfere as little as possible.')}
           >
-            <Field label="Endurance goal">
+            <Field label={t('Endurance goal')}>
               <ChoiceList<EnduranceGoal>
-                label="Endurance goal"
+                label={t('Endurance goal')}
                 value={draft.enduranceGoal}
                 onChange={(v) => set('enduranceGoal', v)}
                 options={[
@@ -469,9 +467,9 @@ export default function Onboarding() {
             </Field>
             {draft.enduranceGoal !== 'none' && (
               <>
-                <Field label="What matters more?" hint="Used when a hard run and hard leg day collide.">
+                <Field label={t('What matters more?')} hint={t('Used when a hard run and hard leg day collide.')}>
                   <SegmentedControl<Priority>
-                    label="Training priority"
+                    label={t('Training priority')}
                     value={draft.priority}
                     onChange={(v) => set('priority', v)}
                     options={[
@@ -481,9 +479,9 @@ export default function Onboarding() {
                     ]}
                   />
                 </Field>
-                <Field label="Current weekly running" hint="Roughly what you are doing now — not what you plan to do.">
+                <Field label={t('Current weekly running')} hint={t('Roughly what you are doing now — not what you plan to do.')}>
                   <NumberStepper
-                    label="Weekly running distance"
+                    label={t('Weekly running distance')}
                     value={draft.units === 'kg' ? draft.weeklyRunKm : Number((draft.weeklyRunKm / 1.609344).toFixed(1))}
                     min={0}
                     max={200}
@@ -500,12 +498,12 @@ export default function Onboarding() {
 
         {step === 7 && (
           <StepCard
-            title="Eating pattern"
-            blurb="FORGED gives you a calorie and macro target you can log against, and explains where every number came from. You can switch to protein-only tracking at any time."
+            title={t('Eating pattern')}
+            blurb={t('FORGED gives you a calorie and macro target you can log against, and explains where every number came from. You can switch to protein-only tracking at any time.')}
           >
-            <Field label="Dietary preference">
+            <Field label={t('Dietary preference')}>
               <SegmentedControl<Diet>
-                label="Diet"
+                label={t('Diet')}
                 columns={2}
                 value={draft.diet}
                 onChange={(v) => set('diet', v)}
@@ -521,10 +519,10 @@ export default function Onboarding() {
               />
             </Field>
             <Card>
-              <p className="text-sm text-parchment font-medium">Your daily targets</p>
+              <p className="text-sm text-parchment font-medium">{t('Your daily targets')}</p>
               <p className="font-display text-4xl text-ember-400 mt-1 tabular">
                 {nutritionPreview.targets.kcal}
-                <span className="text-base text-ash"> kcal / day</span>
+                <span className="text-base text-ash"> {t('kcal / day')}</span>
               </p>
               <div className="grid grid-cols-3 gap-2 mt-3 text-center">
                 {[
@@ -541,13 +539,12 @@ export default function Onboarding() {
               <p className="text-xs text-ash mt-2.5 leading-relaxed">{nutritionPreview.energy.reason}</p>
               <p className="text-xs text-ash mt-1.5 leading-relaxed">{proteinPreview.rationale}</p>
               <p className="text-[11px] text-smoke mt-2 leading-relaxed">
-                Calorie targets are estimates from a prediction equation, not measurements of your metabolism.
-                Treat this as a starting point and adjust it from your own weight trend after a few weeks.
+                {t('Calorie targets are estimates from a prediction equation, not measurements of your metabolism. Treat this as a starting point and adjust it from your own weight trend after a few weeks.')}
               </p>
             </Card>
             <Field
-              label="Override the target (optional)"
-              hint="Leave blank unless you have a reason. FORGED does not think higher is automatically better."
+              label={t('Override the target (optional)')}
+              hint={t('Leave blank unless you have a reason. FORGED does not think higher is automatically better.')}
             >
               <TextInput
                 type="number"
@@ -562,12 +559,12 @@ export default function Onboarding() {
 
         {step === 8 && (
           <StepCard
-            title="Anything that hurts?"
-            blurb="FORGED will avoid loading these patterns and will never tell you to add weight to a movement that hurts."
+            title={t('Anything that hurts?')}
+            blurb={t('FORGED will avoid loading these patterns and will never tell you to add weight to a movement that hurts.')}
           >
             <ChoiceList
               multi
-              label="Areas to work around"
+              label={t('Areas to work around')}
               value={draft.limitations}
               onChange={(v) => set('limitations', v as string[])}
               options={Object.entries(LIMITATION_RULES).map(([key, rule]) => ({
@@ -576,25 +573,24 @@ export default function Onboarding() {
                 hint: rule.note,
               }))}
             />
-            <Field label="Anything else?" hint="Free text, stored on your device only.">
+            <Field label={t('Anything else?')} hint={t('Free text, stored on your device only.')}>
               <TextArea
                 value={limitationNote}
-                placeholder="e.g. left shoulder clicks on overhead pressing"
+                placeholder={t('e.g. left shoulder clicks on overhead pressing')}
                 onChange={(e) => setLimitationNote(e.target.value)}
               />
             </Field>
-            <Alert tone="warn" title="This is not a medical assessment">
-              FORGED is educational software. Persistent pain, sharp pain, numbness, dizziness or chest discomfort
-              needs a physiotherapist or physician — not an app.
+            <Alert tone="warn" title={t('This is not a medical assessment')}>
+              {t('FORGED is educational software. Persistent pain, sharp pain, numbness, dizziness or chest discomfort needs a physiotherapist or physician — not an app.')}
             </Alert>
           </StepCard>
         )}
 
         {step === 9 && (
-          <StepCard title="Choose your archetype" blurb="Purely cosmetic. It sets your starting gear and nothing else — no stat bonuses, ever.">
+          <StepCard title={t('Choose your archetype')} blurb={t('Purely cosmetic. It sets your starting gear and nothing else — no stat bonuses, ever.')}>
             <div
               role="radiogroup"
-              aria-label="Figure"
+              aria-label={t('Figure')}
               className="flex gap-2 mb-3"
             >
               {(['masculine', 'feminine'] as Figure[]).map((key) => (
@@ -616,8 +612,7 @@ export default function Onboarding() {
               ))}
             </div>
             <p className="text-xs text-smoke mb-3 leading-relaxed">
-              Just the figure your warrior is drawn as — change it whenever you like, and it costs nothing.
-              Both build muscle at exactly the same rate.
+              {t('Just the figure your warrior is drawn as — change it whenever you like, and it costs nothing. Both build muscle at exactly the same rate.')}
             </p>
             <div className="space-y-2">
               {ARCHETYPES.map((archetype) => {
@@ -661,7 +656,7 @@ export default function Onboarding() {
         )}
 
         {step === 10 && (
-          <StepCard title="Your starter plan" blurb="Generated from everything you just told FORGED. You can edit or rebuild it at any time.">
+          <StepCard title={t('Your starter plan')} blurb={t('Generated from everything you just told FORGED. You can edit or rebuild it at any time.')}>
             <Card raised>
               <p className="font-display text-xl uppercase tracking-wide">{programPreview.name}</p>
               <p className="text-xs text-ash mt-1 leading-relaxed">{programPreview.description}</p>
@@ -678,9 +673,8 @@ export default function Onboarding() {
                 ))}
               </ul>
             </Card>
-            <Alert tone="info" title="Conservative on purpose">
-              This starts near the bottom of the recommended weekly volume range for your experience level. FORGED
-              adds work gradually, and only when you have actually completed the week.
+            <Alert tone="info" title={t('Conservative on purpose')}>
+              {t('This starts near the bottom of the recommended weekly volume range for your experience level. FORGED adds work gradually, and only when you have actually completed the week.')}
             </Alert>
           </StepCard>
         )}
@@ -693,17 +687,17 @@ export default function Onboarding() {
         <div className="max-w-lg mx-auto flex gap-2">
           {step > 0 && (
             <Button onClick={() => setStep((s) => Math.max(0, s - 1))} className="shrink-0">
-              Back
+              {t('Back')}
             </Button>
           )}
           {step > 0 && step < STEP_COUNT - 1 && (
             <Button variant="primary" full disabled={!canAdvance} onClick={() => setStep((s) => s + 1)}>
-              Continue
+              {t('Continue')}
             </Button>
           )}
           {step === STEP_COUNT - 1 && (
             <Button variant="primary" full onClick={finish}>
-              Light the forge
+              {t('Light the forge')}
             </Button>
           )}
         </div>

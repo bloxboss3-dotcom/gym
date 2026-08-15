@@ -69,6 +69,18 @@ describe('the catalogue', () => {
       'Hip Thrust',
       'Hollow Hold',
       '~{minutes} min',
+      // Platform names and source paths. Translating either would make the
+      // instruction wrong: there is no Spanish button called "Androide", and
+      // the file really is at that path.
+      'cm',
+      'min',
+      // Units-only sentences the schedule builds for a planned run.
+      '{km} km',
+      '{min} min',
+      'iPhone / iPad:',
+      'Android:',
+      'src/config/rules.ts',
+      'src/config/economy.ts',
     ])
     const identical = Object.entries(ES)
       .filter(([en, es]) => en === es && !SAME_IN_BOTH.has(en))

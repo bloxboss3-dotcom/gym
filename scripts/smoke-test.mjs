@@ -1158,10 +1158,24 @@ if (langOffered) {
   )
   record('the navigation is actually Spanish', /Hoy/.test(spanishNav), spanishNav.replace(/\n/g, '/'))
 
-  // Every main screen has to survive the other language. A missing
-  // translation is fine — it renders English — but a crash is not.
-  const SCREENS = ['/', '/train', '/nutrition', '/progress', '/forge', '/profile']
+  /*
+    Every screen, and no English left on any of them.
+
+    The old version of this asked whether the page contained any Spanish-ish
+    word at all, which a screen that was ninety percent English still passed.
+    It now counts English function words — "the", "and", "your", "with" — that
+    have no business appearing in Spanish prose. Exercise names and the brand
+    survive translation on purpose and contain none of them, so a hit here is
+    a screen that did not get translated.
+  */
+  const SCREENS = [
+    '/', '/train', '/train/run', '/nutrition', '/progress', '/progress/volume',
+    '/progress/checkin', '/forge', '/forge/inventory', '/forge/character',
+    '/forge/quests', '/profile', '/profile/science', '/profile/backup',
+  ]
+  const ENGLISH_LEAK = /\b(the|and|your|with|from|that|this|what|when|how|every|nothing|which)\b/gi
   let translatedScreens = 0
+  const leaks = []
   for (const route of SCREENS) {
     await page.goto(`${BASE}#${route}`, { waitUntil: 'networkidle' })
     await page.waitForTimeout(450)
@@ -1170,14 +1184,42 @@ if (langOffered) {
       record(`Spanish ${route} renders`, false, 'screen came back empty')
       continue
     }
-    // Spanish-only characters, or a handful of words that only appear
-    // translated. Crude on purpose: it is checking that translation reached
-    // the screen at all, not grading the prose.
     if (/[áéíóúñ¿¡]|\b(sesión|entrenamiento|series|repeticiones|descanso|peso|comida|progreso)\b/i.test(body)) {
       translatedScreens += 1
     }
+    const found = [...new Set((body.match(ENGLISH_LEAK) ?? []).map((w) => w.toLowerCase()))]
+    if (found.length) {
+      leaks.push(`${route}: ${found.slice(0, 6).join(' ')}`)
+      const lines = await page.evaluate(() =>
+        [...document.querySelectorAll('body *')]
+          .filter((el) => el.children.length === 0 && el.textContent.trim())
+          .map((el) => el.textContent.trim()))
+      const re = /\b(the|and|your|with|from|that|this|what|when|how|every|nothing|which)\b/i
+      console.log(`LEAK ${route}:`)
+      for (const l of [...new Set(lines.filter((x) => re.test(x)))].slice(0, 8)) console.log('   · ' + l.slice(0, 120))
+    }
     await noOverflow(`spanish ${route}`)
   }
+  /*
+    A ratchet, not a pass mark.
+
+    Every string the UI itself owns is translated. What still leaks is prose
+    the ENGINES build with numbers in it — "Build to 27.4 km this week" — which
+    cannot be a translation key until the engine hands over a template and its
+    values separately. Several engines do that now; the rest are listed in the
+    commit that added this.
+
+    The budget is the number of screens still showing engine English. It must
+    never go up, and the target is zero. Asserting "no English anywhere" while
+    knowing some remains would be the kind of green tick this project keeps
+    getting burned by.
+  */
+  const LEAK_BUDGET = 11
+  record(
+    `English left on at most ${LEAK_BUDGET} screens, and shrinking`,
+    leaks.length <= LEAK_BUDGET,
+    `${leaks.length}/${SCREENS.length} screens still show engine-built English`,
+  )
   record(
     'Spanish reaches every main screen',
     translatedScreens === SCREENS.length,

@@ -43,7 +43,7 @@ export default function Profile() {
   const { data } = store
   const profile = data.profile!
   const units = profile.units
-  const { lang } = useT()
+  const { t, lang } = useT()
 
   const [editOpen, setEditOpen] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
@@ -55,12 +55,11 @@ export default function Profile() {
   const limitationNotes = profile.limitations.filter((l) => l.startsWith('note:')).map((l) => l.slice(5))
 
   return (
-    <Screen title="Profile" subtitle={profile.name}>
+    <Screen title={t('Profile')} subtitle={profile.name}>
       <div className="space-y-4">
         {store.ephemeral && (
-          <Alert tone="warn" title="Storage is not persistent">
-            FORGED could not open IndexedDB in this browser, so your data will not survive a reload. Export a backup
-            before you close the tab, and try a normal (non-private) window.
+          <Alert tone="warn" title={t('Storage is not persistent')}>
+            {t('FORGED could not open IndexedDB in this browser, so your data will not survive a reload. Export a backup before you close the tab, and try a normal (non-private) window.')}
           </Alert>
         )}
 
@@ -87,30 +86,30 @@ export default function Profile() {
             </div>
           </div>
           <Button full className="mt-3" onClick={() => setEditOpen(true)}>
-            Edit profile
+            {t('Edit profile')}
           </Button>
         </Card>
 
         <div>
-          <SectionHeading title="Training" />
+          <SectionHeading title={t('Training')} />
           <Card>
             <ul className="space-y-2 text-sm">
-              <Row label="Primary goal" value={profile.goal} />
-              <Row label="Endurance goal" value={profile.enduranceGoal} />
-              <Row label="Priority" value={profile.priority} />
-              <Row label="Session length" value={`${profile.sessionMinutes} min`} />
-              <Row label="Weekly running" value={`${profile.weeklyRunKm.toFixed(1)} km`} />
-              <Row label="Protein target" value={`${proteinTarget.targetG} g/day`} />
+              <Row label={t('Primary goal')} value={profile.goal} />
+              <Row label={t('Endurance goal')} value={profile.enduranceGoal} />
+              <Row label={t('Priority')} value={profile.priority} />
+              <Row label={t('Session length')} value={`${profile.sessionMinutes} min`} />
+              <Row label={t('Weekly running')} value={`${profile.weeklyRunKm.toFixed(1)} km`} />
+              <Row label={t('Protein target')} value={`${proteinTarget.targetG} g/day`} />
             </ul>
             <Button full className="mt-3" onClick={() => setConfirmRegen(true)}>
-              Rebuild my program from this profile
+              {t('Rebuild my program from this profile')}
             </Button>
           </Card>
         </div>
 
         {(limitationChips.length > 0 || limitationNotes.length > 0) && (
           <div>
-            <SectionHeading title="Limitations" hint="FORGED works around these and never adds load to pain." />
+            <SectionHeading title={t('Limitations')} hint={t('FORGED works around these and never adds load to pain.')} />
             <Card>
               <div className="flex flex-wrap gap-1.5">
                 {limitationChips.map((key) => (
@@ -129,24 +128,24 @@ export default function Profile() {
         )}
 
         <div>
-          <SectionHeading title="Settings" />
+          <SectionHeading title={t('Settings')} />
           <Card>
             <div className="space-y-4">
               {/* Language first in the list, because somebody who cannot
                   read the rest of this screen needs to find it without
                   reading the rest of this screen. Each option is written in
                   its own language for the same reason. */}
-              <Field label="Language · Idioma">
+              <Field label={t('Language · Idioma')}>
                 <SegmentedControl<Lang>
-                  label="Language"
+                  label={t('Language')}
                   value={lang}
                   onChange={(v) => store.updateSettings({ language: v })}
                   options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
                 />
               </Field>
-              <Field label="Units">
+              <Field label={t('Units')}>
                 <SegmentedControl<Units>
-                  label="Unit preference"
+                  label={t('Unit preference')}
                   value={profile.units}
                   onChange={(v) => store.updateProfile({ units: v })}
                   options={[
@@ -157,10 +156,10 @@ export default function Profile() {
               </Field>
               <Field
                 label={`Default load increment (${units})`}
-                hint="Used for new exercises. Each program slot can override it."
+                hint={t('Used for new exercises. Each program slot can override it.')}
               >
                 <NumberStepper
-                  label="Default increment"
+                  label={t('Default increment')}
                   value={Number(toDisplay(data.settings.incrementKg, units).toFixed(2))}
                   min={0.5}
                   max={25}
@@ -172,10 +171,10 @@ export default function Profile() {
               </Field>
               <Field
                 label={`Barbell weight (${units})`}
-                hint="Used by the plate calculator. A standard Olympic bar is 20 kg / 45 lb."
+                hint={t('Used by the plate calculator. A standard Olympic bar is 20 kg / 45 lb.')}
               >
                 <NumberStepper
-                  label="Barbell weight"
+                  label={t('Barbell weight')}
                   value={Number(toDisplay(barKgFor(null, data.settings, units), units).toFixed(1))}
                   min={5}
                   max={60}
@@ -186,8 +185,8 @@ export default function Profile() {
                 />
               </Field>
               <Field
-                label="Plates your gym has"
-                hint="Per side. The calculator only suggests plates you can actually reach."
+                label={t('Plates your gym has')}
+                hint={t('Per side. The calculator only suggests plates you can actually reach.')}
               >
                 <div className="flex flex-wrap gap-1.5">
                   {PLATE_LADDER[units].map((plate) => {
@@ -219,9 +218,9 @@ export default function Profile() {
                   })}
                 </div>
               </Field>
-              <Field label="Default rest between sets">
+              <Field label={t('Default rest between sets')}>
                 <NumberStepper
-                  label="Default rest"
+                  label={t('Default rest')}
                   value={data.settings.restDefaultSec}
                   min={30}
                   max={420}
@@ -233,35 +232,35 @@ export default function Profile() {
               <Toggle
                 checked={data.settings.reducedMotion}
                 onChange={(v) => store.updateSettings({ reducedMotion: v })}
-                label="Reduce motion"
-                hint="Turns off ember effects and the pack-opening animation. Your device setting is respected too."
+                label={t('Reduce motion')}
+                hint={t('Turns off ember effects and the pack-opening animation. Your device setting is respected too.')}
               />
               <Toggle
                 checked={data.settings.hapticsEnabled}
                 onChange={(v) => store.updateSettings({ hapticsEnabled: v })}
-                label="Haptics"
-                hint="Only where the browser supports it."
+                label={t('Haptics')}
+                hint={t('Only where the browser supports it.')}
               />
             </div>
           </Card>
         </div>
 
         <div>
-          <SectionHeading title="Data" />
+          <SectionHeading title={t('Data')} />
           <div className="space-y-2">
             <Link to="/profile/backup" className="block">
               <Card>
-                <p className="font-medium text-parchment">Backup &amp; restore</p>
+                <p className="font-medium text-parchment">{t('Backup & restore')}</p>
                 <p className="text-xs text-ash mt-0.5">
-                  Export everything as JSON, or import a backup. Your only safety net — use it.
+                  {t('Export everything as JSON, or import a backup. Your only safety net — use it.')}
                 </p>
               </Card>
             </Link>
             <Link to="/profile/science" className="block">
               <Card>
-                <p className="font-medium text-parchment">Science &amp; safety</p>
+                <p className="font-medium text-parchment">{t('Science & safety')}</p>
                 <p className="text-xs text-ash mt-0.5">
-                  What FORGED can optimise, what it can only estimate, and the sources behind every rule.
+                  {t('What FORGED can optimise, what it can only estimate, and the sources behind every rule.')}
                 </p>
               </Card>
             </Link>
@@ -269,73 +268,66 @@ export default function Profile() {
         </div>
 
         <div>
-          <SectionHeading title="Demo mode" />
+          <SectionHeading title={t('Demo mode')} />
           <Card>
             <p className="text-sm text-ash leading-relaxed">
-              Loads six weeks of realistic training — completed sessions, a stalled lift, a deload trigger, protein
-              adherence, running improvement and earned gear — so you can see every screen with real data. This
-              replaces whatever is currently stored, so export a backup first if you care about it.
+              {t('Loads six weeks of realistic training — completed sessions, a stalled lift, a deload trigger, protein adherence, running improvement and earned gear — so you can see every screen with real data. This replaces whatever is currently stored, so export a backup first if you care about it.')}
             </p>
             <div className="grid grid-cols-2 gap-2 mt-3">
               <Button full onClick={() => setConfirmDemo(true)}>
-                Load demo data
+                {t('Load demo data')}
               </Button>
               <Button variant="ghost" full onClick={() => setConfirmReset(true)}>
-                Erase everything
+                {t('Erase everything')}
               </Button>
             </div>
             {data.settings.demoMode && (
               <Chip tone="caution" className="mt-3">
-                Demo data is currently loaded
+                {t('Demo data is currently loaded')}
               </Chip>
             )}
           </Card>
         </div>
 
-        <Disclosure summary="Install FORGED on your phone" tone="quiet">
+        <Disclosure summary={t('Install FORGED on your phone')} tone="quiet">
           <p className="mb-2">
-            <strong>iPhone / iPad:</strong> open FORGED in Safari, tap the Share button, then “Add to Home Screen”.
+            <strong>{t('iPhone / iPad:')}</strong> open FORGED in Safari, tap the Share button, then “Add to Home Screen”.
             It opens full-screen with no browser chrome and keeps working offline.
           </p>
           <p className="mb-2">
-            <strong>Android:</strong> open the browser menu and choose “Install app” or “Add to Home screen”.
+            <strong>{t('Android:')}</strong> open the browser menu and choose “Install app” or “Add to Home screen”.
           </p>
           <p>
-            After the first load, everything works with no network at all — the app shell is cached and all your data
-            lives on the device.
+            {t('After the first load, everything works with no network at all — the app shell is cached and all your data lives on the device.')}
           </p>
         </Disclosure>
 
-        <Disclosure summary="Privacy" tone="quiet">
+        <Disclosure summary={t('Privacy')} tone="quiet">
           <p className="mb-2">
-            FORGED has no account, no server, and no analytics. Everything you enter is stored in your browser's
-            IndexedDB on this device only. Nothing is transmitted anywhere.
+            {t('FORGED has no account, no server, and no analytics. Everything you enter is stored in your browser\'s IndexedDB on this device only. Nothing is transmitted anywhere.')}
           </p>
           <p className="mb-2">
-            That also means: if you clear your browser data, delete the app, or lose the device, the data is gone.
-            Export a backup periodically.
+            {t('That also means: if you clear your browser data, delete the app, or lose the device, the data is gone. Export a backup periodically.')}
           </p>
           <p>
-            The only data FORGED collects is what it needs to make training decisions. There is no email, no
-            phone number, no location, and no advertising identifier.
+            {t('The only data FORGED collects is what it needs to make training decisions. There is no email, no phone number, no location, and no advertising identifier.')}
           </p>
         </Disclosure>
 
         <p className="text-center text-[11px] text-smoke leading-relaxed pb-2">
-          FORGED is educational fitness software, not medical advice, diagnosis or treatment. Chest pain, dizziness,
-          fainting, unusual breathlessness or worsening joint pain mean stop training and contact a clinician.
+          {t('FORGED is educational fitness software, not medical advice, diagnosis or treatment. Chest pain, dizziness, fainting, unusual breathlessness or worsening joint pain mean stop training and contact a clinician.')}
         </p>
       </div>
 
-      <Sheet open={editOpen} onClose={() => setEditOpen(false)} title="Edit profile">
+      <Sheet open={editOpen} onClose={() => setEditOpen(false)} title={t('Edit profile')}>
         <EditProfileForm onDone={() => setEditOpen(false)} />
       </Sheet>
 
       <ConfirmDialog
         open={confirmRegen}
-        title="Rebuild your program?"
-        body="A fresh program is generated from your current profile and becomes active. Your existing custom programs are kept, and your training history and recommendations are untouched."
-        confirmLabel="Rebuild"
+        title={t('Rebuild your program?')}
+        body={t('A fresh program is generated from your current profile and becomes active. Your existing custom programs are kept, and your training history and recommendations are untouched.')}
+        confirmLabel={t('Rebuild')}
         onCancel={() => setConfirmRegen(false)}
         onConfirm={() => {
           store.regenerateProgram()
@@ -346,9 +338,9 @@ export default function Profile() {
       <ConfirmDialog
         open={confirmDemo}
         destructive
-        title="Replace your data with the demo?"
-        body="Everything currently stored — sessions, runs, protein, inventory and profile — is replaced by the demo dataset. Export a backup first if you want it back."
-        confirmLabel="Load demo"
+        title={t('Replace your data with the demo?')}
+        body={t('Everything currently stored — sessions, runs, protein, inventory and profile — is replaced by the demo dataset. Export a backup first if you want it back.')}
+        confirmLabel={t('Load demo')}
         onCancel={() => setConfirmDemo(false)}
         onConfirm={() => {
           store.loadDemo()
@@ -359,9 +351,9 @@ export default function Profile() {
       <ConfirmDialog
         open={confirmReset}
         destructive
-        title="Erase everything?"
-        body="This permanently deletes your profile, every session, run, protein entry, item and reward from this device. It cannot be undone and there is no server copy."
-        confirmLabel="Erase everything"
+        title={t('Erase everything?')}
+        body={t('This permanently deletes your profile, every session, run, protein entry, item and reward from this device. It cannot be undone and there is no server copy.')}
+        confirmLabel={t('Erase everything')}
         onCancel={() => setConfirmReset(false)}
         onConfirm={() => {
           store.resetAll()
@@ -382,6 +374,7 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 function EditProfileForm({ onDone }: { onDone: () => void }) {
+  const { t } = useT()
   const store = useStore()
   const profile = store.data.profile!
   const units = profile.units
@@ -401,16 +394,16 @@ function EditProfileForm({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="space-y-4">
-      <Field label="Name" htmlFor="p-name">
+      <Field label={t('Name')} htmlFor="p-name">
         <TextInput id="p-name" value={name} onChange={(e) => setName(e.target.value)} />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Age">
-          <NumberStepper label="Age" value={age} min={13} max={100} onChange={setAge} />
+        <Field label={t('Age')}>
+          <NumberStepper label={t('Age')} value={age} min={13} max={100} onChange={setAge} />
         </Field>
         <Field label={`Weight (${units})`}>
           <NumberStepper
-            label="Body weight"
+            label={t('Body weight')}
             value={weight}
             min={20}
             max={400}
@@ -420,20 +413,20 @@ function EditProfileForm({ onDone }: { onDone: () => void }) {
           />
         </Field>
       </div>
-      <Field label="Height (cm)">
-        <NumberStepper label="Height" value={heightCm} min={120} max={230} onChange={setHeightCm} suffix="cm" />
+      <Field label={t('Height (cm)')}>
+        <NumberStepper label={t('Height')} value={heightCm} min={120} max={230} onChange={setHeightCm} suffix={t('cm')} />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Days per week">
-          <NumberStepper label="Days per week" value={days} min={2} max={6} onChange={setDays} />
+        <Field label={t('Days per week')}>
+          <NumberStepper label={t('Days per week')} value={days} min={2} max={6} onChange={setDays} />
         </Field>
-        <Field label="Session minutes">
-          <NumberStepper label="Session minutes" value={minutes} min={20} max={120} step={5} onChange={setMinutes} />
+        <Field label={t('Session minutes')}>
+          <NumberStepper label={t('Session minutes')} value={minutes} min={20} max={120} step={5} onChange={setMinutes} />
         </Field>
       </div>
-      <Field label="Experience">
+      <Field label={t('Experience')}>
         <SegmentedControl<Experience>
-          label="Experience"
+          label={t('Experience')}
           value={experience}
           onChange={setExperience}
           options={[
@@ -443,9 +436,9 @@ function EditProfileForm({ onDone }: { onDone: () => void }) {
           ]}
         />
       </Field>
-      <Field label="Primary goal">
+      <Field label={t('Primary goal')}>
         <SegmentedControl<Goal>
-          label="Goal"
+          label={t('Goal')}
           columns={2}
           value={goal}
           onChange={setGoal}
@@ -458,9 +451,9 @@ function EditProfileForm({ onDone }: { onDone: () => void }) {
           ]}
         />
       </Field>
-      <Field label="Endurance goal">
+      <Field label={t('Endurance goal')}>
         <SegmentedControl<EnduranceGoal>
-          label="Endurance goal"
+          label={t('Endurance goal')}
           columns={2}
           value={enduranceGoal}
           onChange={setEnduranceGoal}
@@ -473,9 +466,9 @@ function EditProfileForm({ onDone }: { onDone: () => void }) {
           ]}
         />
       </Field>
-      <Field label="Priority">
+      <Field label={t('Priority')}>
         <SegmentedControl<Priority>
-          label="Priority"
+          label={t('Priority')}
           value={priority}
           onChange={setPriority}
           options={[
@@ -486,11 +479,11 @@ function EditProfileForm({ onDone }: { onDone: () => void }) {
         />
       </Field>
       <Field
-        label="Biological sex"
-        hint="Only used as the constant in the calorie equation."
+        label={t('Biological sex')}
+        hint={t('Only used as the constant in the calorie equation.')}
       >
         <SegmentedControl<Sex>
-          label="Biological sex"
+          label={t('Biological sex')}
           value={sex}
           onChange={setSex}
           options={[
@@ -500,9 +493,9 @@ function EditProfileForm({ onDone }: { onDone: () => void }) {
           ]}
         />
       </Field>
-      <Field label="Daily activity" hint="Outside training — workouts are counted separately.">
+      <Field label={t('Daily activity')} hint={t('Outside training — workouts are counted separately.')}>
         <SegmentedControl<ActivityLevel>
-          label="Daily activity"
+          label={t('Daily activity')}
           columns={2}
           value={dailyActivity}
           onChange={setDailyActivity}
@@ -514,9 +507,9 @@ function EditProfileForm({ onDone }: { onDone: () => void }) {
           ]}
         />
       </Field>
-      <Field label="Diet">
+      <Field label={t('Diet')}>
         <SegmentedControl<Diet>
-          label="Diet"
+          label={t('Diet')}
           columns={2}
           value={diet}
           onChange={setDiet}
@@ -553,7 +546,7 @@ function EditProfileForm({ onDone }: { onDone: () => void }) {
           onDone()
         }}
       >
-        Save changes
+        {t('Save changes')}
       </Button>
     </div>
   )

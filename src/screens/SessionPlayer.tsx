@@ -904,7 +904,7 @@ function ExerciseBlock({
               <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1">{t('Reps')}</p>
               {/* The stepper's own label stays English: it becomes the input's
                   aria-label, and the browser suite types into it by that name. */}
-              <NumberStepper label="Reps" value={draftReps} min={1} max={100} onChange={setDraftReps} />
+              <NumberStepper label={t('Reps')} value={draftReps} min={1} max={100} onChange={setDraftReps} />
             </div>
           </div>
 
@@ -1229,7 +1229,7 @@ function EditSetForm({
         <div>
           <p className="block text-[11px] uppercase tracking-wider text-smoke mb-1">{t('Reps')}</p>
           {/* English label on purpose — see the note on the other stepper. */}
-          <NumberStepper label="Reps" value={reps} min={0} max={100} onChange={setReps} />
+          <NumberStepper label={t('Reps')} value={reps} min={0} max={100} onChange={setReps} />
         </div>
       </div>
       <div>
@@ -1314,8 +1314,8 @@ export function ExercisePicker({
         onChange={(e) => setQuery(e.target.value)}
         placeholder={t('Search exercises')}
         // The aria-label stays English: the browser suite finds this field with
-        // `input[aria-label="Search exercises"]`.
-        aria-label="Search exercises"
+        // `input[aria-label={t('Search exercises')}]`.
+        aria-label={t('Search exercises')}
         className="w-full h-12 rounded-xl bg-coal border border-slate px-3.5 text-parchment placeholder:text-smoke mb-3"
       />
       {suggested.length > 0 && !query && (

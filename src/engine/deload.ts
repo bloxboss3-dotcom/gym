@@ -32,6 +32,8 @@ export interface DeloadAssessment {
   triggeredCount: number
   signals: DeloadSignal[]
   reason: string
+  reasonTemplate: string
+  reasonVars: Record<string, string | number>
   rule: string
   confidence: Confidence
   missingData: string[]
@@ -39,6 +41,8 @@ export interface DeloadAssessment {
     loadReductionPct: number
     volumeReductionPct: number
     description: string
+    descriptionTemplate: string
+    descriptionVars: Record<string, string | number>
   }
   citationIds: string[]
 }
@@ -223,6 +227,22 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
       : cooledDown
         ? `${triggeredCount} of ${RULES.deload.triggerCount} deload signals are currently firing. Keep training as planned and keep checking in — FORGED will flag it if the pattern builds.`
         : `You backed off recently, so FORGED is holding off on another deload suggestion for now (${RULES.deload.cooldownDays}-day cooldown).`,
+    // The same sentence with its numbers pulled out, so it can be translated.
+    reasonTemplate: suggested
+      ? '{count} fatigue signals are firing at once: {signals}. That pattern usually means accumulated fatigue is masking your actual fitness. A week at roughly {load}% of your usual load and {volume}% of your usual sets normally brings performance back up rather than down.'
+      : cooledDown
+        ? '{count} of {needed} deload signals are currently firing. Keep training as planned and keep checking in — FORGED will flag it if the pattern builds.'
+        : 'You backed off recently, so FORGED is holding off on another deload suggestion for now ({days}-day cooldown).',
+    reasonVars: suggested
+      ? {
+          count: triggeredCount,
+          signals: firing.join(', '),
+          load: Math.round((1 - RULES.deload.loadReductionPct) * 100),
+          volume: Math.round((1 - RULES.deload.volumeReductionPct) * 100),
+        }
+      : cooledDown
+        ? { count: triggeredCount, needed: RULES.deload.triggerCount }
+        : { days: RULES.deload.cooldownDays },
     rule: `${RULES.deload.triggerCount}+ of 6 fatigue signals inside a ${window}-day window → suggest a deload (rules.deload).`,
     confidence,
     missingData,
@@ -230,6 +250,12 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
       loadReductionPct: RULES.deload.loadReductionPct,
       volumeReductionPct: RULES.deload.volumeReductionPct,
       description: `Keep the same movements. Cut working sets by about ${Math.round(RULES.deload.volumeReductionPct * 100)}% and load by about ${Math.round(RULES.deload.loadReductionPct * 100)}%, and stop every set well short of failure (4+ reps in reserve). Keep easy running, keep protein where it is, and sleep as much as you can.`,
+      descriptionTemplate:
+        'Keep the same movements. Cut working sets by about {volume}% and load by about {load}%, and stop every set well short of failure (4+ reps in reserve). Keep easy running, keep protein where it is, and sleep as much as you can.',
+      descriptionVars: {
+        volume: Math.round(RULES.deload.volumeReductionPct * 100),
+        load: Math.round(RULES.deload.loadReductionPct * 100),
+      },
     },
     citationIds: ['bell-2020-overreaching', 'acsm-2011-quantity'],
   }

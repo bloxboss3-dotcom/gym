@@ -41,6 +41,7 @@ export function ConfidenceChip({ confidence }: { confidence: Confidence }) {
 }
 
 export function CitationList({ ids }: { ids: readonly string[] }) {
+  const { t } = useT()
   const citations = citationsFor(ids)
   if (!citations.length) return null
   return (
@@ -56,8 +57,12 @@ export function CitationList({ ids }: { ids: readonly string[] }) {
             {citation.authors} ({citation.year}) — {citation.title}
           </a>
           <p className="text-smoke mt-0.5">{citation.source}</p>
-          <p className="text-ash mt-1">{citation.takeaway}</p>
-          {citation.caveat && <p className="text-caution/90 mt-1">Caveat: {citation.caveat}</p>}
+          <p className="text-ash mt-1">{t(citation.takeaway)}</p>
+          {citation.caveat && (
+            <p className="text-caution/90 mt-1">
+              {t('Caveat:')} {t(citation.caveat)}
+            </p>
+          )}
         </li>
       ))}
     </ul>
@@ -108,7 +113,7 @@ export function RecommendationCard({
       )}
 
       <div className="mt-3 rounded-lg bg-coal/80 border border-slate/70 px-3 py-2.5">
-        <p className="text-[11px] uppercase tracking-wider text-smoke">Next session target</p>
+        <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Next session target')}</p>
         <p className="text-sm text-parchment mt-0.5 leading-snug">{t(recommendation.target.description)}</p>
       </div>
 
@@ -117,7 +122,7 @@ export function RecommendationCard({
       </p>
 
       {recommendation.warning && (
-        <Alert tone="danger" className="mt-3" title="Safety">
+        <Alert tone="danger" className="mt-3" title={t('Safety')}>
           {recommendation.warning}
         </Alert>
       )}
@@ -131,14 +136,14 @@ export function RecommendationCard({
 
       {!compact && (
         <div className="mt-3 space-y-2">
-          <Disclosure summary="Rule used" tone="quiet">
+          <Disclosure summary={t('Rule used')} tone="quiet">
             <p className="font-mono text-[11px] text-parchment/90 leading-relaxed">{recommendation.rule}</p>
           </Disclosure>
-          <Disclosure summary="Evidence" tone="quiet">
+          <Disclosure summary={t('Evidence')} tone="quiet">
             <CitationList ids={recommendation.citationIds} />
           </Disclosure>
           {recommendation.missingData.length > 0 && (
-            <Disclosure summary="What FORGED is missing" tone="quiet">
+            <Disclosure summary={t('What FORGED is missing')} tone="quiet">
               <ul className="list-disc pl-4 space-y-1">
                 {recommendation.missingData.map((item) => (
                   <li key={item}>{t(item)}</li>
@@ -157,7 +162,7 @@ export function RecommendationCard({
           to={detailHref}
           className="mt-3 inline-flex items-center gap-1.5 text-sm text-ember-400 font-medium touch-target"
         >
-          Full reasoning
+          {t('Full reasoning')}
           <span aria-hidden>→</span>
         </Link>
       )}

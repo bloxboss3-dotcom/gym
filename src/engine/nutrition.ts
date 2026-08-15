@@ -1,4 +1,5 @@
 import { RULES } from '@/config/rules'
+import { interpolate } from '@/lib/interpolate'
 import { calculateProteinTarget } from '@/engine/protein'
 import type { Confidence } from '@/engine/progression'
 import type { IsoDate, MealSlot, Profile, ProteinEntry, Sex } from '@/types'
@@ -48,6 +49,8 @@ export interface EnergyTarget {
   /** True when a cap or floor moved the number away from the goal offset. */
   clamped: boolean
   reason: string
+  reasonTemplate: string
+  reasonVars: Record<string, string | number>
   rule: string
   confidence: Confidence
   missingData: string[]
@@ -199,6 +202,9 @@ export function calculateEnergyTarget(
       overridden: true,
       clamped: false,
       reason: `Using your manual target of ${targetKcal} kcal. For reference, FORGED estimates your maintenance at about ${maintenanceKcal} kcal.`,
+      reasonTemplate:
+        'Using your manual target of {target} kcal. For reference, FORGED estimates your maintenance at about {maintenance} kcal.',
+      reasonVars: { target: targetKcal, maintenance: maintenanceKcal },
       rule: 'energy.manual_override',
       confidence: 'low',
       missingData,
@@ -248,10 +254,19 @@ export function calculateEnergyTarget(
   const direction =
     deltaKcal > 20 ? 'a small surplus' : deltaKcal < -20 ? 'a moderate deficit' : 'maintenance'
 
-  const reason =
-    `Estimated maintenance is about ${maintenanceKcal} kcal — ${bmrKcal} kcal at rest, plus your daily activity, plus roughly ${estimateMaintenance(profile).trainingKcal} kcal a day of training. ` +
-    `For ${GOAL_WORD[profile.goal]}, FORGED sets ${direction}: ${targetKcal} kcal.` +
+  const reasonTemplate =
+    'Estimated maintenance is about {maintenance} kcal — {bmr} kcal at rest, plus your daily activity, plus roughly {training} kcal a day of training. ' +
+    'For {goal}, FORGED sets {direction}: {target} kcal.' +
     (clamped ? ' The number was adjusted to stay inside the safe bounds in the rules file.' : '')
+  const reasonVars = {
+    maintenance: maintenanceKcal,
+    bmr: bmrKcal,
+    training: estimateMaintenance(profile).trainingKcal,
+    goal: GOAL_WORD[profile.goal],
+    direction,
+    target: targetKcal,
+  }
+  const reason = interpolate(reasonTemplate, reasonVars)
 
   return {
     bmrKcal,
@@ -259,6 +274,8 @@ export function calculateEnergyTarget(
     targetKcal,
     deltaKcal,
     projectedWeeklyKg: projectedWeeklyKg(deltaKcal),
+    reasonTemplate,
+    reasonVars,
     overridden: false,
     clamped,
     reason,

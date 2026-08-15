@@ -5,6 +5,7 @@ import { Button, Card, Chip, EmptyState, cx, useReducedMotion } from '@/componen
 import { ECONOMY } from '@/config/economy'
 import { ITEM_BY_ID, RARITY_META, SLOT_LABEL } from '@/data/items'
 import { useStore } from '@/state/store'
+import { useT } from '@/i18n/useT'
 
 /**
  * Pack opening.
@@ -18,6 +19,7 @@ import { useStore } from '@/state/store'
 type Phase = 'idle' | 'heating' | 'cracking' | 'revealed'
 
 export default function PackOpening() {
+  const { t } = useT()
   const { packId } = useParams<{ packId: string }>()
   const navigate = useNavigate()
   const store = useStore()
@@ -71,11 +73,11 @@ export default function PackOpening() {
       <div className="min-h-dvh grid place-items-center p-6 bg-void">
         <EmptyState
           icon="▣"
-          title="Pack not found"
-          body="This pack has already been opened or no longer exists."
+          title={t('Pack not found')}
+          body={t('This pack has already been opened or no longer exists.')}
           action={
             <Button variant="primary" onClick={() => navigate('/forge')}>
-              Back to the Forge
+              {t('Back to the Forge')}
             </Button>
           }
         />
@@ -92,12 +94,12 @@ export default function PackOpening() {
     >
       <header className="px-4 py-3 flex items-center justify-between">
         <button type="button" onClick={() => navigate('/forge')} className="touch-target text-ash px-2">
-          ✕<span className="sr-only">Close</span>
+          ✕<span className="sr-only">{t('Close')}</span>
         </button>
         <p className="font-display text-lg uppercase tracking-wide">{ECONOMY.packs[pack.kind].name}</p>
         {phase !== 'revealed' ? (
           <button type="button" onClick={skip} className="touch-target text-sm text-ember-400 px-2">
-            Skip animation
+            {t('Skip animation')}
           </button>
         ) : (
           <span className="w-16" />
@@ -114,7 +116,7 @@ export default function PackOpening() {
               <button
                 type="button"
                 onClick={tapHeat}
-                aria-label="Tap to heat the pack"
+                aria-label={t('Tap to heat the pack')}
                 className={cx(
                   'size-52 rounded-3xl border-2 grid place-items-center transition-colors duration-300 touch-target',
                   phase === 'cracking' && !reduced && 'animate-shake',
@@ -220,7 +222,7 @@ export default function PackOpening() {
                   else navigate('/forge/character')
                 }}
               >
-                Equip now
+                {t('Equip now')}
               </Button>
               <Button
                 full
@@ -249,9 +251,9 @@ export default function PackOpening() {
 
         {phase === 'revealed' && !current && (
           <Card>
-            <p className="text-sm text-ash">This pack was already opened.</p>
+            <p className="text-sm text-ash">{t('This pack was already opened.')}</p>
             <Button variant="primary" full className="mt-3" onClick={() => navigate('/forge/inventory')}>
-              View inventory
+              {t('View inventory')}
             </Button>
           </Card>
         )}

@@ -164,8 +164,8 @@ export default function Today() {
                     ? t('Today’s run')
                     : t('Today’s session')}
               </p>
-              <h2 className="font-display text-3xl uppercase leading-none mt-1 text-balance">{plan.title}</h2>
-              <p className="text-sm text-ash mt-1">{plan.subtitle}</p>
+              <h2 className="font-display text-3xl uppercase leading-none mt-1 text-balance">{t(plan.title)}</h2>
+              <p className="text-sm text-ash mt-1">{t(plan.subtitleTemplate, plan.subtitleVars)}</p>
             </div>
             <Chip tone="ember" className="shrink-0">
               {t('~{minutes} min', { minutes: plan.estimatedMinutes })}
@@ -192,8 +192,8 @@ export default function Today() {
                 ▾
               </span>
             </button>
-            <p className={cx('text-sm text-parchment/90 leading-relaxed', !showWhy && 'line-clamp-2')}>{plan.why}</p>
-            {showWhy && <p className="text-xs text-ember-200 mt-2 leading-relaxed">{plan.progressNote}</p>}
+            <p className={cx('text-sm text-parchment/90 leading-relaxed', !showWhy && 'line-clamp-2')}>{t(plan.whyTemplate, plan.whyVars)}</p>
+            {showWhy && <p className="text-xs text-ember-200 mt-2 leading-relaxed">{t(plan.progressNoteTemplate, plan.progressNoteVars)}</p>}
           </div>
 
           <Button variant="primary" size="lg" full className="mt-3" onClick={start}>
@@ -265,7 +265,7 @@ export default function Today() {
                 <>
                   <p className="font-display text-3xl text-ember-400 mt-0.5 tabular">
                     {Math.max(0, remainingKcal(macroPlan.targets.kcal, nutritionToday.kcal))}
-                    <span className="text-base text-ash">kcal</span>
+                    <span className="text-base text-ash">{t('kcal')}</span>
                   </p>
                   <ProgressBar
                     value={nutritionToday.kcal}

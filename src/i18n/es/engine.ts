@@ -115,4 +115,64 @@ export const ENGINE: Dict = {
     'Yendo hacia atrás ({pct}) aunque el esfuerzo está en la ventana correcta. Vale la pena revisar sueño, comida y cuánto más estás entrenando.',
   'Flat ({pct}) at a reasonable effort. Normal for a stretch — if it holds another few weeks, change the rep range or the movement.':
     'Estancado ({pct}) con un esfuerzo razonable. Normal por una temporada — si sigue así unas semanas más, cambia el rango de repeticiones o el ejercicio.',
+
+  // --- Today's plan, deloads and energy targets ----------------------------
+  'Session in progress': 'Sesión en curso',
+  'You have an unfinished session. Pick up exactly where you left off — every set you already logged is saved.':
+    'Tienes una sesión sin terminar. Retómala justo donde la dejaste: todas las series que ya registraste están guardadas.',
+  'Finishing an interrupted session still counts in full.':
+    'Terminar una sesión interrumpida cuenta igualmente por completo.',
+  'Build your plan': 'Crea tu plan',
+  'No program yet': 'Todavía sin programa',
+  'FORGED needs a program before it can tell you what to train. Generate one from your profile or build a custom routine — it takes about a minute.':
+    'FORGED necesita un programa antes de poder decirte qué entrenar. Genera uno desde tu perfil o crea una rutina propia: se tarda un minuto.',
+  'A plan turns training into something FORGED can progress for you.':
+    'Un plan convierte el entrenamiento en algo que FORGED puede hacer progresar por ti.',
+  'Lighter on purpose': 'Más suave a propósito',
+  'You are in a planned deload. Same movements, roughly 60% of the usual load, fewer sets, and every set stopped well short of failure. This counts as a completed session — backing off on purpose is training, not time off.':
+    'Estás en una descarga planificada. Los mismos movimientos, en torno al 60 % de la carga habitual, menos series y todas paradas bastante antes del fallo. Cuenta como sesión completada: bajar el pie a propósito es entrenar, no descansar.',
+  'Finishing the deload clears accumulated fatigue so the next block actually moves.':
+    'Terminar la descarga limpia la fatiga acumulada para que el siguiente bloque avance de verdad.',
+  '{movements} movements · {sets} working sets':
+    '{movements} movimientos · {sets} series de trabajo',
+  'This is the session you missed on {date}, moved to today rather than stacked on top of another day.':
+    'Esta es la sesión que te saltaste el {date}, movida a hoy en vez de amontonada sobre otro día.',
+  '{day} is scheduled for today in your plan. FORGED has a specific target for every movement based on what you did last time.':
+    'Hoy toca {day} según tu plan. FORGED tiene un objetivo concreto para cada movimiento según lo que hiciste la última vez.',
+  '{sets} hard sets toward this week\'s volume, and a fresh recommendation for every lift you log.':
+    '{sets} series duras para el volumen de esta semana, y una recomendación nueva por cada ejercicio que registres.',
+  '{km} km': '{km} km',
+  '{min} min': '{min} min',
+  'No lifting scheduled today, which makes it the cheapest possible day to run — endurance work sits furthest from your hard lower-body sessions here.':
+    'Hoy no hay pesas programadas, lo que lo convierte en el día más barato para correr: el trabajo de resistencia queda lo más lejos posible de tus sesiones duras de tren inferior.',
+  'Adds to this week’s running volume without competing with a lifting session.':
+    'Suma al volumen de carrera de esta semana sin competir con una sesión de pesas.',
+  'Recovery day': 'Día de recuperación',
+  'Prescribed, not skipped': 'Prescrito, no saltado',
+  'Nothing is scheduled today. Adaptation happens between sessions, not during them — a recovery day is part of the plan and counts toward your consistency exactly like a training day.':
+    'Hoy no hay nada programado. La adaptación ocurre entre sesiones, no durante ellas: un día de recuperación forma parte del plan y cuenta para tu constancia igual que un día de entrenamiento.',
+  'Log a check-in and hit your protein target to bank the day.':
+    'Registra tu control diario y llega a tu objetivo de proteína para cerrar el día.',
+  '{count} fatigue signals are firing at once: {signals}. That pattern usually means accumulated fatigue is masking your actual fitness. A week at roughly {load}% of your usual load and {volume}% of your usual sets normally brings performance back up rather than down.':
+    'Hay {count} señales de fatiga activas a la vez: {signals}. Ese patrón suele significar que la fatiga acumulada está tapando tu forma real. Una semana con en torno al {load} % de tu carga habitual y el {volume} % de tus series suele devolver el rendimiento hacia arriba, no hacia abajo.',
+  '{count} of {needed} deload signals are currently firing. Keep training as planned and keep checking in — FORGED will flag it if the pattern builds.':
+    'Hay {count} de {needed} señales de descarga activas. Sigue entrenando según el plan y sigue registrando tus controles: FORGED te avisará si el patrón crece.',
+  'You backed off recently, so FORGED is holding off on another deload suggestion for now ({days}-day cooldown).':
+    'Bajaste el pie hace poco, así que FORGED no sugerirá otra descarga por ahora (espera de {days} días).',
+  'Keep the same movements. Cut working sets by about {volume}% and load by about {load}%, and stop every set well short of failure (4+ reps in reserve). Keep easy running, keep protein where it is, and sleep as much as you can.':
+    'Mantén los mismos movimientos. Recorta las series de trabajo en torno a un {volume} % y la carga en torno a un {load} %, y para cada serie bastante antes del fallo (4+ repeticiones en reserva). Sigue corriendo suave, deja la proteína donde está y duerme todo lo que puedas.',
+  'Estimated maintenance is about {maintenance} kcal — {bmr} kcal at rest, plus your daily activity, plus roughly {training} kcal a day of training. For {goal}, FORGED sets {direction}: {target} kcal.':
+    'Tu mantenimiento estimado ronda las {maintenance} kcal: {bmr} kcal en reposo, más tu actividad diaria, más unas {training} kcal al día de entrenamiento. Para {goal}, FORGED fija {direction}: {target} kcal.',
+  'Estimated maintenance is about {maintenance} kcal — {bmr} kcal at rest, plus your daily activity, plus roughly {training} kcal a day of training. For {goal}, FORGED sets {direction}: {target} kcal. The number was adjusted to stay inside the safe bounds in the rules file.':
+    'Tu mantenimiento estimado ronda las {maintenance} kcal: {bmr} kcal en reposo, más tu actividad diaria, más unas {training} kcal al día de entrenamiento. Para {goal}, FORGED fija {direction}: {target} kcal. El número se ajustó para quedarse dentro de los límites seguros del archivo de reglas.',
+  'Using your manual target of {target} kcal. For reference, FORGED estimates your maintenance at about {maintenance} kcal.':
+    'Usando tu objetivo manual de {target} kcal. Como referencia, FORGED estima tu mantenimiento en unas {maintenance} kcal.',
+  'a small surplus': 'un pequeño superávit',
+  'a moderate deficit': 'un déficit moderado',
+  'maintenance': 'mantenimiento',
+  'building muscle': 'ganar músculo',
+  'getting stronger': 'ganar fuerza',
+  'a slow recomposition': 'una recomposición lenta',
+  'losing fat while keeping muscle': 'perder grasa manteniendo músculo',
+  'general fitness': 'forma física general',
 }
