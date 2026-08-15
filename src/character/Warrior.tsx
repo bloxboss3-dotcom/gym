@@ -78,28 +78,27 @@ export interface ArmAngles {
   elbow: number;
 }
 
-/**
- * The transform for one limb segment, and its exact inverse.
- *
- * The inverse is not decoration. Gloves and weapons live outside `Body`, and
- * the only way to send the left one with the left arm is to draw the gear
- * twice and clip each copy to its own side. A `clipPath` resolves in the
- * coordinate system of the element that references it — which is the rotated
- * one — so the clip rectangle carries the inverse rotation and lands back on
- * the un-posed half it was meant to describe. Without that, a raised arm
- * clips its own sword in half.
- */
+/** The transform for one limb segment, plus the rotations that built it. */
 function limb(rotations: { deg: number; x: number; y: number }[]) {
   const used = rotations.filter((r) => r.deg !== 0);
-  return {
-    forward: used.map((r) => `rotate(${r.deg} ${r.x} ${r.y})`).join(" "),
-    inverse: [...used]
-      .reverse()
-      .map((r) => `rotate(${-r.deg} ${r.x} ${r.y})`)
-      .join(" "),
-  };
+  return { forward: used.map((r) => `rotate(${r.deg} ${r.x} ${r.y})`).join(" "), rotations: used };
 }
 
+/** Where a point ends up after a chain of rotations, innermost last. */
+function movedBy(
+  point: { x: number; y: number },
+  rotations: { deg: number; x: number; y: number }[],
+) {
+  let { x, y } = point;
+  for (const r of [...rotations].reverse()) {
+    const a = (r.deg * Math.PI) / 180;
+    const [cos, sin] = [Math.cos(a), Math.sin(a)];
+    const [dx, dy] = [x - r.x, y - r.y];
+    x = dx * cos - dy * sin + r.x;
+    y = dx * sin + dy * cos + r.y;
+  }
+  return { x, y };
+}
 /** Both segments of one arm, ready to hang geometry off. */
 export function armTransforms(
   side: "left" | "right",
@@ -1411,23 +1410,32 @@ function FaceArt({
 // Hands
 // ---------------------------------------------------------------------------
 
+/**
+ * Gloves, one hand at a time.
+ *
+ * `side` exists because a pose moves the two arms independently, and the only
+ * honest way to send the left glove with the left arm is to draw one glove.
+ * The previous attempt drew both and clipped each copy to half the canvas,
+ * which does not work: the clip silently removed nothing, so every posed
+ * figure carried two of everything — including a second sword through its own
+ * skull. Rendering the side you asked for cannot fail that way.
+ */
 function HandsArt({
   art,
   p,
   animate,
+  side,
 }: {
   art: string;
   p: Palette;
   animate: boolean;
+  side: "left" | "right";
 }) {
   switch (art) {
     case "claws":
       return (
         <g>
-          {[
-            [67, 150, -1],
-            [133, 150, 1],
-          ].map(([x, y, dir]) => (
+          {(side === "left" ? [[67, 150, -1]] : [[133, 150, 1]]).map(([x, y, dir]) => (
             <g key={x}>
               <rect
                 x={x - 7}
@@ -1453,7 +1461,7 @@ function HandsArt({
     case "spirit-cuffs":
       return (
         <g className={animate ? "anim-glow" : undefined}>
-          {[67, 133].map((x) => (
+          {(side === "left" ? [67] : [133]).map((x) => (
             <g key={x}>
               <rect
                 x={x - 8}
@@ -1476,18 +1484,24 @@ function HandsArt({
         </g>
       );
   }
-  return <LegacyHandsArt art={art} p={p} />;
+  return <LegacyHandsArt art={art} p={p} side={side} />;
 }
 
-function LegacyHandsArt({ art, p }: { art: string; p: Palette }) {
+function LegacyHandsArt({
+  art,
+  p,
+  side,
+}: {
+  art: string;
+  p: Palette;
+  side: "left" | "right";
+}) {
   const left = { x: 67, y: 150 };
   const right = { x: 133, y: 150 };
-  const pair = (render: (x: number, y: number, flip: number) => ReactNode) => (
-    <>
-      {render(left.x, left.y, -1)}
-      {render(right.x, right.y, 1)}
-    </>
-  );
+  // Every legacy glove is drawn through this one helper, so restricting it to
+  // a single hand is a one-line change rather than eighty.
+  const pair = (render: (x: number, y: number, flip: number) => ReactNode) =>
+    side === "left" ? <>{render(left.x, left.y, -1)}</> : <>{render(right.x, right.y, 1)}</>;
   switch (art) {
     case "wraps":
       return pair((x, y) => (
@@ -2961,6 +2975,8 @@ export interface PoseSpec {
   head?: string;
   /** Legs and boots together, about the floor. */
   stance?: string;
+  /** Degrees to swing the weapon, chosen for the stance rather than inherited. */
+  blade?: number;
 }
 
 const POSES: Record<string, PoseSpec> = {
@@ -2969,105 +2985,89 @@ const POSES: Record<string, PoseSpec> = {
   // Hands up, chin down: elbows out, forearms drawn in across the chest.
   guard: {
     figure: "translate(0 3) rotate(-4 100 252) scale(0.99)",
-    left: { shoulder: 36, elbow: -88 },
-    right: { shoulder: -36, elbow: 88 },
-    head: "translate(0 3) rotate(-3 100 86)",
+    left: { shoulder: 40, elbow: -100 },
+    right: { shoulder: -40, elbow: 100 },
+    blade: 12,
+    head: "translate(0 4) rotate(-4 100 86)",
   },
   // Between sets, breathing. One hand to the hip, weight off one leg.
   rest: {
-    figure: "translate(-4 5) rotate(3 100 252) scale(0.985)",
-    left: { shoulder: 4, elbow: -55 },
-    right: { shoulder: -14, elbow: 20 },
-    head: "rotate(7 100 86)",
-    stance: "rotate(-3 100 252)",
+    figure: "translate(-4 5) rotate(4 100 252) scale(0.985)",
+    left: { shoulder: 5, elbow: -70 },
+    right: { shoulder: -10, elbow: 15 },
+    blade: 28,
+    head: "rotate(9 100 86)",
+    stance: "rotate(-4 100 252)",
   },
   // Chest up. Earned it. Arms open, standing tall.
   heroic: {
-    figure: "translate(0 -5) rotate(-2 100 252) scale(1.05)",
-    left: { shoulder: 34, elbow: -8 },
-    right: { shoulder: -34, elbow: 8 },
-    head: "rotate(-2 100 86)",
+    figure: "translate(0 -6) rotate(-2 100 252) scale(1.06)",
+    left: { shoulder: 45, elbow: -20 },
+    right: { shoulder: -45, elbow: 20 },
+    blade: -40,
+    head: "rotate(-3 100 86)",
   },
   // Raised blade: the weapon arm lifts and cocks back, the other stays low.
   raised: {
-    figure: "translate(3 -3) rotate(-7 100 252) scale(1.02)",
-    left: { shoulder: 16, elbow: 26 },
-    right: { shoulder: -22, elbow: -30 },
-    head: "rotate(-6 100 86)",
+    figure: "translate(3 -3) rotate(-8 100 252) scale(1.02)",
+    left: { shoulder: 25, elbow: 15 },
+    right: { shoulder: -52, elbow: -28 },
+    blade: -26,
+    head: "rotate(-8 100 86)",
   },
   // Braced low and wide, ready to take a hit.
   braced: {
-    figure: "translate(0 5) rotate(2 100 252) scale(1.03)",
-    left: { shoulder: 30, elbow: -30 },
-    right: { shoulder: -30, elbow: 30 },
-    head: "translate(0 2)",
-    stance: "translate(100 252) scale(1.1 0.96) translate(-100 -252)",
+    figure: "translate(0 6) rotate(2 100 252) scale(1.03)",
+    left: { shoulder: 36, elbow: -36 },
+    right: { shoulder: -36, elbow: 36 },
+    blade: 18,
+    head: "translate(0 3)",
+    stance: "translate(100 252) scale(1.14 0.94) translate(-100 -252)",
   },
   // Side-on, hand at the hilt, nothing drawn yet.
   sheathed: {
-    figure: "translate(-5 1) rotate(8 100 252) scale(0.98)",
-    left: { shoulder: 6, elbow: -46 },
-    right: { shoulder: -10, elbow: -22 },
-    head: "rotate(9 100 86)",
+    figure: "translate(-5 1) rotate(9 100 252) scale(0.98)",
+    left: { shoulder: 10, elbow: -60 },
+    right: { shoulder: -8, elbow: -30 },
+    blade: 52,
+    head: "rotate(6 100 86)",
+    stance: "rotate(3 100 252)",
   },
   // Rising. Both feet still on the floor, only just.
   ascend: {
-    figure: "translate(0 -12) rotate(-1 100 252) scale(1.06)",
-    left: { shoulder: 40, elbow: -16 },
-    right: { shoulder: -40, elbow: 16 },
-    head: "rotate(-3 100 86)",
+    figure: "translate(0 -13) rotate(-1 100 252) scale(1.07)",
+    left: { shoulder: 55, elbow: -25 },
+    right: { shoulder: -55, elbow: 25 },
+    blade: -28,
+    head: "rotate(-4 100 86)",
   },
 };
 
 /**
- * Gloves and weapon, each side carried by the arm that holds it.
+ * Where a pose puts the weapon.
  *
- * Every hand art in this file draws its pair at x = 67 and x = 133, and every
- * weapon hangs off the right hand (a couple mirror a second copy into the
- * left). None of it crosses the centre line before a pose moves it, so
- * splitting the drawing at x = 100 splits it into left-hand and right-hand
- * halves exactly — which is what lets both follow their own arm without
- * rewriting eighty art variants.
+ * Deliberately NOT the arm's transform. The weapon is drawn in the hand's
+ * frame, so rigidly rotating it with the arm swings a sword through however
+ * many degrees the shoulder moved — which put the blade through the figure's
+ * own head on two of the eight stances, and capped every arm angle at
+ * something too small to read as a pose.
  *
- * When no pose moves the arms, this draws once with no clips at all, so the
- * default figure is byte-for-byte what it was before poses articulated.
+ * So the weapon follows the hand's POSITION and takes its angle from the pose
+ * itself. That is both better looking and the thing that frees the arms to
+ * move properly: a raised blade can now be a raised blade.
  */
-function ArmGear({
-  left,
-  right,
-  children,
-}: {
-  left: ReturnType<typeof armTransforms>["lower"];
-  right: ReturnType<typeof armTransforms>["lower"];
-  children: ReactNode;
-}) {
-  const clipId = useId();
-  if (!left.forward && !right.forward) return <>{children}</>;
-  const half = (side: "l" | "r", inverse: string) => (
-    <clipPath id={`${clipId}-${side}`} key={side}>
-      <rect
-        x={side === "l" ? -200 : 100}
-        y={-200}
-        width={300}
-        height={700}
-        transform={inverse || undefined}
-      />
-    </clipPath>
-  );
-  return (
-    <>
-      <defs>
-        {half("l", left.inverse)}
-        {half("r", right.inverse)}
-      </defs>
-      <g transform={left.forward || undefined}>
-        <g clipPath={`url(#${clipId}-l)`}>{children}</g>
-      </g>
-      <g transform={right.forward || undefined}>
-        <g clipPath={`url(#${clipId}-r)`}>{children}</g>
-      </g>
-    </>
-  );
+function weaponTransform(
+  rightArm: ReturnType<typeof armTransforms>,
+  blade: number | undefined,
+) {
+  const wrist = JOINTS.wrist.right;
+  const moved = movedBy(wrist, rightArm.lower.rotations);
+  const dx = Number((moved.x - wrist.x).toFixed(2));
+  const dy = Number((moved.y - wrist.y).toFixed(2));
+  const parts: string[] = [];
+  if (dx !== 0 || dy !== 0) parts.push(`translate(${dx} ${dy})`);
+  if (blade) parts.push(`rotate(${blade} ${wrist.x} ${wrist.y})`);
+  return parts.join(" ");
 }
 
 // ---------------------------------------------------------------------------
@@ -3241,22 +3241,33 @@ export function Warrior({
                 animate={animate}
               />
             </g>
-            <ArmGear left={leftArm.lower} right={rightArm.lower}>
-              {hands && (
-                <HandsArt
-                  art={hands.art}
-                  p={paletteOf(hands, { base: CLOTH, accent: "#888" })}
-                  animate={animate}
-                />
-              )}
-              {weapon && weapon.art !== "none" && (
+            {/* One glove per hand, each carried by its own arm. */}
+            {hands &&
+              (["left", "right"] as const).map((side) => (
+                <g
+                  key={side}
+                  data-part={`glove-${side}`}
+                  transform={
+                    (side === "left" ? leftArm : rightArm).lower.forward || undefined
+                  }
+                >
+                  <HandsArt
+                    art={hands.art}
+                    p={paletteOf(hands, { base: CLOTH, accent: "#888" })}
+                    animate={animate}
+                    side={side}
+                  />
+                </g>
+              ))}
+            {weapon && weapon.art !== "none" && (
+              <g data-part="weapon" transform={weaponTransform(rightArm, posed.blade) || undefined}>
                 <WeaponArt
                   art={weapon.art}
                   p={paletteOf(weapon, { base: "#8a8a94", accent: "#c9c9d2" })}
                   animate={animate}
                 />
-              )}
-            </ArmGear>
+              </g>
+            )}
           </g>
         </g>
       </g>
