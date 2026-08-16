@@ -7,7 +7,7 @@ import {
   paletteOf,
   type Palette,
 } from "@/character/palette";
-import type { CosmeticItem, Figure, Slot } from "@/types";
+import type { CosmeticItem, Figure, Rarity, Slot } from "@/types";
 import { useReducedMotion } from "@/components/ui";
 
 /**
@@ -481,7 +481,14 @@ function BustShading({ wide }: { wide?: boolean }) {
  * by a test that renders every body item and checks nothing escapes its own
  * outline at the waist.
  */
-const WIDE_BODY_ARTS = new Set(["mecha", "plate", "heavy-plate", "ember-plate"]);
+const WIDE_BODY_ARTS = new Set([
+  "mecha",
+  "plate",
+  "heavy-plate",
+  "ember-plate",
+  "obsidian-plate",
+  "solar-plate",
+]);
 
 /** Exported so the wardrobe tests can render one piece of armour on its own —
  *  comparing whole warriors cannot tell you whether the ARMOUR responded to
@@ -557,6 +564,146 @@ function BodyArtBase({
       : "M74 88 Q100 78 126 88 L124 152 Q100 162 76 152 Z";
 
   switch (art) {
+    /*
+      Obsidian Warplate — legendary. Volcanic glass: the plate itself is almost
+      black and faceted, and every joint between the facets is a lit seam. The
+      seams pulse together, which is what makes it read as one piece of armour
+      with something inside it rather than a set of glowing decals.
+    */
+    case "obsidian-plate":
+      return (
+        <g>
+          <path d={wide} fill="#0c0b12" />
+          <path d="M56 88 Q74 72 92 88 L88 108 L58 108 Z" fill={p.base} />
+          <path d="M144 88 Q126 72 108 88 L112 108 L142 108 Z" fill={p.base} />
+          <path d="M78 96 L100 86 L122 96 L118 130 L100 140 L82 130 Z" fill={p.base} />
+          <path d="M100 86 L100 140 M78 96 L122 96 M82 130 L118 130" stroke="#0c0b12" strokeWidth="2" />
+          <g className={animate ? "anim-seam" : undefined}>
+            <path
+              d="M100 84 L100 150 M78 96 L100 86 L122 96 M82 130 L100 140 L118 130 M58 106 L88 106 M112 106 L142 106"
+              stroke={p.glow ?? p.accent}
+              strokeWidth="2"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </g>
+          <path d="M78 148 L122 148 L118 168 L82 168 Z" fill="#0c0b12" />
+          <g
+            className={animate ? "anim-seam" : undefined}
+            style={animate ? { animationDelay: "0.7s" } : undefined}
+          >
+            <path
+              d="M88 152 L90 166 M100 152 L100 168 M112 152 L110 166"
+              stroke={p.accent}
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </g>
+        </g>
+      );
+
+    /*
+      Solar Aegis — mythical. The tier above obsidian, so it does not just
+      pulse: the chest disc turns, motes go round it, and a ring keeps leaving.
+    */
+    case "solar-plate":
+      return (
+        <g>
+          <path d={wide} fill={p.base} />
+          <path d="M56 88 Q74 72 92 88 L88 108 L58 108 Z" fill={p.accent} />
+          <path d="M144 88 Q126 72 108 88 L112 108 L142 108 Z" fill={p.accent} />
+          <path d="M80 112 Q100 122 120 112" fill="none" stroke={p.accent} strokeWidth="2.5" />
+          <path d="M80 132 Q100 142 120 132" fill="none" stroke={p.accent} strokeWidth="2.5" />
+          <path d="M78 148 L122 148 L118 168 L82 168 Z" fill={p.base} />
+          <g
+            className={animate ? "anim-spin" : undefined}
+            style={{ transformOrigin: "100px 104px" }}
+          >
+            {Array.from({ length: 10 }, (_, i) => {
+              const a = (i / 10) * Math.PI * 2;
+              return (
+                <path
+                  key={i}
+                  d={`M${100 + Math.cos(a) * 9} ${104 + Math.sin(a) * 9} L${100 + Math.cos(a) * (i % 2 ? 15 : 19)} ${104 + Math.sin(a) * (i % 2 ? 15 : 19)}`}
+                  stroke={p.glow ?? p.accent}
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+              );
+            })}
+          </g>
+          <circle cx="100" cy="104" r="7.5" fill={p.glow ?? p.accent} />
+          <circle cx="100" cy="104" r="3.4" fill="#fffbeb" />
+          {[0, 1, 2].map((i) => (
+            <g
+              key={i}
+              className={animate ? "anim-orbit" : undefined}
+              style={
+                animate
+                  ? ({
+                      transformOrigin: "100px 104px",
+                      animationDelay: `${i * 1.9}s`,
+                      ["--r" as string]: `${22 + i * 5}px`,
+                    } as React.CSSProperties)
+                  : undefined
+              }
+            >
+              <circle cx="100" cy="104" r="1.8" fill={p.glow ?? p.accent} />
+            </g>
+          ))}
+          <circle
+            cx="100"
+            cy="104"
+            r="18"
+            fill="none"
+            stroke={p.glow ?? p.accent}
+            strokeWidth="1.4"
+            className={animate ? "anim-ring" : undefined}
+            style={{ transformOrigin: "100px 104px" }}
+          />
+        </g>
+      );
+
+    /*
+      The Unmade — secret. Armour that is not attached to the wearer: eight
+      shards holding the shape of a cuirass with gaps between them, each
+      drifting on its own vector, over a body left deliberately visible
+      through the middle.
+    */
+    case "unmade":
+      return (
+        <g>
+          <path d={torso} fill={p.base} opacity="0.25" />
+          {[
+            { d: "M76 88 L98 84 L96 102 L74 104 Z", dx: "-4px", dy: "-3px", t: 0 },
+            { d: "M102 84 L124 88 L126 104 L104 102 Z", dx: "4px", dy: "-3px", t: 0.6 },
+            { d: "M74 110 L96 108 L96 126 L76 126 Z", dx: "-5px", dy: "2px", t: 1.2 },
+            { d: "M104 108 L126 110 L124 126 L104 126 Z", dx: "5px", dy: "2px", t: 1.8 },
+            { d: "M78 132 L96 132 L96 150 L80 148 Z", dx: "-3px", dy: "5px", t: 2.4 },
+            { d: "M104 132 L122 132 L120 148 L104 150 Z", dx: "3px", dy: "5px", t: 3 },
+            { d: "M88 152 L112 152 L110 166 L90 166 Z", dx: "0px", dy: "6px", t: 3.6 },
+            { d: "M96 96 L104 96 L104 130 L96 130 Z", dx: "0px", dy: "-6px", t: 4.2 },
+          ].map((shard) => (
+            <g
+              key={shard.d}
+              className={animate ? "anim-drift" : undefined}
+              style={
+                animate
+                  ? ({
+                      animationDelay: `${shard.t}s`,
+                      ["--dx" as string]: shard.dx,
+                      ["--dy" as string]: shard.dy,
+                    } as React.CSSProperties)
+                  : { opacity: 0.8 }
+              }
+            >
+              <path d={shard.d} fill={p.base} />
+              <path d={shard.d} fill="none" stroke={p.glow ?? p.accent} strokeWidth="1.2" />
+            </g>
+          ))}
+        </g>
+      );
+
     case "shinobi":
       return (
         <g>
@@ -969,6 +1116,164 @@ function HeadArt({
   animate: boolean;
 }) {
   switch (art) {
+    /*
+      Drakeskull Helm — legendary. Built on the skull at (100, 58), r 19/21:
+      a swept brow, two horns going back rather than up so it reads at thumbnail
+      size, and eye slots that carry the only lit colour on the piece.
+    */
+    case "drake-helm":
+      return (
+        <g>
+          {/* A closed skullcap, not a circlet. Every other helm in the
+              wardrobe draws only a band and leaves the crown of the head bare,
+              which is right for a crown and wrong for something called a
+              skull. */}
+          <path d="M79 52 Q79 27 100 27 Q121 27 121 52 Q100 44 79 52 Z" fill="#15100e" />
+          <path d="M79 48 Q100 40 121 48 L121 55 Q100 47 79 55 Z" fill={p.base} />
+          {/*
+            Long horns sweeping back and out, not spikes on top. The first
+            version put three triangles above the brow and the whole helm read
+            as a jester's cap — the giveaway is that horns have to leave the
+            silhouette sideways, or they are just a hat with points.
+          */}
+          {[-1, 1].map((dir) => (
+            <g key={dir}>
+              {/* Tapered to a point. Drawn with a blunt outer edge they were
+                  the width of an ear at the tip and read as bat wings. */}
+              <path
+                d={`M${100 + dir * 18} 40
+                    Q${100 + dir * 38} 28 ${100 + dir * 57} 22
+                    Q${100 + dir * 40} 39 ${100 + dir * 20} 50 Z`}
+                fill={p.base}
+              />
+              <path
+                d={`M${100 + dir * 22} 42 Q${100 + dir * 38} 32 ${100 + dir * 52} 26`}
+                stroke={p.accent}
+                strokeWidth="1.4"
+                fill="none"
+                opacity="0.8"
+              />
+              {/* A short ridge horn above each brow, low enough to stay under
+                  the top of a 280-tall canvas. */}
+              <path
+                d={`M${100 + dir * 8} 30 L${100 + dir * 13} 19 L${100 + dir * 16} 32 Z`}
+                fill={p.base}
+              />
+            </g>
+          ))}
+          <path
+            d="M88 38 Q100 33 112 38"
+            fill="none"
+            stroke={p.accent}
+            strokeWidth="1.6"
+            opacity="0.6"
+          />
+          <g className={animate ? "anim-glow" : undefined}>
+            <path
+              d="M85 56 L95 53 L94 60 L86 61 Z M115 56 L105 53 L106 60 L114 61 Z"
+              fill={p.glow ?? p.accent}
+            />
+          </g>
+        </g>
+      );
+
+    /*
+      Astral Diadem — mythical. It does not sit on the head: a ring hovering
+      above it with stars going round, so the tell is the gap between the ring
+      and the skull.
+    */
+    case "diadem":
+      return (
+        <g>
+          <ellipse
+            cx="100"
+            cy="26"
+            rx="24"
+            ry="7"
+            fill="none"
+            stroke={p.base}
+            strokeWidth="3.4"
+          />
+          <ellipse
+            cx="100"
+            cy="26"
+            rx="24"
+            ry="7"
+            fill="none"
+            stroke={p.glow ?? p.accent}
+            strokeWidth="1.4"
+            className={animate ? "anim-shimmer" : undefined}
+          />
+          <path d="M100 14 L103 22 L100 26 L97 22 Z" fill={p.glow ?? p.accent} />
+          {[0, 1, 2, 3].map((i) => (
+            <g
+              key={i}
+              className={animate ? "anim-orbit" : undefined}
+              style={
+                animate
+                  ? ({
+                      transformOrigin: "100px 26px",
+                      animationDelay: `${i * 2.1}s`,
+                      animationDuration: "8.4s",
+                      ["--r" as string]: `${20 + (i % 2) * 6}px`,
+                    } as React.CSSProperties)
+                  : undefined
+              }
+            >
+              <circle cx="100" cy="26" r={i % 2 ? 1.6 : 2.4} fill="#f8fafc" />
+            </g>
+          ))}
+        </g>
+      );
+
+    /*
+      Crown of Nothing — secret. Seven shards holding the shape of a crown with
+      nothing joining them, each drifting on its own vector, over a gap where
+      the band would be. The rarity tier cycles the hue on top.
+    */
+    case "void-crown":
+      return (
+        <g>
+          <ellipse cx="100" cy="42" rx="23" ry="6" fill="#05030c" opacity="0.7" />
+          {/* Wide shards sitting ON the skull (top of the head is y = 37), not
+              hovering above it. Thin ones at y = 34 read as tally marks. */}
+          {[
+            { x: 80, h: 10, dx: "-3px", dy: "-3px", t: 0 },
+            { x: 87, h: 17, dx: "-2px", dy: "-5px", t: 0.7 },
+            { x: 94, h: 13, dx: "-1px", dy: "-4px", t: 1.4 },
+            { x: 100, h: 23, dx: "0px", dy: "-6px", t: 2.1 },
+            { x: 106, h: 13, dx: "1px", dy: "-4px", t: 2.8 },
+            { x: 113, h: 17, dx: "2px", dy: "-5px", t: 3.5 },
+            { x: 120, h: 10, dx: "3px", dy: "-3px", t: 4.2 },
+          ].map((shard) => (
+            <g
+              key={shard.x}
+              className={animate ? "anim-drift" : undefined}
+              style={
+                animate
+                  ? ({
+                      animationDelay: `${shard.t}s`,
+                      ["--dx" as string]: shard.dx,
+                      ["--dy" as string]: shard.dy,
+                    } as React.CSSProperties)
+                  : { opacity: 0.85 }
+              }
+            >
+              <path
+                d={`M${shard.x - 5} 42 L${shard.x} ${42 - shard.h} L${shard.x + 5} 42 Z`}
+                fill={p.accent}
+              />
+              <path
+                d={`M${shard.x - 5} 42 L${shard.x} ${42 - shard.h} L${shard.x + 5} 42 Z`}
+                fill="none"
+                stroke={p.glow ?? p.accent}
+                strokeWidth="1.4"
+              />
+            </g>
+          ))}
+        </g>
+      );
+
     case "spiked":
       return (
         <g>
@@ -1202,6 +1507,100 @@ function FaceArt({
     </>
   );
   switch (art) {
+    /*
+      Runebrand — legendary. Marks burnt into the face rather than painted on:
+      three on each cheek and one on the brow, all lighting and fading
+      together, and the eyes are left alone so they still blink.
+    */
+    case "runebrand":
+      return (
+        <g>
+          <g className={animate ? "anim-seam" : undefined}>
+            <path
+              d="M100 44 L100 50 M96 47 L104 47"
+              stroke={p.glow ?? p.accent}
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M84 54 L88 54 M83 60 L89 60 M85 66 L90 63"
+              stroke={p.glow ?? p.accent}
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+            <path
+              d="M116 54 L112 54 M117 60 L111 60 M115 66 L110 63"
+              stroke={p.glow ?? p.accent}
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </g>
+          {eyes(p.accent)}
+          <path
+            d="M94 70 Q100 73 106 70"
+            stroke="#2a1a14"
+            strokeWidth="1.6"
+            fill="none"
+            strokeLinecap="round"
+          />
+        </g>
+      );
+
+    /*
+      Starlit — secret. There are no eyes: two holes onto a sky, with points of
+      light drifting inside them. Nothing blinks, because there is nothing
+      there to close.
+    */
+    case "starlit":
+      return (
+        <g>
+          <ellipse cx="92" cy="58" rx="5" ry="3.6" fill="#05030c" />
+          <ellipse cx="108" cy="58" rx="5" ry="3.6" fill="#05030c" />
+          {[
+            { x: 90, y: 57, t: 0 },
+            { x: 94, y: 59, t: 0.9 },
+            { x: 92, y: 60, t: 1.8 },
+            { x: 106, y: 59, t: 0.5 },
+            { x: 110, y: 57, t: 1.4 },
+            { x: 108, y: 60, t: 2.3 },
+          ].map((s) => (
+            <g
+              key={`${s.x}-${s.y}`}
+              className={animate ? "anim-glow" : undefined}
+              style={animate ? { animationDelay: `${s.t}s` } : undefined}
+            >
+              <circle cx={s.x} cy={s.y} r="0.9" fill="#f8fafc" />
+            </g>
+          ))}
+          <g className={animate ? "anim-shimmer" : undefined}>
+            <ellipse
+              cx="92"
+              cy="58"
+              rx="6.4"
+              ry="4.6"
+              fill="none"
+              stroke={p.glow ?? p.accent}
+              strokeWidth="1"
+            />
+            <ellipse
+              cx="108"
+              cy="58"
+              rx="6.4"
+              ry="4.6"
+              fill="none"
+              stroke={p.glow ?? p.accent}
+              strokeWidth="1"
+            />
+          </g>
+          <path
+            d="M95 70 L105 70"
+            stroke="#2a1a14"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+        </g>
+      );
+
     case "oni":
       return (
         <g>
@@ -1432,6 +1831,97 @@ function HandsArt({
   side: "left" | "right";
 }) {
   switch (art) {
+    /*
+      Riftgrasp — legendary. A gauntlet split down the back of the hand with a
+      lit seam through the gap, one per hand. `side` matters: this component
+      renders ONE hand and is called twice, once carried by each arm.
+    */
+    case "rift-gauntlets":
+      return (
+        <g>
+          {(side === "left" ? [67] : [133]).map((x) => (
+            <g key={x}>
+              <rect x={x - 8} y="136" width="16" height="11" rx="3" fill="#120c1c" />
+              <rect x={x - 8} y="141" width="16" height="17" rx="4" fill={p.base} />
+              <path
+                d={`M${x - 7} 158 Q${x} 168 ${x + 7} 158 L${x + 7} 150 L${x - 7} 150 Z`}
+                fill={p.base}
+              />
+              <g className={animate ? "anim-seam" : undefined}>
+                <path
+                  d={`M${x} 137 L${x} 164`}
+                  stroke={p.glow ?? p.accent}
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d={`M${x - 5} 146 L${x + 5} 146`}
+                  stroke={p.glow ?? p.accent}
+                  strokeWidth="1.4"
+                />
+              </g>
+            </g>
+          ))}
+        </g>
+      );
+
+    /*
+      Titan Grips — mythical. Oversized: knuckle plates wider than the forearm,
+      and a core in the back of each hand that turns as well as pulsing, which
+      is the tier's job — one step up means a second kind of motion.
+    */
+    case "titan-gauntlets":
+      return (
+        <g>
+          {(side === "left" ? [67] : [133]).map((x) => (
+            <g key={x}>
+              <rect x={x - 11} y="130" width="22" height="14" rx="3" fill={p.base} />
+              <rect x={x - 10} y="143" width="20" height="20" rx="5" fill={p.base} />
+              <path
+                d={`M${x - 10} 163 Q${x} 174 ${x + 10} 163 L${x + 10} 156 L${x - 10} 156 Z`}
+                fill={p.base}
+              />
+              <path
+                d={`M${x - 8} 134 L${x + 8} 134 M${x - 8} 139 L${x + 8} 139`}
+                stroke={p.accent}
+                strokeWidth="2"
+              />
+              <path
+                d={`M${x - 10} 148 L${x + 10} 148`}
+                stroke="#2a0d0d"
+                strokeWidth="2"
+              />
+              {/* A short spoked core, not a starburst. Spokes out to r = 8 on
+                  a 20px-wide glove drew a red star across the whole hand. */}
+              <g
+                className={animate ? "anim-spin" : undefined}
+                style={{ transformOrigin: `${x}px 154px`, animationDuration: "8s" }}
+              >
+                {Array.from({ length: 6 }, (_, i) => {
+                  const a = (i / 6) * Math.PI * 2;
+                  return (
+                    <path
+                      key={i}
+                      d={`M${x + Math.cos(a) * 3.4} ${154 + Math.sin(a) * 3.4} L${x + Math.cos(a) * 5.4} ${154 + Math.sin(a) * 5.4}`}
+                      stroke={p.glow ?? p.accent}
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
+                  );
+                })}
+              </g>
+              <circle
+                cx={x}
+                cy="154"
+                r="3.2"
+                fill={p.glow ?? p.accent}
+                className={animate ? "anim-shimmer" : undefined}
+              />
+            </g>
+          ))}
+        </g>
+      );
+
     case "claws":
       return (
         <g>
@@ -1626,6 +2116,108 @@ function FeetArt({
   animate: boolean;
 }) {
   switch (art) {
+    /*
+      Magmatread — legendary. Fractured plate over a molten sole: the cracks
+      brighten and dim, and the ground under each boot carries the same colour,
+      so the heat reads as coming out of them rather than painted on.
+    */
+    case "magma-greaves":
+      return (
+        <g>
+          {[85, 115].map((x, i) => (
+            <g key={x}>
+              <g
+                className={animate ? "anim-glow" : undefined}
+                style={animate ? { animationDelay: `${i * 0.9}s` } : undefined}
+              >
+                <ellipse cx={x} cy="250" rx="17" ry="5" fill={p.glow ?? p.accent} opacity="0.4" />
+              </g>
+              <rect x={x - 9} y="204" width="18" height="32" rx="3" fill="#1c0d0a" />
+              <path
+                d={`M${x - 10} 236 L${x + 11} 236 L${x + 13} 248 L${x - 10} 248 Z`}
+                fill="#1c0d0a"
+              />
+              <g
+                className={animate ? "anim-seam" : undefined}
+                style={animate ? { animationDelay: `${i * 0.55}s` } : undefined}
+              >
+                <path
+                  d={`M${x - 7} 208 L${x + 2} 214 L${x - 4} 222 L${x + 6} 230
+                      M${x - 8} 244 L${x + 12} 244`}
+                  stroke={p.glow ?? p.accent}
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              </g>
+              <path
+                d={`M${x - 9} 204 L${x + 9} 204 L${x + 7} 198 L${x - 7} 198 Z`}
+                fill={p.base}
+              />
+            </g>
+          ))}
+        </g>
+      );
+
+    /*
+      Voidstride — mythical. The boots do not touch the ground: they hover a
+      few pixels clear, with the floor shadow left behind where the foot ought
+      to be, and shards orbiting each ankle.
+    */
+    case "void-greaves":
+      return (
+        <g>
+          {[85, 115].map((x, i) => (
+            <g key={x}>
+              <ellipse cx={x} cy="250" rx="13" ry="4" fill="#05030c" opacity="0.6" />
+              <g
+                className={animate ? "anim-float" : undefined}
+                style={
+                  animate
+                    ? { animationDelay: `${i * 0.8}s`, animationDuration: "3.6s" }
+                    : undefined
+                }
+              >
+                <rect x={x - 9} y="200" width="18" height="32" rx="4" fill={p.base} />
+                <path
+                  d={`M${x - 10} 232 L${x + 11} 232 L${x + 13} 242 L${x - 10} 242 Z`}
+                  fill={p.base}
+                />
+                <path
+                  d={`M${x - 7} 208 L${x + 7} 208 M${x - 7} 218 L${x + 7} 218`}
+                  stroke={p.glow ?? p.accent}
+                  strokeWidth="1.8"
+                />
+                <path
+                  d={`M${x - 9} 242 L${x + 13} 242`}
+                  stroke={p.glow ?? p.accent}
+                  strokeWidth="2"
+                  className={animate ? "anim-shimmer" : undefined}
+                />
+              </g>
+              {[0, 1, 2].map((k) => (
+                <g
+                  key={k}
+                  className={animate ? "anim-orbit" : undefined}
+                  style={
+                    animate
+                      ? ({
+                          transformOrigin: `${x}px 228px`,
+                          animationDelay: `${k * 2 + i}s`,
+                          animationDuration: "6s",
+                          ["--r" as string]: `${14 + k * 4}px`,
+                        } as React.CSSProperties)
+                      : undefined
+                  }
+                >
+                  <rect x={x - 1.4} y="226.6" width="2.8" height="2.8" fill={p.accent} />
+                </g>
+              ))}
+            </g>
+          ))}
+        </g>
+      );
+
     case "tabi":
       return (
         <g>
@@ -1836,6 +2428,150 @@ function WeaponArt({
   animate: boolean;
 }) {
   switch (art) {
+    /*
+      Riftcleaver — legendary. A greatsword with a tear down the middle of the
+      blade, and the tear is the item: the steel is nearly black so the seam
+      is the only bright thing, and it pulses rather than glows steadily so
+      the eye keeps going back to it.
+    */
+    case "rift-blade":
+      return (
+        <g>
+          <rect x="129.5" y="140" width="7" height="26" rx="3" fill="#120c1c" />
+          <path d="M116 141 L152 141 L148 133 L120 133 Z" fill={p.accent} />
+          {/* Wide. The first cut was 18px across and near-black, which left a
+              purple squiggle floating where a greatsword should have been. */}
+          <path d="M120 133 L146 133 L141 46 L133 26 L125 46 Z" fill={p.base} />
+          <path d="M133 133 L146 133 L141 46 L133 26 Z" fill="#150c26" />
+          <path
+            d="M120 133 L125 46 L133 26"
+            fill="none"
+            stroke={p.accent}
+            strokeWidth="1.8"
+            opacity="0.75"
+          />
+          <g className={animate ? "anim-seam" : undefined}>
+            <path
+              d="M133 128 L128 106 L137 86 L130 64 L133 44 L133 30"
+              stroke={p.glow ?? p.accent}
+              strokeWidth="3.4"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </g>
+          {/* What escapes through the tear, drifting up the edge of the blade. */}
+          {[
+            { x: 141, y: 112, d: 0 },
+            { x: 125, y: 88, d: 1.4 },
+            { x: 139, y: 66, d: 2.6 },
+          ].map((m) => (
+            <g
+              key={`${m.x}-${m.y}`}
+              className={animate ? "anim-rise" : undefined}
+              style={
+                animate
+                  ? { animationDelay: `${m.d}s`, animationDuration: "4.6s" }
+                  : { opacity: 0.5 }
+              }
+            >
+              <circle cx={m.x} cy={m.y} r="2.2" fill={p.accent} />
+            </g>
+          ))}
+        </g>
+      );
+
+    /*
+      Thunderpeal — mythical. A tier above the rift blade, so it gets two kinds
+      of motion instead of one: arcs that snap between the flanges, and sparks
+      that orbit the head continuously.
+    */
+    case "storm-hammer":
+      return (
+        <g>
+          {/* The head sits at chest height, not shoulder height. Drawn 34px
+              higher it rested on the figure's own collarbone and the flange
+              reached the edge of the face. */}
+          <rect x="130" y="104" width="6" height="66" rx="3" fill="#1b1836" />
+          <path d="M128 162 L138 162 L138 172 L128 172 Z" fill={p.base} />
+          <rect x="112" y="90" width="42" height="30" rx="4" fill={p.base} />
+          <path d="M112 96 L104 102 L104 108 L112 114 Z" fill={p.accent} />
+          <path d="M154 96 L162 102 L162 108 L154 114 Z" fill={p.accent} />
+          <rect x="118" y="96" width="30" height="18" rx="2" fill="#1b1836" />
+          <circle cx="133" cy="105" r="5.5" fill={p.glow ?? p.accent} opacity="0.9" />
+          {[0, 1, 2].map((i) => (
+            <g
+              key={i}
+              className={animate ? "anim-flicker" : undefined}
+              style={animate ? { animationDelay: `${i * 0.41}s` } : { opacity: 0.4 }}
+            >
+              <path
+                d={`M${146 + i * 8} ${72 + i * 4} l6 10 l-4 1 l7 12 l-11 -12 l4 -1 Z`}
+                fill={p.glow ?? p.accent}
+              />
+            </g>
+          ))}
+          {[0, 1, 2, 3].map((i) => (
+            <g
+              key={i}
+              className={animate ? "anim-orbit" : undefined}
+              style={
+                animate
+                  ? ({
+                      transformOrigin: "133px 105px",
+                      animationDelay: `${i * 1.2}s`,
+                      animationDuration: `${4.8 + (i % 2)}s`,
+                      ["--r" as string]: `${26 + (i % 2) * 8}px`,
+                    } as React.CSSProperties)
+                  : undefined
+              }
+            >
+              <circle cx="133" cy="105" r="2" fill={p.glow ?? p.accent} />
+            </g>
+          ))}
+        </g>
+      );
+
+    /*
+      First Light — secret. There is no blade: the hilt is real and everything
+      above it is layered light, three beams of different length shimmering out
+      of phase, so the "edge" is never in quite the same place twice.
+    */
+    case "dawn-blade":
+      return (
+        <g>
+          <rect x="130" y="142" width="6" height="24" rx="3" fill="#2b1a06" />
+          <path d="M120 142 L148 142 L144 136 L124 136 Z" fill={p.base} />
+          <circle cx="133" cy="139" r="4" fill={p.glow ?? p.accent} />
+          {/* Wide enough to read as a blade. At 11px the widest beam was a
+              hairline on a phone and the item looked like a bare hilt. */}
+          {[
+            { w: 26, top: 52, o: 0.2, d: 0 },
+            { w: 15, top: 36, o: 0.42, d: 0.8 },
+            { w: 6.5, top: 26, o: 0.95, d: 1.6 },
+          ].map((beam) => (
+            <g
+              key={beam.w}
+              className={animate ? "anim-shimmer" : undefined}
+              style={
+                animate
+                  ? { animationDelay: `${beam.d}s`, animationDuration: "3.1s" }
+                  : { opacity: beam.o }
+              }
+            >
+              <path
+                d={`M${133 - beam.w / 2} 136 L${133 + beam.w / 2} 136 L133 ${beam.top} Z`}
+                fill={p.glow ?? p.accent}
+                opacity={beam.o}
+              />
+            </g>
+          ))}
+          {/* A bar of light running the length of it, top to bottom. */}
+          <g className={animate ? "anim-scan" : undefined}>
+            <rect x="125" y="90" width="16" height="5" rx="2.5" fill="#fffbeb" opacity="0.8" />
+          </g>
+        </g>
+      );
+
     case "katana":
       return (
         <g>
@@ -2362,6 +3098,163 @@ function BackArt({
   animate: boolean;
 }) {
   switch (art) {
+    /*
+      Auroral Mantle — legendary. Not cloth: six ribbons of light hanging off
+      the shoulders, each leaning at its own rate, so the whole thing moves
+      like a curtain in a current rather than a cape in wind.
+    */
+    case "aurora-cape":
+      return (
+        <g>
+          <path
+            d="M78 84 Q100 76 122 84 L128 118 Q100 110 72 118 Z"
+            fill={p.base}
+            opacity="0.9"
+          />
+          {[-38, -23, -8, 8, 23, 38].map((spread, i) => (
+            <g
+              key={spread}
+              className={animate ? "anim-wave" : undefined}
+              style={
+                animate
+                  ? {
+                      animationDelay: `${i * 0.42}s`,
+                      animationDuration: `${3.6 + i * 0.32}s`,
+                    }
+                  : { opacity: 0.7 }
+              }
+            >
+              <path
+                d={`M${100 + spread * 0.7} 100
+                    Q${100 + spread * 1.1} ${152 + i * 4} ${100 + spread * 1.35} ${226 - Math.abs(spread) * 0.5}
+                    L${100 + spread * 1.35 + 13} ${226 - Math.abs(spread) * 0.5}
+                    Q${100 + spread * 1.1 + 13} ${152 + i * 4} ${100 + spread * 0.7 + 13} 100 Z`}
+                fill={i % 2 ? p.accent : (p.glow ?? p.accent)}
+                opacity={0.42 + (i % 3) * 0.13}
+              />
+            </g>
+          ))}
+        </g>
+      );
+
+    /*
+      Seraph Wings — mythical. Six of them in three pairs, and they beat by
+      compressing vertically about the shoulder line. Rotating them instead
+      pivots each wing off its own root and detaches it from the back.
+    */
+    case "seraph":
+      return (
+        <g>
+          {[0, 1, 2].map((row) => (
+            <g
+              key={row}
+              className={animate ? "anim-beat" : undefined}
+              style={
+                animate
+                  ? {
+                      animationDelay: `${row * 0.28}s`,
+                      animationDuration: `${2.6 + row * 0.4}s`,
+                    }
+                  : undefined
+              }
+            >
+              {/* They have to clear the torso. Tips 30px out disappeared behind
+                  the shoulders and six wings read as a bit of fluff. */}
+              {[-1, 1].map((dir) => (
+                <g key={dir}>
+                  {/* Up first, then out and down. Sweeping straight outward
+                      from the shoulder produced six shapes hanging off the
+                      ribs that read as a feathered cape, not wings — the arc
+                      above the shoulder line is the whole silhouette. */}
+                  <path
+                    d={`M100 ${94 + row * 12}
+                        Q${100 + dir * (30 + row * 4)} ${40 + row * 20} ${100 + dir * (64 + row * 5)} ${52 + row * 26}
+                        Q${100 + dir * (56 + row * 4)} ${104 + row * 22} ${100 + dir * (26 + row * 6)} ${132 + row * 20}
+                        Q${100 + dir * (22 + row * 3)} ${108 + row * 16} 100 ${100 + row * 12} Z`}
+                    fill={row === 1 ? (p.glow ?? p.accent) : p.base}
+                    opacity={0.94 - row * 0.15}
+                  />
+                  {[0, 1, 2].map((f) => (
+                    <path
+                      key={f}
+                      d={`M100 ${98 + row * 12} Q${100 + dir * (30 + f * 6 + row * 4)} ${60 + row * 20 + f * 14} ${100 + dir * (54 - f * 8 + row * 5)} ${70 + row * 24 + f * 18}`}
+                      stroke={p.accent}
+                      strokeWidth="1.1"
+                      fill="none"
+                      opacity="0.5"
+                    />
+                  ))}
+                </g>
+              ))}
+            </g>
+          ))}
+        </g>
+      );
+
+    /*
+      Riftgate — secret, so it gets everything: a hole standing open behind
+      the figure, a rune ring turning one way, an inner ring turning the other,
+      and light going out of it in waves. The rarity tier adds the hue cycle
+      on top, which is what nothing below secret does.
+    */
+    case "riftgate":
+      return (
+        <g>
+          <circle cx="100" cy="130" r="62" fill={p.glow ?? p.accent} opacity="0.1" />
+          <circle cx="100" cy="130" r="52" fill="#05030c" />
+          <g
+            className={animate ? "anim-spin" : undefined}
+            style={{ transformOrigin: "100px 130px" }}
+          >
+            {Array.from({ length: 16 }, (_, i) => {
+              const a = (i / 16) * Math.PI * 2;
+              return (
+                <rect
+                  key={i}
+                  x={100 + Math.cos(a) * 57 - 2}
+                  y={130 + Math.sin(a) * 57 - 4}
+                  width="4"
+                  height={i % 2 ? 8 : 5}
+                  rx="1"
+                  fill={p.accent}
+                  opacity="0.85"
+                />
+              );
+            })}
+          </g>
+          <g
+            className={animate ? "anim-spin" : undefined}
+            style={{ transformOrigin: "100px 130px", animationDirection: "reverse", animationDuration: "9s" }}
+          >
+            {Array.from({ length: 9 }, (_, i) => {
+              const a = (i / 9) * Math.PI * 2;
+              return (
+                <circle
+                  key={i}
+                  cx={100 + Math.cos(a) * 41}
+                  cy={130 + Math.sin(a) * 41}
+                  r="2.4"
+                  fill={p.glow ?? p.accent}
+                />
+              );
+            })}
+          </g>
+          {[0, 1, 2].map((i) => (
+            <circle
+              key={i}
+              cx="100"
+              cy="130"
+              r="44"
+              fill="none"
+              stroke={p.glow ?? p.accent}
+              strokeWidth="1.6"
+              className={animate ? "anim-ring" : undefined}
+              style={{ transformOrigin: "100px 130px", animationDelay: `${i * 1.3}s` }}
+            />
+          ))}
+        </g>
+      );
+
     case "scarf":
       return (
         <g>
@@ -2595,6 +3488,202 @@ function AuraArt({
   animate: boolean;
 }) {
   switch (art) {
+    /*
+      Umbral Shroud — legendary.
+
+      Smoke rather than sparkle: plumes that grow, drift sideways and thin out
+      as they climb, over a pool of shadow that never leaves the floor. Each
+      plume gets its own delay and its own drift so the column never pulses in
+      lockstep, which is what would make it read as a loop.
+    */
+    case "shadow":
+      return (
+        <g>
+          <ellipse cx="100" cy="250" rx="58" ry="11" fill={p.base} opacity="0.55" />
+          <ellipse cx="100" cy="250" rx="34" ry="6" fill="#000" opacity="0.6" />
+          {/*
+            `lift` is what a still frame looks like. Frozen at the pool the
+            seven plumes stack into one grey puddle, which is what the item
+            preview and every reduced-motion render would show — so when the
+            animation is off each plume is drawn part-way up its own path
+            instead, and the column reads without moving.
+          */}
+          {[
+            { x: 62, y: 240, r: 13, delay: 0, drift: "-9px", lift: 44, fade: 0.16 },
+            { x: 138, y: 244, r: 11, delay: 0.9, drift: "10px", lift: 36, fade: 0.2 },
+            { x: 84, y: 246, r: 15, delay: 1.7, drift: "-4px", lift: 26, fade: 0.26 },
+            { x: 118, y: 238, r: 12, delay: 2.6, drift: "7px", lift: 18, fade: 0.3 },
+            { x: 100, y: 248, r: 16, delay: 3.4, drift: "-2px", lift: 10, fade: 0.34 },
+            { x: 48, y: 246, r: 9, delay: 4.2, drift: "-12px", lift: 54, fade: 0.12 },
+            { x: 152, y: 248, r: 10, delay: 5, drift: "13px", lift: 4, fade: 0.38 },
+          ].map((plume) => (
+            <g
+              key={`${plume.x}-${plume.delay}`}
+              className={animate ? "anim-smoke" : undefined}
+              transform={
+                animate
+                  ? undefined
+                  : `translate(${(parseFloat(plume.drift) * plume.lift) / 54} ${-plume.lift})`
+              }
+              style={
+                animate
+                  ? ({
+                      animationDelay: `${plume.delay}s`,
+                      ["--drift" as string]: plume.drift,
+                    } as React.CSSProperties)
+                  : { opacity: plume.fade }
+              }
+            >
+              <ellipse
+                cx={plume.x}
+                cy={plume.y}
+                rx={plume.r}
+                ry={plume.r * 0.74}
+                fill={p.base}
+              />
+              <ellipse
+                cx={plume.x + plume.r * 0.3}
+                cy={plume.y - plume.r * 0.4}
+                rx={plume.r * 0.62}
+                ry={plume.r * 0.5}
+                fill={p.accent}
+                opacity="0.5"
+              />
+            </g>
+          ))}
+        </g>
+      );
+
+    /*
+      Solar Flare — mythical. One tier up, so it gets a second kind of motion:
+      a corona that turns, motes that orbit it, and a ring that keeps going out.
+    */
+    case "solar":
+      return (
+        <g>
+          <ellipse cx="100" cy="250" rx="52" ry="9" fill={p.glow ?? p.accent} opacity="0.2" />
+          <g className={animate ? "anim-spin" : undefined} style={{ transformOrigin: "100px 140px" }}>
+            {Array.from({ length: 12 }, (_, i) => {
+              const a = (i / 12) * Math.PI * 2;
+              const inner = 44;
+              const outer = i % 2 === 0 ? 64 : 54;
+              return (
+                <path
+                  key={i}
+                  d={`M${100 + Math.cos(a) * inner} ${140 + Math.sin(a) * inner} L${100 + Math.cos(a) * outer} ${140 + Math.sin(a) * outer}`}
+                  stroke={p.glow ?? p.accent}
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  opacity="0.5"
+                />
+              );
+            })}
+          </g>
+          {[0, 1, 2, 3].map((i) => (
+            <g
+              key={i}
+              className={animate ? "anim-orbit" : undefined}
+              style={
+                animate
+                  ? ({
+                      transformOrigin: "100px 140px",
+                      animationDelay: `${i * 1.75}s`,
+                      ["--r" as string]: `${38 + i * 7}px`,
+                    } as React.CSSProperties)
+                  : undefined
+              }
+            >
+              <circle cx="100" cy="140" r={3 - i * 0.4} fill={p.glow ?? p.accent} />
+            </g>
+          ))}
+          <circle
+            cx="100"
+            cy="140"
+            r="40"
+            fill="none"
+            stroke={p.accent}
+            strokeWidth="1.6"
+            className={animate ? "anim-ring" : undefined}
+            style={{ transformOrigin: "100px 140px" }}
+          />
+        </g>
+      );
+
+    /*
+      Eclipse — secret, and the only art that gets all of it: a dark disc, a
+      corona that turns the other way, orbiting motes, two rings out of phase
+      and a shimmer over the top. The rarity tier adds the hue cycle.
+    */
+    case "eclipse":
+      return (
+        <g>
+          <ellipse cx="100" cy="250" rx="56" ry="10" fill="#000" opacity="0.5" />
+          {/*
+            Big enough to be an eclipse rather than a rumour. The figure is
+            about 46px across at the shoulders, so a 38px disc behind it is
+            entirely hidden and only the spokes ever showed — the item looked
+            like a sunburst with no sun in it.
+          */}
+          <circle cx="100" cy="122" r="70" fill={p.glow ?? p.accent} opacity="0.14" />
+          <g className={animate ? "anim-spin" : undefined} style={{ transformOrigin: "100px 122px", animationDirection: "reverse" }}>
+            {Array.from({ length: 24 }, (_, i) => {
+              const a = (i / 24) * Math.PI * 2;
+              return (
+                <path
+                  key={i}
+                  d={`M${100 + Math.cos(a) * 60} ${122 + Math.sin(a) * 60} L${100 + Math.cos(a) * (i % 3 === 0 ? 86 : 72)} ${122 + Math.sin(a) * (i % 3 === 0 ? 86 : 72)}`}
+                  stroke={p.glow ?? p.accent}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  opacity="0.75"
+                />
+              );
+            })}
+          </g>
+          <circle cx="100" cy="122" r="58" fill="#05050a" />
+          <circle
+            cx="100"
+            cy="122"
+            r="58"
+            fill="none"
+            stroke={p.glow ?? p.accent}
+            strokeWidth="3"
+            className={animate ? "anim-shimmer" : undefined}
+          />
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <g
+              key={i}
+              className={animate ? "anim-orbit" : undefined}
+              style={
+                animate
+                  ? ({
+                      transformOrigin: "100px 122px",
+                      animationDelay: `${i * 1.16}s`,
+                      animationDuration: `${6 + (i % 3)}s`,
+                      ["--r" as string]: `${64 + (i % 3) * 10}px`,
+                    } as React.CSSProperties)
+                  : undefined
+              }
+            >
+              <circle cx="100" cy="122" r="2.8" fill={p.accent} />
+            </g>
+          ))}
+          {[0, 1].map((i) => (
+            <circle
+              key={i}
+              cx="100"
+              cy="122"
+              r="60"
+              fill="none"
+              stroke={p.accent}
+              strokeWidth="1.6"
+              className={animate ? "anim-ring" : undefined}
+              style={{ transformOrigin: "100px 122px", animationDelay: `${i * 1.9}s` }}
+            />
+          ))}
+        </g>
+      );
+
     case "sakura":
       return (
         <g>
@@ -2802,6 +3891,125 @@ function CompanionArt({
   animate: boolean;
 }) {
   switch (art) {
+    /*
+      Cinderdrake — mythical. Perched on the left, wings folded and beating
+      slowly, with heat coming off the back. Sits on the ground like the fox
+      rather than hovering like the wisp, so the two never read as the same
+      companion in a different colour.
+    */
+    case "drake":
+      return (
+        <g>
+          <ellipse cx="42" cy="240" rx="17" ry="5" fill="#000" opacity="0.4" />
+          <path
+            d="M28 238 Q28 218 42 214 Q58 216 56 236 L54 240 L30 240 Z"
+            fill={p.base}
+          />
+          {/* Neck, then a wedge skull with a snout and a swept horn. Without
+              the snout it is a bird, which is what the first version was. */}
+          <path d="M50 220 Q56 206 50 196 Q60 196 62 210 Q62 220 56 226 Z" fill={p.base} />
+          <path d="M50 198 L64 192 L72 198 L64 204 L52 204 Z" fill={p.base} />
+          <path d="M64 199 L74 201 L64 203 Z" fill={p.accent} />
+          <path d="M54 194 Q50 186 44 184 Q52 188 54 196 Z" fill={p.base} />
+          <circle cx="58" cy="197" r="1.7" fill={p.glow ?? p.accent} />
+          <g
+            className={animate ? "anim-beat" : undefined}
+            style={{ transformOrigin: "40px 216px" }}
+          >
+            <path d="M34 218 Q18 200 12 182 Q30 194 42 212 Z" fill={p.accent} opacity="0.92" />
+            <path d="M40 216 Q30 198 28 180 Q42 192 48 210 Z" fill={p.accent} opacity="0.7" />
+          </g>
+          <path d="M28 236 Q12 240 6 232 Q16 244 28 242 Z" fill={p.base} />
+          {[0, 1, 2].map((i) => (
+            <g
+              key={i}
+              className={animate ? "anim-rise" : undefined}
+              style={
+                animate
+                  ? { animationDelay: `${i * 1.1}s`, animationDuration: "3.6s" }
+                  : { opacity: 0.4 }
+              }
+            >
+              <circle cx={32 + i * 9} cy="214" r="1.8" fill={p.glow ?? p.accent} />
+            </g>
+          ))}
+        </g>
+      );
+
+    /*
+      The Watcher — secret. Not an animal: an eye in a shell of rings, one
+      turning each way, floating at head height. It gets three kinds of motion
+      because it is the top of the ladder — float, spin and pulse — and the
+      rarity tier cycles the hue over all of it.
+    */
+    case "watcher":
+      return (
+        <g className={animate ? "anim-float" : undefined}>
+          <g className={animate ? "anim-glow" : undefined}>
+            <circle cx="162" cy="80" r="24" fill={p.glow ?? p.accent} opacity="0.16" />
+          </g>
+          <g
+            className={animate ? "anim-spin" : undefined}
+            style={{ transformOrigin: "162px 80px", animationDuration: "11s" }}
+          >
+            <ellipse
+              cx="162"
+              cy="80"
+              rx="19"
+              ry="7"
+              fill="none"
+              stroke={p.accent}
+              strokeWidth="1.6"
+            />
+          </g>
+          <g
+            className={animate ? "anim-spin" : undefined}
+            style={{
+              transformOrigin: "162px 80px",
+              animationDuration: "7s",
+              animationDirection: "reverse",
+            }}
+          >
+            <ellipse
+              cx="162"
+              cy="80"
+              rx="7"
+              ry="19"
+              fill="none"
+              stroke={p.accent}
+              strokeWidth="1.6"
+            />
+          </g>
+          <circle cx="162" cy="80" r="11" fill="#05030c" />
+          <circle
+            cx="162"
+            cy="80"
+            r="6"
+            fill={p.glow ?? p.accent}
+            className={animate ? "anim-shimmer" : undefined}
+          />
+          <circle cx="162" cy="80" r="2.4" fill="#05030c" />
+          {[0, 1, 2, 3].map((i) => (
+            <g
+              key={i}
+              className={animate ? "anim-orbit" : undefined}
+              style={
+                animate
+                  ? ({
+                      transformOrigin: "162px 80px",
+                      animationDelay: `${i * 2.2}s`,
+                      animationDuration: "8.8s",
+                      ["--r" as string]: `${24 + (i % 2) * 6}px`,
+                    } as React.CSSProperties)
+                  : undefined
+              }
+            >
+              <circle cx="162" cy="80" r="1.8" fill="#f8fafc" />
+            </g>
+          ))}
+        </g>
+      );
+
     case "fox":
       return (
         <g className={animate ? "anim-float" : undefined}>
@@ -3033,6 +4241,19 @@ const POSES: Record<string, PoseSpec> = {
     head: "rotate(6 100 86)",
     stance: "rotate(3 100 252)",
   },
+  // Legendary. Everything wide and low: arms out and away from the ribs,
+  // stance spread, weapon carried point-down beside the leg.
+  titan: {
+    // Scaled about the ground plane, not about the origin. `scale(1.09)` on
+    // its own moves the feet 22px down and the whole figure 9px right, which
+    // pushed this stance off the bottom of the canvas.
+    figure: "translate(100 252) scale(1.09) translate(-100 -252)",
+    left: { shoulder: 24, elbow: 12 },
+    right: { shoulder: -24, elbow: -12 },
+    blade: 34,
+    head: "translate(0 2)",
+    stance: "translate(100 252) scale(1.2 0.96) translate(-100 -252)",
+  },
   // Rising. Both feet still on the floor, only just.
   ascend: {
     figure: "translate(0 -13) rotate(-1 100 252) scale(1.07)",
@@ -3040,6 +4261,16 @@ const POSES: Record<string, PoseSpec> = {
     right: { shoulder: -55, elbow: 25 },
     blade: -28,
     head: "rotate(-4 100 86)",
+  },
+  // Secret. Arms fully open, head tipped back, the whole figure lifted off
+  // the floor plane — the only stance that does not stand on anything.
+  apotheosis: {
+    figure: "translate(100 252) scale(1.1) translate(-100 -252) translate(0 -18)",
+    left: { shoulder: 62, elbow: -14 },
+    right: { shoulder: -62, elbow: 14 },
+    blade: -46,
+    head: "rotate(-11 100 86)",
+    stance: "translate(100 252) scale(0.9 1.02) translate(-100 -252)",
   },
 };
 
@@ -3068,6 +4299,102 @@ function weaponTransform(
   if (dx !== 0 || dy !== 0) parts.push(`translate(${dx} ${dy})`);
   if (blade) parts.push(`rotate(${blade} ${wrist.x} ${wrist.y})`);
   return parts.join(" ");
+}
+
+/**
+ * The rarity ladder, made visible.
+ *
+ * Every item from legendary up gets motion on top of whatever its own art
+ * does, and the tiers escalate: legendary breathes, mythical breathes harder
+ * and runs a little wider, secret does both and cycles hue. Below legendary
+ * this renders nothing at all — the point of the ladder is that the top of it
+ * looks different, which it cannot if everything glows.
+ *
+ * Wrapping rather than threading rarity through ten art components means a new
+ * legendary item is still a data row, and an existing one gets the treatment
+ * without being touched.
+ */
+const TIERED: Partial<Record<Rarity, string>> = {
+  legendary: "rar-legendary",
+  mythical: "rar-mythical",
+  secret: "rar-secret",
+};
+
+/**
+ * What a legendary stance looks like.
+ *
+ * A pose is the one slot with nothing of its own to draw — the stance IS the
+ * item — so there is no artwork for the tier to wrap, and the ladder stopped
+ * dead at the pose slot until this existed.
+ *
+ * Wrapping the whole figure instead was the obvious alternative and is worse:
+ * the secret tier cycles hue, and applied to the warrior it turns skin green
+ * on the way round. So the ground reacts rather than the person: a pool of
+ * light at the feet, rings leaving it, and motes coming off the floor.
+ */
+function PoseGround({ p, animate }: { p: Palette; animate: boolean }) {
+  const lit = p.glow ?? p.accent;
+  return (
+    <g>
+      <ellipse cx="100" cy="252" rx="52" ry="12" fill={lit} opacity="0.16" />
+      <ellipse cx="100" cy="252" rx="30" ry="7" fill={lit} opacity="0.3" />
+      {[0, 1, 2].map((i) => (
+        <ellipse
+          key={i}
+          cx="100"
+          cy="252"
+          rx="46"
+          ry="11"
+          fill="none"
+          stroke={lit}
+          strokeWidth="1.6"
+          className={animate ? "anim-ring" : undefined}
+          style={{ transformOrigin: "100px 252px", animationDelay: `${i * 1.26}s` }}
+          opacity={animate ? undefined : 0.35 - i * 0.1}
+        />
+      ))}
+      {[
+        { x: 66, d: 0 },
+        { x: 88, d: 1.1 },
+        { x: 112, d: 2.2 },
+        { x: 134, d: 3.3 },
+      ].map((m) => (
+        <g
+          key={m.x}
+          className={animate ? "anim-rise" : undefined}
+          style={
+            animate
+              ? { animationDelay: `${m.d}s`, animationDuration: "4.4s" }
+              : { opacity: 0.5 }
+          }
+        >
+          <circle cx={m.x} cy="246" r="2.2" fill={lit} />
+        </g>
+      ))}
+    </g>
+  );
+}
+
+function Tiered({
+  item,
+  animate,
+  children,
+}: {
+  item: CosmeticItem | undefined;
+  animate: boolean;
+  children: ReactNode;
+}) {
+  const tier = item ? TIERED[item.rarity] : undefined;
+  if (!tier || !animate) return <>{children}</>;
+  return (
+    <g
+      className={tier}
+      data-rarity={item?.rarity}
+      style={{ ["--tier-glow" as string]: item?.palette.glow ?? item?.palette.accent }}
+    >
+      {children}
+    </g>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -3152,11 +4479,22 @@ export function Warrior({
       <rect x="0" y="0" width="200" height="280" fill={`url(#${glowId})`} />
 
       {aura && (
-        <AuraArt
-          art={aura.art}
-          p={paletteOf(aura, { base: "#666", accent: "#999" })}
-          animate={animate}
-        />
+        <Tiered item={aura} animate={animate}>
+          <AuraArt
+            art={aura.art}
+            p={paletteOf(aura, { base: "#666", accent: "#999" })}
+            animate={animate}
+          />
+        </Tiered>
+      )}
+
+      {pose && TIERED[pose.rarity] && (
+        <Tiered item={pose} animate={animate}>
+          <PoseGround
+            p={paletteOf(pose, { base: "#666", accent: "#999" })}
+            animate={animate}
+          />
+        </Tiered>
       )}
 
       {/*
@@ -3172,11 +4510,13 @@ export function Warrior({
       >
         <g transform={posed.figure || undefined}>
           {back && (
-            <BackArt
-              art={back.art}
-              p={paletteOf(back, { base: CLOTH, accent: "#666" })}
-              animate={animate}
-            />
+            <Tiered item={back} animate={animate}>
+              <BackArt
+                art={back.art}
+                p={paletteOf(back, { base: CLOTH, accent: "#666" })}
+                animate={animate}
+              />
+            </Tiered>
           )}
           {/*
           Breathing.
@@ -3199,11 +4539,13 @@ export function Warrior({
           <g transform={posed.stance || undefined}>
             <Body heavy={heavy} build={build} frame={frame} legsOnly />
             {feet && (
-              <FeetArt
-                art={feet.art}
-                p={paletteOf(feet, { base: CLOTH, accent: "#777" })}
-                animate={animate}
-              />
+              <Tiered item={feet} animate={animate}>
+                <FeetArt
+                  art={feet.art}
+                  p={paletteOf(feet, { base: CLOTH, accent: "#777" })}
+                  animate={animate}
+                />
+              </Tiered>
             )}
           </g>
           <g
@@ -3219,27 +4561,33 @@ export function Warrior({
               head={posed.head}
             />
             {body && (
-              <BodyArt
-                art={body.art}
-                p={paletteOf(body, { base: CLOTH, accent: "#777" })}
-                animate={animate}
-                frame={frame}
-              />
+              <Tiered item={body} animate={animate}>
+                <BodyArt
+                  art={body.art}
+                  p={paletteOf(body, { base: CLOTH, accent: "#777" })}
+                  animate={animate}
+                  frame={frame}
+                />
+              </Tiered>
             )}
             <g transform={posed.head || undefined}>
               <FrameHair frame={frame} layer="crown" animate={animate} />
               {head && head.art !== "none" && (
-                <HeadArt
-                  art={head.art}
-                  p={paletteOf(head, { base: "#2b2b31", accent: "#888" })}
+                <Tiered item={head} animate={animate}>
+                  <HeadArt
+                    art={head.art}
+                    p={paletteOf(head, { base: "#2b2b31", accent: "#888" })}
+                    animate={animate}
+                  />
+                </Tiered>
+              )}
+              <Tiered item={face} animate={animate}>
+                <FaceArt
+                  art={face?.art ?? "stoic"}
+                  p={paletteOf(face, { base: "#2b2b31", accent: "#888" })}
                   animate={animate}
                 />
-              )}
-              <FaceArt
-                art={face?.art ?? "stoic"}
-                p={paletteOf(face, { base: "#2b2b31", accent: "#888" })}
-                animate={animate}
-              />
+              </Tiered>
             </g>
             {/* One glove per hand, each carried by its own arm. */}
             {hands &&
@@ -3251,21 +4599,25 @@ export function Warrior({
                     (side === "left" ? leftArm : rightArm).lower.forward || undefined
                   }
                 >
-                  <HandsArt
-                    art={hands.art}
-                    p={paletteOf(hands, { base: CLOTH, accent: "#888" })}
-                    animate={animate}
-                    side={side}
-                  />
+                  <Tiered item={hands} animate={animate}>
+                    <HandsArt
+                      art={hands.art}
+                      p={paletteOf(hands, { base: CLOTH, accent: "#888" })}
+                      animate={animate}
+                      side={side}
+                    />
+                  </Tiered>
                 </g>
               ))}
             {weapon && weapon.art !== "none" && (
               <g data-part="weapon" transform={weaponTransform(rightArm, posed.blade) || undefined}>
-                <WeaponArt
-                  art={weapon.art}
-                  p={paletteOf(weapon, { base: "#8a8a94", accent: "#c9c9d2" })}
-                  animate={animate}
-                />
+                <Tiered item={weapon} animate={animate}>
+                  <WeaponArt
+                    art={weapon.art}
+                    p={paletteOf(weapon, { base: "#8a8a94", accent: "#c9c9d2" })}
+                    animate={animate}
+                  />
+                </Tiered>
               </g>
             )}
           </g>
@@ -3273,11 +4625,13 @@ export function Warrior({
       </g>
 
       {companion && (
-        <CompanionArt
-          art={companion.art}
-          p={paletteOf(companion, { base: "#3a3a44", accent: "#888" })}
-          animate={animate}
-        />
+        <Tiered item={companion} animate={animate}>
+          <CompanionArt
+            art={companion.art}
+            p={paletteOf(companion, { base: "#3a3a44", accent: "#888" })}
+            animate={animate}
+          />
+        </Tiered>
       )}
     </svg>
   );

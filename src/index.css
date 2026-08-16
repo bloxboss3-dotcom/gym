@@ -320,6 +320,102 @@
   .anim-flicker { animation: warrior-flicker 2.2s linear infinite; }
   .anim-petal { animation: warrior-petal 5.2s linear infinite; transform-box: fill-box; }
   .anim-rise { animation: warrior-rise 3.4s ease-out infinite; transform-box: fill-box; }
+
+  /* ---------------------------------------------------------------------
+     Legendary and above.
+
+     Two separate things, deliberately:
+
+     · Each item's OWN motion — smoke that drifts, a blade that pulses —
+       written per art below, because a shadow aura and a solar flare should
+       not move the same way.
+     · A rarity TIER applied on top of whatever the art does, so the ladder
+       reads at a glance. Legendary breathes. Mythical breathes harder and
+       carries orbiting motes. Secret does both and shifts hue, which nothing
+       below it does.
+
+     Everything here is motion, and all of it is switched off by the
+     reduced-motion block at the bottom of this file and by the renderer's
+     `still` prop, which the item previews use.
+     --------------------------------------------------------------------- */
+
+  @keyframes warrior-smoke {
+    0%   { transform: translate(0, 0) scale(0.85); opacity: 0; }
+    18%  { opacity: 0.55; }
+    100% { transform: translate(var(--drift, 6px), -54px) scale(1.5); opacity: 0; }
+  }
+  @keyframes warrior-orbit {
+    0%   { transform: rotate(0deg) translateX(var(--r, 34px)) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(var(--r, 34px)) rotate(-360deg); }
+  }
+  @keyframes warrior-spin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes warrior-ring {
+    0%   { transform: scale(0.55); opacity: 0.7; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+  @keyframes warrior-shimmer {
+    0%, 100% { opacity: 0.25; }
+    50%      { opacity: 0.9; }
+  }
+  /* A crack of something else showing through metal. Brightness rather than
+     movement, because a seam that slides stops reading as a crack. */
+  @keyframes warrior-seam {
+    0%, 100% { opacity: 0.35; }
+    50%      { opacity: 1; }
+  }
+  /* Wings. Beating is vertical compression seen from behind, not rotation —
+     a rotated wing pivots off the shoulder and detaches. */
+  @keyframes warrior-beat {
+    0%, 100% { transform: scaleY(1) scaleX(1); }
+    50%      { transform: scaleY(0.86) scaleX(1.05); }
+  }
+  /* A hanging ribbon in a current: it leans and stretches, it does not swing. */
+  @keyframes warrior-wave {
+    0%, 100% { transform: translateX(-2.5px) skewX(3deg); opacity: 0.55; }
+    50%      { transform: translateX(2.5px) skewX(-3deg); opacity: 0.95; }
+  }
+  /* Pieces of armour that are not attached to anything, going nowhere slowly. */
+  @keyframes warrior-drift {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.55; }
+    50%      { transform: translate(var(--dx, 3px), var(--dy, -4px)) rotate(12deg); opacity: 1; }
+  }
+  /* A bar of light travelling down a surface. */
+  @keyframes warrior-scan {
+    0%   { transform: translateY(-14px); opacity: 0; }
+    25%  { opacity: 0.9; }
+    100% { transform: translateY(30px); opacity: 0; }
+  }
+  @keyframes warrior-tier-legendary {
+    0%, 100% { filter: drop-shadow(0 0 2px var(--tier-glow)); }
+    50%      { filter: drop-shadow(0 0 6px var(--tier-glow)); }
+  }
+  @keyframes warrior-tier-mythical {
+    0%, 100% { filter: drop-shadow(0 0 3px var(--tier-glow)); transform: scale(1); }
+    50%      { filter: drop-shadow(0 0 10px var(--tier-glow)); transform: scale(1.014); }
+  }
+  @keyframes warrior-tier-secret {
+    0%   { filter: drop-shadow(0 0 4px var(--tier-glow)) hue-rotate(0deg); transform: scale(1); }
+    50%  { filter: drop-shadow(0 0 13px var(--tier-glow)) hue-rotate(180deg); transform: scale(1.02); }
+    100% { filter: drop-shadow(0 0 4px var(--tier-glow)) hue-rotate(360deg); transform: scale(1); }
+  }
+
+  .anim-smoke { animation: warrior-smoke 5.6s ease-out infinite; transform-box: fill-box; }
+  .anim-orbit { animation: warrior-orbit 7s linear infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+  .anim-spin { animation: warrior-spin 14s linear infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+  .anim-ring { animation: warrior-ring 3.8s ease-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+  .anim-shimmer { animation: warrior-shimmer 2.4s ease-in-out infinite; }
+  .anim-seam { animation: warrior-seam 2.1s ease-in-out infinite; }
+  .anim-beat { animation: warrior-beat 2.8s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 0%; }
+  .anim-wave { animation: warrior-wave 4.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 0%; }
+  .anim-drift { animation: warrior-drift 5s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+  .anim-scan { animation: warrior-scan 3.4s ease-in-out infinite; transform-box: fill-box; }
+
+  .rar-legendary { animation: warrior-tier-legendary 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+  .rar-mythical { animation: warrior-tier-mythical 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 50%; }
+  .rar-secret { animation: warrior-tier-secret 6s linear infinite; transform-box: fill-box; transform-origin: 50% 50%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
