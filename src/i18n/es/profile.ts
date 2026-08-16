@@ -63,4 +63,9 @@ export const PROFILE: Dict = {
   'Height (cm)': 'Estatura (cm)',
   'Experience': 'Experiencia',
   'Goal': 'Objetivo',
+
+  'FORGED watches six signals ({count} firing at once triggers a suggestion): broad performance decline, elevated soreness, low readiness, persistent joint discomfort, repeated sessions harder than prescribed, and {weeks}+ consecutive weeks without a back-off.':
+    'FORGED vigila seis señales ({count} activas a la vez disparan una sugerencia): caída general del rendimiento, agujetas elevadas, poca disposición, molestia articular persistente, sesiones repetidas más duras de lo prescrito y {weeks}+ semanas seguidas sin bajar el pie.',
+  'A deload week keeps the movements and cuts roughly {volume}% of the sets and {load}% of the load. It counts as a completed week for your consistency and pays out rewards like any other — because it is training, not time off.':
+    'Una semana de descarga mantiene los ejercicios y recorta en torno al {volume} % de las series y al {load} % de la carga. Cuenta como semana completada para tu constancia y paga recompensas como cualquier otra, porque es entrenar, no descansar.',
 }

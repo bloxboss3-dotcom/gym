@@ -12,9 +12,16 @@ import { interpolate } from '@/lib/interpolate'
  * legible app; half-keyed is not.
  *
  * The cost is that two different English strings that happen to be identical
- * get one translation. In an app this size that is a fair trade, and where it
- * bites the fix is to make the English distinct — which is usually an
- * improvement anyway.
+ * get one translation. Usually the fix is to make the English distinct, which
+ * is an improvement anyway — but not always, and "Back" is the case that
+ * proved it: the navigation button and the cape slot are both correctly called
+ * Back in English, and they are "Atrás" and "Espalda" in Spanish.
+ *
+ * So a key may carry a context after a pipe: `t('Back|slot')` looks up
+ * `'Back|slot'` and, finding nothing, renders `Back`. The context never
+ * reaches the screen, English or otherwise. This is gettext's msgctxt, and it
+ * is deliberately the exception rather than the habit — a context on every
+ * string would rebuild the invented key namespace this design exists to avoid.
  *
  * Interpolation is `{name}` placeholders rather than template literals,
  * because a template literal produces a finished sentence at runtime and there
@@ -51,9 +58,12 @@ export function isLang(value: unknown): value is Lang {
  * catalogue is a mistake, and rendering nothing is the worst way to surface it.
  */
 export function translate(english: string, lang: Lang): string {
-  if (lang === 'en') return english
-  const found = DICTS[lang]?.[english]
-  return found && found.length > 0 ? found : english
+  const found = lang === 'en' ? undefined : DICTS[lang]?.[english]
+  if (found && found.length > 0) return found
+  // No translation: strip any `|context` so the fallback is readable English
+  // rather than the disambiguator the catalogue needed.
+  const pipe = english.lastIndexOf('|')
+  return pipe > 0 ? english.slice(0, pipe) : english
 }
 
 /** Fill `{placeholders}` after translating. Re-exported; see the note there. */

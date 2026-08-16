@@ -318,18 +318,26 @@ export const SLOT_ORDER: Slot[] = [
   'pose',
 ]
 
+/**
+ * Slot names, as shown.
+ *
+ * Carried with a `|slot` context because two of these collide with unrelated
+ * words elsewhere in the app: "Back" is also the navigation button (Atrás, not
+ * Espalda) and "Title" is also a heading label. The context is stripped before
+ * anything reaches the screen — see `src/i18n/index.ts`.
+ */
 export const SLOT_LABEL: Record<Slot, string> = {
-  face: 'Face',
-  head: 'Head',
-  body: 'Body armour',
-  hands: 'Hands',
-  feet: 'Feet',
-  weapon: 'Weapon',
-  back: 'Back',
-  aura: 'Aura',
-  companion: 'Companion',
-  title: 'Title',
-  pose: 'Pose',
+  face: 'Face|slot',
+  head: 'Head|slot',
+  body: 'Body armour|slot',
+  hands: 'Hands|slot',
+  feet: 'Feet|slot',
+  weapon: 'Weapon|slot',
+  back: 'Back|slot',
+  aura: 'Aura|slot',
+  companion: 'Companion|slot',
+  title: 'Title|slot',
+  pose: 'Pose|slot',
 }
 
 export const RARITY_ORDER: Rarity[] = [

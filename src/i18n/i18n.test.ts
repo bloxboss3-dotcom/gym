@@ -5,6 +5,8 @@ import { assessMovement } from '@/engine/coaching'
 import { BLOCK_EXPLANATION } from '@/engine/intensity'
 import { EXERCISE_BY_ID } from '@/data/exercises'
 import { CITATIONS } from '@/data/citations'
+import { ITEMS, RARITY_META, SECRET_PLACEHOLDER, SLOT_LABEL } from '@/data/items'
+import { ECONOMY } from '@/config/economy'
 import { addDays } from '@/lib/date'
 import type { Session } from '@/types'
 
@@ -83,6 +85,18 @@ describe('the catalogue', () => {
       'Android:',
       'src/config/rules.ts',
       'src/config/economy.ts',
+      /*
+        Wardrobe loanwords. Japanese arms and armour keep their names in
+        Spanish exactly as they do in English — a katana is a katana, and
+        calling it a "sable" names a different sword. Eclipse happens to be
+        spelt the same in both.
+      */
+      'Kabuto',
+      'Katana',
+      'Nodachi',
+      'Kusarigama',
+      'Iaido',
+      'Eclipse',
     ])
     const identical = Object.entries(ES)
       .filter(([en, es]) => en === es && !SAME_IN_BOTH.has(en))
@@ -206,6 +220,78 @@ describe('the engine prose is genuinely reachable', () => {
       (english) => translate(english, 'es') === english,
     )
     expect(untranslated, `no Spanish for: ${untranslated.join(' | ')}`).toEqual([])
+  })
+})
+
+describe('the wardrobe is translated too', () => {
+  /*
+    The gap this closes was invisible to everything that was watching.
+
+    Item names and lore reach the screen through `t(item.name)` and
+    `t(item.lore)`, so the English lives in a data file and the coverage script
+    — which scans for literal `t('…')` calls — reported 100% while three
+    hundred English strings were on screen. The browser leak check missed them
+    too: it counts English function words, and "Training Tunic" contains none.
+
+    Asserting on the catalogue itself is the only check that cannot drift,
+    because a new item is a row in exactly one place.
+  */
+  /*
+    Membership in the catalogue, not "the output differs from the input".
+
+    A handful of wardrobe names are correctly identical in both languages — a
+    katana is a katana — so comparing strings would either fail on them or
+    force a second exception list to drift out of step with the one above.
+    Requiring the key to be PRESENT is both stricter and simpler: it says
+    somebody looked at this string and made a decision about it.
+  */
+  const unlisted = (s: string) => ES[s] === undefined
+
+  it('translates every item name', () => {
+    const missing = ITEMS.filter((i) => unlisted(i.name)).map((i) => i.id)
+    expect(missing, `no Spanish for: ${missing.slice(0, 8).join(', ')}`).toEqual([])
+  })
+
+  it('translates every line of lore', () => {
+    const missing = ITEMS.filter((i) => unlisted(i.lore)).map((i) => i.id)
+    expect(missing, `no Spanish lore for: ${missing.slice(0, 8).join(', ')}`).toEqual([])
+  })
+
+  it('translates every slot name', () => {
+    const missing = Object.values(SLOT_LABEL).filter(unlisted)
+    expect(missing, `no Spanish for: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('translates every rarity name except the secret one', () => {
+    // A secret's rarity renders as "???" in both languages on purpose: naming
+    // the tier would tell you the item exists.
+    const missing = Object.values(RARITY_META)
+      .map((m) => m.label)
+      .filter((l) => l !== SECRET_PLACEHOLDER && unlisted(l))
+    expect(missing, `no Spanish for: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('translates every pack name', () => {
+    const missing = Object.values(ECONOMY.packs)
+      .map((p) => p.name)
+      .filter(unlisted)
+    expect(missing, `no Spanish for: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('never shows a disambiguator to anybody', () => {
+    /*
+      `'Back|slot'` is a key, not a string: the pipe exists so the cape slot
+      and the navigation button can differ in Spanish. It must never reach a
+      screen in either language — untranslated, it has to fall back to "Back".
+    */
+    for (const label of Object.values(SLOT_LABEL)) {
+      expect(translate(label, 'en')).not.toContain('|')
+      expect(translate(label, 'es')).not.toContain('|')
+    }
+    expect(translate('Back|slot', 'en')).toBe('Back')
+    expect(translate('a string nobody translated|somecontext', 'es')).toBe(
+      'a string nobody translated',
+    )
   })
 })
 

@@ -53,7 +53,7 @@ export default function Inventory() {
   const secretsLeft = collection.byRarity.secret.total - collection.byRarity.secret.owned
 
   return (
-    <Screen title={t('Inventory')} subtitle={`${collection.owned} of ${collection.total} collected`} back="/forge">
+    <Screen title={t('Inventory')} subtitle={t('{owned} of {total} collected', { owned: collection.owned, total: collection.total })} back="/forge">
       <div className="space-y-4">
         <Card>
           <ProgressBar value={collection.owned} max={collection.total} tone="gold" label={t('Collection')} showValue />
@@ -61,7 +61,7 @@ export default function Inventory() {
             {RARITY_ORDER.map((rarity) => (
               <li key={rarity} className="text-center">
                 <span className="block text-[10px]" style={{ color: RARITY_META[rarity].color }}>
-                  {RARITY_META[rarity].label}
+                  {t(RARITY_META[rarity].label)}
                 </span>
                 <span className="block text-sm tabular text-parchment">
                   {collection.byRarity[rarity].owned}/
@@ -85,7 +85,7 @@ export default function Inventory() {
                 slot === key ? 'border-ember-500 bg-ember-500/15 text-ember-200' : 'border-slate bg-coal text-ash',
               )}
             >
-              {key === 'all' ? 'All' : SLOT_LABEL[key]}
+              {key === 'all' ? t('All') : t(SLOT_LABEL[key])}
             </button>
           ))}
         </div>
@@ -95,7 +95,7 @@ export default function Inventory() {
           onClick={() => setShowLocked((v) => !v)}
           className="text-sm text-ember-400 touch-target"
         >
-          {showLocked ? 'Hide items you have not earned' : 'Show everything'}
+          {showLocked ? t('Hide items you have not earned') : t('Show everything')}
         </button>
 
         {items.length ? (
@@ -109,6 +109,7 @@ export default function Inventory() {
                   <button
                     type="button"
                     onClick={() => setPreview(item)}
+                    data-owned={owned ? 'true' : 'false'}
                     className={cx(
                       'w-full h-full text-left rounded-xl border p-3 transition-colors touch-target',
                       owned ? 'bg-iron' : 'bg-coal/60 opacity-60',
@@ -118,7 +119,7 @@ export default function Inventory() {
                   >
                     <span className="flex items-center justify-between gap-1">
                       <span className="text-[10px] uppercase tracking-wider" style={{ color: meta.color }}>
-                        {meta.label}
+                        {t(meta.label)}
                       </span>
                       {owned?.new && <span className="text-[10px] text-ember-400">{t('NEW')}</span>}
                       {equipped && <span className="text-[10px] text-ember-400">{t('EQUIPPED')}</span>}
@@ -140,9 +141,9 @@ export default function Inventory() {
                         <span className="text-smoke">{t('Not earned yet')}</span>
                       )}
                     </span>
-                    <span className="block text-[11px] text-smoke">{SLOT_LABEL[item.slot]}</span>
+                    <span className="block text-[11px] text-smoke">{t(SLOT_LABEL[item.slot])}</span>
                     {owned && owned.duplicates > 0 && (
-                      <span className="block text-[10px] text-gold-300 mt-1">×{owned.duplicates + 1} owned</span>
+                      <span className="block text-[10px] text-gold-300 mt-1">{t('×{n} owned', { n: owned.duplicates + 1 })}</span>
                     )}
                   </button>
                 </li>
@@ -197,7 +198,7 @@ export default function Inventory() {
       <Sheet
         open={preview !== null}
         onClose={() => setPreview(null)}
-        title={preview && ownedMap.has(preview.id) ? preview.name : 'Not earned yet'}
+        title={preview && ownedMap.has(preview.id) ? t(preview.name) : t('Not earned yet')}
       >
         {preview && (
           <div className="space-y-4">
@@ -206,11 +207,11 @@ export default function Inventory() {
             </div>
             <div className="text-center">
               <Chip tone="neutral" className="mb-2">
-                <span style={{ color: RARITY_META[preview.rarity].color }}>{RARITY_META[preview.rarity].label}</span>
-                <span className="text-smoke"> · {SLOT_LABEL[preview.slot]}</span>
+                <span style={{ color: RARITY_META[preview.rarity].color }}>{t(RARITY_META[preview.rarity].label)}</span>
+                <span className="text-smoke"> · {t(SLOT_LABEL[preview.slot])}</span>
               </Chip>
               {ownedMap.has(preview.id) ? (
-                <p className="text-sm text-ash italic leading-relaxed">{preview.lore}</p>
+                <p className="text-sm text-ash italic leading-relaxed">{t(preview.lore)}</p>
               ) : (
                 <p className="text-sm text-smoke leading-relaxed">
                   {t('You have not pulled this one. Its name and what it looks like are the reward for finding it, so they stay behind the pack.')}
@@ -227,13 +228,15 @@ export default function Inventory() {
                   setPreview(null)
                 }}
               >
-                {data.game.equipped[preview.slot] === preview.id ? 'Already equipped' : 'Equip'}
+                {data.game.equipped[preview.slot] === preview.id ? t('Already equipped') : t('Equip')}
               </Button>
             ) : (
               <Card>
                 <p className="text-sm text-ash text-center">
-                  Not earned yet. It can appear in any pack — duplicates convert to{' '}
-                  {ECONOMY.duplicateRefund[preview.rarity as Rarity]} coins once you own it.
+                  {t(
+                    'Not earned yet. It can appear in any pack — duplicates convert to {coins} coins once you own it.',
+                    { coins: ECONOMY.duplicateRefund[preview.rarity as Rarity] },
+                  )}
                 </p>
               </Card>
             )}

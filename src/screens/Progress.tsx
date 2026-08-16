@@ -21,6 +21,7 @@ import { RULES } from '@/config/rules'
 import { MUSCLE_LABEL, PRIMARY_MUSCLES } from '@/data/muscles'
 import { computeConsistency } from '@/engine/consistency'
 import { assessDeload } from '@/engine/deload'
+import { deloadReasonVars } from '@/lib/deloadText'
 import { assessTraining } from '@/engine/coaching'
 import { proteinAdherence, calculateProteinTarget } from '@/engine/protein'
 import { assessAllMuscles, weeklyCompletion } from '@/engine/volume'
@@ -200,12 +201,21 @@ export default function Progress() {
             <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Fatigue check')}</p>
               <p className="font-display text-xl uppercase leading-tight mt-0.5">
-                {deload.suggested ? 'Deload worth taking' : `${deload.triggeredCount}/${RULES.deload.triggerCount} signals firing`}
+                {deload.suggested
+                  ? t('Deload worth taking')
+                  : t('{firing}/{needed} signals firing', {
+                      firing: deload.triggeredCount,
+                      needed: RULES.deload.triggerCount,
+                    })}
               </p>
             </div>
-            <Chip tone={deload.suggested ? 'caution' : 'good'}>{deload.confidence} confidence</Chip>
+            <Chip tone={deload.suggested ? 'caution' : 'good'}>
+              {t('{level} confidence', { level: t(deload.confidence) })}
+            </Chip>
           </div>
-          <p className="text-sm text-ash mt-2 leading-relaxed">{t(deload.reasonTemplate, deload.reasonVars)}</p>
+          <p className="text-sm text-ash mt-2 leading-relaxed">
+            {t(deload.reasonTemplate, deloadReasonVars(deload, t))}
+          </p>
           <ul className="mt-3 space-y-1">
             {deload.signals.map((signal) => (
               <li key={signal.key} className="flex items-start gap-2 text-xs">
@@ -449,10 +459,15 @@ export default function Progress() {
               </div>
               <p className="text-xs text-ash mt-2 leading-relaxed">
                 {quality.missingFraction > 0.34
-                  ? `Effort is missing on ${Math.round(quality.missingFraction * 100)}% of sets. Logging it is the single cheapest thing you can do to make recommendations sharper.`
+                  ? t(
+                      'Effort is missing on {pct}% of sets. Logging it is the single cheapest thing you can do to make recommendations sharper.',
+                      { pct: Math.round(quality.missingFraction * 100) },
+                    )
                   : quality.toFailureFraction > 0.4
-                    ? 'A lot of sets are going to failure. Sets stopped 1–3 reps short grow muscle about as well for meaningfully less fatigue.'
-                    : 'Effort is being logged consistently and sits in a productive range.'}
+                    ? t(
+                        'A lot of sets are going to failure. Sets stopped 1–3 reps short grow muscle about as well for meaningfully less fatigue.',
+                      )
+                    : t('Effort is being logged consistently and sits in a productive range.')}
               </p>
             </>
           ) : (

@@ -57,7 +57,7 @@ export default function Train() {
         {plan.kind === 'resume' && plan.activeSessionId && (
           <Card raised className="border-ember-500/50">
             <p className="text-[11px] uppercase tracking-wider text-ember-400">{t('Unfinished session')}</p>
-            <p className="font-display text-2xl uppercase mt-0.5">{plan.title}</p>
+            <p className="font-display text-2xl uppercase mt-0.5">{t(plan.title)}</p>
             <p className="text-sm text-ash mt-1">
               {t('Everything you logged is saved. Pick up where you stopped.')}
             </p>
@@ -99,8 +99,8 @@ export default function Train() {
             {plan.kind !== 'resume' && (
               <Card raised>
                 <p className="text-[11px] uppercase tracking-wider text-ember-400">{t('Today')}</p>
-                <p className="font-display text-2xl uppercase mt-0.5">{plan.title}</p>
-                <p className="text-sm text-ash mt-1">{plan.subtitle}</p>
+                <p className="font-display text-2xl uppercase mt-0.5">{t(plan.title)}</p>
+                <p className="text-sm text-ash mt-1">{t(plan.subtitleTemplate, plan.subtitleVars)}</p>
                 <div className="grid grid-cols-2 gap-2 mt-3">
                   <Button
                     variant="primary"

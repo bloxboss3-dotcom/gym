@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { deloadReasonVars } from '@/lib/deloadText'
 import { Screen } from '@/components/AppShell'
 import { Warrior } from '@/character/Warrior'
 import { ConsistencyStrip } from '@/components/charts'
@@ -220,7 +221,7 @@ export default function Today() {
         {/* ---------------------------------------------------------------- */}
         {deload.suggested && (
           <Alert tone="warn" title={t('Deload worth considering')}>
-            <p className="leading-relaxed">{t(deload.reasonTemplate, deload.reasonVars)}</p>
+            <p className="leading-relaxed">{t(deload.reasonTemplate, deloadReasonVars(deload, t))}</p>
             <Link
               to="/progress"
               className="mt-2 inline-flex text-sm font-medium text-caution underline underline-offset-2 touch-target items-center"

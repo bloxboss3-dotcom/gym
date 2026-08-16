@@ -96,7 +96,7 @@ export default function PackOpening() {
         <button type="button" onClick={() => navigate('/forge')} className="touch-target text-ash px-2">
           ✕<span className="sr-only">{t('Close')}</span>
         </button>
-        <p className="font-display text-lg uppercase tracking-wide">{ECONOMY.packs[pack.kind].name}</p>
+        <p className="font-display text-lg uppercase tracking-wide">{t(ECONOMY.packs[pack.kind].name)}</p>
         {phase !== 'revealed' ? (
           <button type="button" onClick={skip} className="touch-target text-sm text-ember-400 px-2">
             {t('Skip animation')}
@@ -197,16 +197,16 @@ export default function PackOpening() {
               style={{ borderColor: rarity.color, boxShadow: `0 0 60px -12px ${rarity.glow}` }}
             >
               <p className="text-[11px] uppercase tracking-[0.2em]" style={{ color: rarity.color }}>
-                {rarity.label} · {SLOT_LABEL[current.slot]}
+                {t(rarity.label)} · {t(SLOT_LABEL[current.slot])}
               </p>
               <div className="grid place-items-center my-3">
                 <ItemPreview item={current} frame={store.data.game.figure ?? 'masculine'} className="w-40 h-auto" />
               </div>
-              <h2 className="font-display text-3xl uppercase tracking-wide leading-none">{current.name}</h2>
-              <p className="text-sm text-ash mt-2 italic leading-relaxed">{current.lore}</p>
+              <h2 className="font-display text-3xl uppercase tracking-wide leading-none">{t(current.name)}</h2>
+              <p className="text-sm text-ash mt-2 italic leading-relaxed">{t(current.lore)}</p>
               {store.data.game.owned.find((o) => o.itemId === current.id && o.duplicates > 0) && (
                 <Chip tone="gold" className="mt-3">
-                  Duplicate · +{ECONOMY.duplicateRefund[current.rarity]} coins
+                  {t('Duplicate · +{coins} coins', { coins: ECONOMY.duplicateRefund[current.rarity] })}
                 </Chip>
               )}
             </div>
@@ -260,7 +260,9 @@ export default function PackOpening() {
       </main>
 
       <span aria-live="polite" className="sr-only">
-        {phase === 'revealed' && current ? `Revealed ${current.name}, ${current.rarity}` : ''}
+        {phase === 'revealed' && current
+          ? t('Revealed {name}, {rarity}', { name: t(current.name), rarity: t(RARITY_META[current.rarity].label) })
+          : ''}
       </span>
     </div>
   )

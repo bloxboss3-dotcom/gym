@@ -127,14 +127,19 @@ export default function Science() {
             {t('Training is the stimulus; adaptation happens between sessions. Sustained hard training accumulates fatigue that masks fitness — you get stronger while appearing to get weaker.')}
           </p>
           <p className="mb-2">
-            FORGED watches six signals ({RULES.deload.triggerCount} firing at once triggers a suggestion): broad
-            performance decline, elevated soreness, low readiness, persistent joint discomfort, repeated sessions
-            harder than prescribed, and {RULES.deload.weeksBeforeDeload}+ consecutive weeks without a back-off.
+            {t(
+              'FORGED watches six signals ({count} firing at once triggers a suggestion): broad performance decline, elevated soreness, low readiness, persistent joint discomfort, repeated sessions harder than prescribed, and {weeks}+ consecutive weeks without a back-off.',
+              { count: RULES.deload.triggerCount, weeks: RULES.deload.weeksBeforeDeload },
+            )}
           </p>
           <p>
-            A deload week keeps the movements and cuts roughly {Math.round(RULES.deload.volumeReductionPct * 100)}% of
-            the sets and {Math.round(RULES.deload.loadReductionPct * 100)}% of the load. It counts as a completed week
-            for your consistency and pays out rewards like any other — because it is training, not time off.
+            {t(
+              'A deload week keeps the movements and cuts roughly {volume}% of the sets and {load}% of the load. It counts as a completed week for your consistency and pays out rewards like any other — because it is training, not time off.',
+              {
+                volume: Math.round(RULES.deload.volumeReductionPct * 100),
+                load: Math.round(RULES.deload.loadReductionPct * 100),
+              },
+            )}
           </p>
         </Disclosure>
 
