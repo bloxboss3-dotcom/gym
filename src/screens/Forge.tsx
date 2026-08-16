@@ -55,7 +55,7 @@ export default function Forge() {
             />
             <div className="min-w-0 flex-1">
               <p className="font-display text-2xl uppercase tracking-wide leading-none">{data.profile?.name}</p>
-              {title && <p className="text-sm text-gold-300 mt-0.5">{title.name}</p>}
+              {title && <p className="text-sm text-gold-300 mt-0.5">{t(title.name)}</p>}
               <div className="mt-3">
                 <div className="flex justify-between text-xs text-ash mb-1">
                   <span>Level {level.level}</span>
@@ -100,7 +100,7 @@ export default function Forge() {
                       ▣
                     </span>
                     <span className="block font-display text-sm uppercase tracking-wide">
-                      {ECONOMY.packs[pack.kind].name}
+                      {t(ECONOMY.packs[pack.kind].name)}
                     </span>
                     <span className="block text-[11px] text-smoke mt-0.5">
                       {ECONOMY.packs[pack.kind].items} item{ECONOMY.packs[pack.kind].items === 1 ? '' : 's'}
@@ -126,7 +126,7 @@ export default function Forge() {
                         ▣
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block font-display text-lg uppercase tracking-wide">{config.name}</span>
+                        <span className="block font-display text-lg uppercase tracking-wide">{t(config.name)}</span>
                         <span className="block text-xs text-smoke">
                           {config.items} item{config.items === 1 ? '' : 's'}
                           {'floor' in config && config.floor ? ` · guaranteed ${config.floor}+` : ''}
@@ -150,7 +150,7 @@ export default function Forge() {
                                 >
                                   {/* Rounding a real 0.1% chance down to "0%" reads as
                                       "impossible", which is a different claim. */}
-                                  {RARITY_META[rarity].label}{' '}
+                                  {t(RARITY_META[rarity].label)}{' '}
                                   {percent < 1 ? '<1' : percent.toFixed(0)}%
                                 </span>
                               )

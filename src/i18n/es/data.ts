@@ -266,21 +266,7 @@ export const DATA: Dict = {
   'Log reps in reserve on 100 working sets.':
     'Registra las repeticiones en reserva en 100 series de trabajo.',
 
-  // --- Titles and deload signal labels -------------------------------------
-  'the Recruit': 'el Recluta',
-  'the Steady': 'el Constante',
-  'the Unbroken': 'el Inquebrantable',
-  'Ironbound': 'Ferrado',
-  'Longstrider': 'Zancada Larga',
-  'Emberborn': 'Nacido de la Brasa',
-  'Warden of the Forge': 'Guardián de la Fragua',
-  'the Unyielding': 'el Indoblegable',
-  'Forgemaster': 'Maestro Forjador',
-  'Tidebound': 'Atado a la Marea',
-  'Rimewalker': 'Caminante de Escarcha',
-  'the Rōnin': 'el Rōnin',
-  'Nine-Tailed': 'Nueve Colas',
-  'the Nameless': 'el Sin Nombre',
+  // --- Deload signal labels -------------------------------------------------
   'Empty': 'Vacío',
   'Sessions harder than prescribed': 'Sesiones más duras de lo prescrito',
   'Broad performance decline, elevated soreness and low readiness after a long build.':

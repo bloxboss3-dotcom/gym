@@ -11,6 +11,7 @@ import { PROFILE } from '@/i18n/es/profile'
 import { FORGE } from '@/i18n/es/forge'
 import { MISC } from '@/i18n/es/misc'
 import { DATA } from '@/i18n/es/data'
+import { ITEMS } from '@/i18n/es/items'
 import { ENGINE } from '@/i18n/es/engine'
 
 /**
@@ -40,5 +41,6 @@ export const ES: Dict = {
   ...FORGE,
   ...MISC,
   ...DATA,
+  ...ITEMS,
   ...ENGINE,
 }

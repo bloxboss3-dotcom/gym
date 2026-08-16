@@ -1257,7 +1257,20 @@ if (langOffered) {
     '/progress/checkin', '/forge', '/forge/inventory', '/forge/character',
     '/forge/quests', '/profile', '/profile/science', '/profile/backup',
   ]
-  const ENGLISH_LEAK = /\b(the|and|your|with|from|that|this|what|when|how|every|nothing|which)\b/gi
+  /*
+    Words that have no business appearing in Spanish prose.
+
+    The list started at thirteen and was too short: "Already equipped" and
+    "Not earned yet. It can appear in any pack…" both sat on the item sheet in
+    English and contained not one of them. Every word below was checked against
+    the Spanish catalogue and the exercise names, which stay English on purpose
+    — "over" is out because of Bent-Over Row, and anything that is also a
+    Spanish word is out for obvious reasons: "no", "son", "sea", "van", "fue",
+    and "has", which is the second person of haber and appears in half the
+    Spanish copy in the app.
+  */
+  const ENGLISH_LEAK =
+    /\b(the|and|your|with|from|that|this|what|when|how|every|nothing|which|you|are|have|will|they|there|been|can|not|but|for|into|once|only|more|than|already|its|about|because|would|should|could|does|did)\b/gi
   let translatedScreens = 0
   const leaks = []
   for (const route of SCREENS) {
@@ -1302,7 +1315,7 @@ if (langOffered) {
     if (found.length) {
       leaks.push(`${route}: ${found.slice(0, 6).join(' ')}`)
       const lines = scanned.split('\n')
-      const re = /\b(the|and|your|with|from|that|this|what|when|how|every|nothing|which)\b/i
+      const re = new RegExp(ENGLISH_LEAK.source, 'i')
       console.log(`LEAK ${route}:`)
       for (const l of [...new Set(lines.filter((x) => re.test(x)))].slice(0, 8)) console.log('   · ' + l.slice(0, 120))
     }
@@ -1330,6 +1343,52 @@ if (langOffered) {
     'Spanish reaches every main screen',
     translatedScreens === SCREENS.length,
     `${translatedScreens}/${SCREENS.length} screens showing Spanish`,
+  )
+
+  /*
+    The wardrobe, which the sweep above could not see.
+
+    Item names and lore are the largest block of prose in the app and none of
+    it appears in the source of a screen — it comes from `src/data/items.ts` at
+    runtime through `t(item.name)`. Three hundred English strings sat behind a
+    100% coverage score, and this check missed them too: it counts English
+    function words, and "Training Tunic" has none.
+
+    Lore does contain them, which is what makes this work — but only once
+    something opens the detail sheet, because the names alone are on the grid
+    and the sentences are behind a tap. So the tap is the check.
+  */
+  await page.goto(`${BASE}#/forge/inventory`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(500)
+  const ownedTile = page.locator('button[data-owned="true"]')
+  const tiles = await ownedTile.count()
+  let loreLeak = ''
+  const readSheets = []
+  for (let i = 0; i < Math.min(tiles, 12); i++) {
+    await ownedTile.nth(i).click({ timeout: 4000 }).catch(() => {})
+    await page.waitForTimeout(260)
+    const sheet = await page.getByRole('dialog').innerText().catch(() => '')
+    // A sheet shorter than this is the dialog frame with nothing in it, which
+    // is the state the first version of this check silently accepted: it read
+    // no lore at all and reported every screen clean.
+    if (sheet.trim().length > 40) {
+      readSheets.push(sheet)
+      const hit = sheet.match(ENGLISH_LEAK)
+      if (hit && !loreLeak) loreLeak = `${sheet.split('\n')[0]}: ${[...new Set(hit)].join(' ')}`
+    }
+    await page.keyboard.press('Escape').catch(() => {})
+    await page.waitForTimeout(140)
+  }
+  record(
+    'the wardrobe check actually opened some items',
+    readSheets.length >= 5,
+    `${readSheets.length} sheets read from ${tiles} owned tiles`,
+  )
+  record(
+    'item names and lore are Spanish too',
+    readSheets.length >= 5 && loreLeak === '',
+    loreLeak ||
+      `${readSheets.length} item sheets clean — e.g. "${readSheets[0]?.replace(/\n/g, ' / ').slice(0, 90)}"`,
   )
   await page.goto(`${BASE}#/`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(400)

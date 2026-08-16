@@ -82,4 +82,54 @@ export const FORGE: Dict = {
   'Show me': 'Enséñamelo',
   'Solving pays a few coins, capped well below what training pays — and only while you are actually resting mid-session.':
     'Resolverlo paga unas pocas monedas, muy por debajo de lo que paga entrenar, y solo mientras estás descansando de verdad en mitad de una sesión.',
+
+  // --- Slot names ------------------------------------------------------------
+  // The `|slot` half is a disambiguator, never shown. "Back" is Atrás as a
+  // navigation button and Espalda as the slot a cloak goes in; "Title" is a
+  // heading elsewhere and the word under the warrior's name here.
+  'Face|slot': 'Cara',
+  'Head|slot': 'Cabeza',
+  'Body armour|slot': 'Armadura',
+  'Hands|slot': 'Manos',
+  'Feet|slot': 'Pies',
+  'Weapon|slot': 'Arma',
+  'Back|slot': 'Espalda',
+  'Aura|slot': 'Aura',
+  'Companion|slot': 'Compañero',
+  'Title|slot': 'Título',
+  'Pose|slot': 'Pose',
+
+  // --- Rarities --------------------------------------------------------------
+  'Common': 'Común',
+  'Uncommon': 'Poco común',
+  'Rare': 'Raro',
+  'Epic': 'Épico',
+  'Legendary': 'Legendario',
+  'Mythical': 'Mítico',
+
+  // --- Packs -----------------------------------------------------------------
+  'Recruit Cache': 'Alijo del Recluta',
+  'Warband Crate': 'Caja de la Banda',
+  'Ember Reliquary': 'Relicario de Brasa',
+  'Relic Vault': 'Cámara de Reliquias',
+
+  // --- Wardrobe chrome -------------------------------------------------------
+  'All': 'Todo',
+  'Masculine': 'Masculina',
+  'Feminine': 'Femenina',
+  'No {slot} earned yet': 'Aún no has conseguido nada de {slot}',
+  '{count} items owned': '{count} objetos en tu poder',
+  'level {n} of {max}': 'nivel {n} de {max}',
+  'Duplicate · +{coins} coins': 'Repetido · +{coins} monedas',
+  'Revealed {name}, {rarity}': 'Ha salido {name}, {rarity}',
+
+  '{owned} of {total} collected': '{owned} de {total} conseguidos',
+  'Show everything': 'Mostrar todo',
+  'Hide items you have not earned': 'Ocultar lo que aún no has conseguido',
+  '×{n} owned': '×{n} en tu poder',
+
+  'Already equipped': 'Ya está equipado',
+  'Equip': 'Equipar',
+  'Not earned yet. It can appear in any pack — duplicates convert to {coins} coins once you own it.':
+    'Aún no lo has conseguido. Puede salir en cualquier sobre; los repetidos se convierten en {coins} monedas una vez que lo tengas.',
 }

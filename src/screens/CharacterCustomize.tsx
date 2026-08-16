@@ -71,7 +71,7 @@ export default function CharacterCustomize() {
                     : 'border-slate bg-coal text-ash',
                 )}
               >
-                {label}
+                {t(label)}
               </button>
             ))}
           </div>
@@ -85,7 +85,7 @@ export default function CharacterCustomize() {
             <div className="flex items-center justify-between gap-2 mb-1">
               <p className="text-[11px] uppercase tracking-wider text-smoke">{t('Build')}</p>
               <p className="text-[11px] text-ash tabular">
-                level {level.level} of {ECONOMY.character.fullBuildLevel}
+                {t('level {n} of {max}', { n: level.level, max: ECONOMY.character.fullBuildLevel })}
               </p>
             </div>
             <ProgressBar
@@ -119,7 +119,7 @@ export default function CharacterCustomize() {
                   slot === key ? 'border-ember-500 bg-ember-500/12' : 'border-slate bg-coal',
                 )}
               >
-                <span className="block text-[10px] uppercase tracking-wider text-smoke">{SLOT_LABEL[key]}</span>
+                <span className="block text-[10px] uppercase tracking-wider text-smoke">{t(SLOT_LABEL[key])}</span>
                 <span data-testid={`equipped-${key}`} className="block text-xs text-parchment whitespace-nowrap">
                   {item ? t(item.name) : t('Empty')}
                 </span>
@@ -167,7 +167,7 @@ export default function CharacterCustomize() {
                     )}
                     <span className="block text-[11px] text-parchment leading-tight mt-1">{t(item.name)}</span>
                     <span className="block text-[9px] uppercase tracking-wider" style={{ color: meta.color }}>
-                      {meta.label}
+                      {t(meta.label)}
                     </span>
                   </button>
                 </li>
@@ -177,7 +177,7 @@ export default function CharacterCustomize() {
         ) : (
           <EmptyState
             icon="◇"
-            title={`No ${SLOT_LABEL[slot].toLowerCase()} earned yet`}
+            title={t('No {slot} earned yet', { slot: t(SLOT_LABEL[slot]).toLowerCase() })}
             body={t('Open packs in the Forge to find gear for this slot. Every item is earned through training.')}
             action={
               <Link to="/forge">
@@ -192,7 +192,7 @@ export default function CharacterCustomize() {
             {t('Your warrior changes only through work you actually did. Nothing here affects a single training recommendation — it is the reward, not the mechanism.')}
           </p>
           <div className="flex flex-wrap gap-1.5 mt-2">
-            <Chip tone="ember">{data.game.owned.length} items owned</Chip>
+            <Chip tone="ember">{t('{count} items owned', { count: data.game.owned.length })}</Chip>
             <Chip tone="gold">◈ {data.game.coins}</Chip>
           </div>
         </Card>

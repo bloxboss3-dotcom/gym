@@ -116,4 +116,15 @@ export const PROGRESS: Dict = {
   'Stall after:': 'Estancado tras:',
   '{n} sessions': '{n} sesiones',
   'Back-off:': 'Retroceso:',
+
+  'Deload worth taking': 'Descarga que vale la pena',
+  '{firing}/{needed} signals firing': '{firing}/{needed} señales activas',
+  '{level} confidence': 'confianza {level}',
+  'Effort is missing on {pct}% of sets. Logging it is the single cheapest thing you can do to make recommendations sharper.':
+    'Falta el esfuerzo en el {pct} % de las series. Registrarlo es lo más barato que puedes hacer para afinar las recomendaciones.',
+  'A lot of sets are going to failure. Sets stopped 1–3 reps short grow muscle about as well for meaningfully less fatigue.':
+    'Muchas series llegan al fallo. Las series que paran 1–3 repeticiones antes generan músculo casi igual con bastante menos fatiga.',
+  'Effort is being logged consistently and sits in a productive range.':
+    'El esfuerzo se está registrando con constancia y está en un rango productivo.',
+  'Broad performance decline': 'Caída general del rendimiento',
 }
