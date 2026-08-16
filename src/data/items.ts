@@ -36,6 +36,26 @@ const P = {
   celadon: { base: '#0f766e', accent: '#99f6e4', glow: '#5eead4' },
   bloom: { base: '#7e22ce', accent: '#f0abfc', glow: '#e879f9' },
   daybreak: { base: '#b91c1c', accent: '#fde68a', glow: '#fcd34d' },
+  /*
+    Palettes for the top of the ladder.
+
+    The `glow` on each of these is doing a second job: from legendary up the
+    renderer feeds it to a drop-shadow around the whole item, so a glow that is
+    nearly black produces no halo at all however good the artwork is.
+
+    Umbra is the case that forced a second rule. A shadow aura wants black
+    smoke, and the first version was literally that — #16161f plumes on a
+    #0b0b0f background, which rendered perfectly and was invisible. Dark art
+    still has to be lighter than the thing behind it.
+  */
+  umbra: { base: '#33333f', accent: '#6b6b82', glow: '#7c3aed' },
+  solar: { base: '#b45309', accent: '#fde047', glow: '#facc15' },
+  eclipse: { base: '#0b0b12', accent: '#e5e7eb', glow: '#a78bfa' },
+  rift: { base: '#231344', accent: '#c084fc', glow: '#a855f7' },
+  magma: { base: '#7f1d1d', accent: '#fca5a5', glow: '#ef4444' },
+  aurora: { base: '#0c4a6e', accent: '#7dd3fc', glow: '#38bdf8' },
+  radiant: { base: '#92400e', accent: '#fef3c7', glow: '#fde68a' },
+  nether: { base: '#3b0764', accent: '#d8b4fe', glow: '#c084fc' },
 } as const
 
 type Def = [id: string, name: string, art: string, rarity: Rarity, palette: keyof typeof P, lore: string]
@@ -52,7 +72,7 @@ function build(slot: Slot, defs: Def[]): CosmeticItem[] {
   }))
 }
 
-// --- Faces (6) --------------------------------------------------------------
+// --- Faces (13) --------------------------------------------------------------
 const FACES = build('face', [
   ['face-recruit', 'Recruit', 'stoic', 'common', 'bone', 'The face you started with. Nothing to prove yet.'],
   ['face-scarred', 'Scarred', 'scarred', 'uncommon', 'bone', 'Every mark is a session you did not skip.'],
@@ -65,9 +85,11 @@ const FACES = build('face', [
   ['face-oni', 'Oni Mask', 'oni', 'epic', 'daybreak', 'Horned, snarling, and older than anyone who wears one.'],
   ['face-kitsune', 'Kitsune Mask', 'kitsune', 'legendary', 'fox', 'Nine tails are said to come with it. Only one has been confirmed.'],
   ['face-hollow', 'Hollow Sigil', 'hollow', 'mythical', 'bloom', 'The mark that appears on nobody, and then on someone.'],
+  ['face-runebrand', 'Runebrand', 'runebrand', 'legendary', 'rift', 'Burnt in, one mark per plateau broken. Nobody has filled the second cheek.'],
+  ['face-starlit', 'Starlit', 'starlit', 'secret', 'eclipse', 'Whatever is behind the eyes, it is a long way behind them.'],
 ])
 
-// --- Head / hair (8) --------------------------------------------------------
+// --- Head / hair (17) --------------------------------------------------------
 const HEADS = build('head', [
   ['head-none', 'Bare Head', 'none', 'common', 'bone', 'Nothing between you and the work.'],
   ['head-bound', 'Bound Hair', 'bound', 'common', 'charcoal', 'Tied back so it stays out of the third set.'],
@@ -83,9 +105,12 @@ const HEADS = build('head', [
   ['head-ponytail', 'High Ponytail', 'ponytail', 'rare', 'ink', 'Long enough to move a beat behind you.'],
   ['head-kabuto', 'Kabuto', 'kabuto', 'epic', 'storm', 'A crescent on the brow, and everything below it hidden.'],
   ['head-halo', 'Ashen Halo', 'halo', 'mythical', 'daybreak', 'It does not rest on anything. It simply stays.'],
+  ['head-drake', 'Drakeskull Helm', 'drake-helm', 'legendary', 'magma', 'The skull was already this shape. The straps were added later.'],
+  ['head-diadem', 'Astral Diadem', 'diadem', 'mythical', 'nether', 'It does not rest on the head. It keeps a respectful gap.'],
+  ['head-void-crown', 'Crown of Nothing', 'void-crown', 'secret', 'eclipse', 'Seven pieces, no band, and it has never fallen off anyone.'],
 ])
 
-// --- Body armour (9) --------------------------------------------------------
+// --- Body armour (18) --------------------------------------------------------
 const BODIES = build('body', [
   ['body-tunic', 'Training Tunic', 'tunic', 'common', 'bone', 'Cheap cloth, honest sweat.'],
   ['body-padded', 'Padded Jack', 'padded', 'common', 'charcoal', 'Enough to blunt a bad rep.'],
@@ -102,9 +127,12 @@ const BODIES = build('body', [
   ['body-haori', 'Sakura Haori', 'haori', 'epic', 'sakura', 'Open at the front, and the sleeves never quite settle.'],
   ['body-mecha', 'Mecha Frame', 'mecha', 'legendary', 'storm', 'Something in it is always quietly running.'],
   ['body-celestial', 'Celestial Robe', 'celestial', 'mythical', 'bloom', 'Cut from a night that had not happened yet.'],
+  ['body-obsidian', 'Obsidian Warplate', 'obsidian-plate', 'legendary', 'umbra', 'Volcanic glass, and something behind it that has not gone out.'],
+  ['body-aegis', 'Solar Aegis', 'solar-plate', 'mythical', 'solar', 'The disc on the chest turns whether or not you do.'],
+  ['body-unmade', 'The Unmade', 'unmade', 'secret', 'eclipse', 'Eight pieces of a cuirass, none of them touching, all of them yours.'],
 ])
 
-// --- Hands (7) --------------------------------------------------------------
+// --- Hands (12) --------------------------------------------------------------
 const HANDS = build('hands', [
   ['hands-wraps', 'Linen Wraps', 'wraps', 'common', 'bone', 'The first thing every recruit is handed.'],
   ['hands-gloves', 'Grip Gloves', 'gloves', 'common', 'charcoal', 'Chalk-stained and loyal.'],
@@ -116,9 +144,11 @@ const HANDS = build('hands', [
   ['hands-jade', 'Jadebound Wraps', 'wraps', 'rare', 'jade', 'Silk over chalk. Quietly expensive.'],
   ['hands-claws', 'Tekkō Claws', 'claws', 'epic', 'ink', 'Four blades along the knuckle, worn under the sleeve.'],
   ['hands-spirit', 'Spiritbound Cuffs', 'spirit-cuffs', 'mythical', 'celadon', 'The light between the fingers is not reflected from anything.'],
+  ['hands-rift', 'Riftgrasp', 'rift-gauntlets', 'legendary', 'rift', 'Split down the back of the hand, and the split is not empty.'],
+  ['hands-titan', 'Titan Grips', 'titan-gauntlets', 'mythical', 'magma', 'Heavier than the bar. That is the joke, and it is not a joke.'],
 ])
 
-// --- Feet (7) ---------------------------------------------------------------
+// --- Feet (12) ---------------------------------------------------------------
 const FEET = build('feet', [
   ['feet-wraps', 'Foot Wraps', 'wraps', 'common', 'bone', 'Flat, grounded, honest.'],
   ['feet-boots', 'Trail Boots', 'boots', 'common', 'charcoal', 'They have seen more roads than gyms.'],
@@ -130,9 +160,11 @@ const FEET = build('feet', [
   ['feet-flat', 'Flat Lifters', 'boots', 'uncommon', 'rust', 'No cushion, no wobble, no excuses.'],
   ['feet-tabi', 'Tabi Boots', 'tabi', 'rare', 'ink', 'Split toe, soft sole, no sound at all.'],
   ['feet-stormstep', 'Stormstep Greaves', 'stormstep', 'legendary', 'storm', 'The air near them keeps flickering.'],
+  ['feet-magma', 'Magmatread', 'magma-greaves', 'legendary', 'magma', 'The platform under them is warm for an hour after you leave.'],
+  ['feet-voidstride', 'Voidstride', 'void-greaves', 'mythical', 'nether', 'They hover about four millimetres. Enough that people check.'],
 ])
 
-// --- Weapons (12) -----------------------------------------------------------
+// --- Weapons (22) -----------------------------------------------------------
 const WEAPONS = build('weapon', [
   ['weapon-none', 'Bare Hands', 'none', 'common', 'bone', 'Where everyone begins.'],
   ['weapon-staff', 'Training Staff', 'staff', 'common', 'charcoal', 'Balance before power.'],
@@ -153,9 +185,12 @@ const WEAPONS = build('weapon', [
   ['weapon-kusarigama', 'Kusarigama', 'kusarigama', 'legendary', 'iron', 'A sickle, a chain, and a weight. In that order, usually.'],
   ['weapon-spirit-blade', 'Spiritcutter', 'spirit-blade', 'mythical', 'celadon', 'It hums at the pitch of the room it is in.'],
   ['weapon-null', 'The Quiet Edge', 'null-blade', 'secret', 'ink', 'No one agrees on what it looks like. Everyone agrees they have seen it.'],
+  ['weapon-riftcleaver', 'Riftcleaver', 'rift-blade', 'legendary', 'rift', 'The crack down the middle is not damage. It was made that way.'],
+  ['weapon-thunderpeal', 'Thunderpeal', 'storm-hammer', 'mythical', 'storm', 'You hear it a half second before it lands, every single time.'],
+  ['weapon-firstlight', 'First Light', 'dawn-blade', 'secret', 'radiant', 'There is a hilt. Everyone disagrees about the rest of it.'],
 ])
 
-// --- Back / capes (6) -------------------------------------------------------
+// --- Back / capes (14) -------------------------------------------------------
 const BACKS = build('back', [
   ['back-none', 'No Cloak', 'none', 'common', 'bone', 'Nothing to catch the wind.'],
   ['back-short', 'Short Cloak', 'short-cloak', 'common', 'charcoal', 'Practical warmth for cold mornings.'],
@@ -168,9 +203,12 @@ const BACKS = build('back', [
   ['back-wings', 'Ashen Wings', 'wings', 'epic', 'ink', 'Folded most of the time. Mostly.'],
   ['back-tails', 'Nine Tails', 'tails', 'legendary', 'fox', 'Only three are usually visible. Nobody has counted the rest.'],
   ['back-starcloak', 'Starcloak', 'starcloak', 'mythical', 'storm', 'Wearing it at night is how people lose an evening.'],
+  ['back-aurora', 'Auroral Mantle', 'aurora-cape', 'legendary', 'aurora', 'Six ribbons, none of them cloth, all of them moving.'],
+  ['back-seraph', 'Seraph Wings', 'seraph', 'mythical', 'radiant', 'Six wings. Two for flying, and nobody will say what the other four do.'],
+  ['back-riftgate', 'Riftgate', 'riftgate', 'secret', 'nether', 'It has been open the whole time. You only just turned around.'],
 ])
 
-// --- Auras (6) --------------------------------------------------------------
+// --- Auras (13) --------------------------------------------------------------
 const AURAS = build('aura', [
   ['aura-none', 'No Aura', 'none', 'common', 'bone', 'Just you and the work.'],
   ['aura-dust', 'Forge Dust', 'dust', 'uncommon', 'ash', 'Fine grit that never quite settles.'],
@@ -182,9 +220,12 @@ const AURAS = build('aura', [
   ['aura-sakura', 'Falling Blossom', 'sakura', 'epic', 'sakura', 'Out of season, indoors, and constant.'],
   ['aura-lightning', 'Stormcall', 'lightning', 'legendary', 'storm', 'The hair goes first. Then everyone notices.'],
   ['aura-void', 'Voidbloom', 'voidbloom', 'mythical', 'bloom', 'Petals that fall upward and are gone before they arrive.'],
+  ['aura-shadow', 'Umbral Shroud', 'shadow', 'legendary', 'umbra', 'Black smoke off a pool that never dries. It rises even indoors.'],
+  ['aura-solar', 'Solar Flare', 'solar', 'mythical', 'solar', 'A corona that turns, and it turns faster on the heavy days.'],
+  ['aura-eclipse', 'Eclipse', 'eclipse', 'secret', 'eclipse', 'The light goes round it rather than through. Nobody likes standing behind you.'],
 ])
 
-// --- Companions (4) ---------------------------------------------------------
+// --- Companions (9) ---------------------------------------------------------
 const COMPANIONS = build('companion', [
   ['companion-none', 'No Companion', 'none', 'common', 'bone', 'Solo work.'],
   ['companion-wisp', 'Ember Wisp', 'wisp', 'rare', 'ember', 'It hovers near the bar and waits.'],
@@ -193,9 +234,11 @@ const COMPANIONS = build('companion', [
   ['companion-owl', 'Rime Owl', 'wisp', 'epic', 'frost', 'Silent on the approach. Always is.'],
   ['companion-fox', 'Spirit Fox', 'fox', 'legendary', 'fox', 'Turns up on the heavy days and sits just out of reach.'],
   ['companion-phoenix', 'Emberwing', 'phoenix', 'mythical', 'daybreak', 'Burns down to nothing every rest day and comes back annoyed.'],
+  ['companion-drake', 'Cinderdrake', 'drake', 'mythical', 'magma', 'Perches on the rack. Has opinions about your setup.'],
+  ['companion-watcher', 'The Watcher', 'watcher', 'secret', 'eclipse', 'It has counted every rep you have ever done, including the bad ones.'],
 ])
 
-// --- Titles (10) ------------------------------------------------------------
+// --- Titles (18) ------------------------------------------------------------
 const TITLES = build('title', [
   ['title-recruit', 'the Recruit', 'text', 'common', 'bone', 'Everyone earns this by starting.'],
   ['title-steady', 'the Steady', 'text', 'common', 'ash', 'Awarded for showing up twice in a row.'],
@@ -212,9 +255,12 @@ const TITLES = build('title', [
   ['title-ronin', 'the Rōnin', 'text', 'rare', 'ink', 'No school, no master, still turns up.'],
   ['title-ninetailed', 'Nine-Tailed', 'text', 'mythical', 'fox', 'Counted once, by someone who then forgot the number.'],
   ['title-nameless', 'the Nameless', 'text', 'secret', 'ink', 'Whoever earns this is not listed anywhere.'],
+  ['title-worldbreaker', 'Worldbreaker', 'text', 'legendary', 'magma', 'For a lift nobody in the room expected to go up.'],
+  ['title-eclipsed', 'the Eclipsed', 'text', 'mythical', 'eclipse', 'You trained through the week everything else went dark.'],
+  ['title-unwritten', 'the Unwritten', 'text', 'secret', 'nether', 'There is no record of this one. There is no record of you.'],
 ])
 
-// --- Poses (5) --------------------------------------------------------------
+// --- Poses (10) --------------------------------------------------------------
 const POSES = build('pose', [
   ['pose-ready', 'Ready Stance', 'ready', 'common', 'bone', 'Feet set, weight even.'],
   ['pose-guard', 'Guard', 'guard', 'common', 'iron', 'Hands up, chin down.'],
@@ -224,6 +270,8 @@ const POSES = build('pose', [
   ['pose-braced', 'Braced', 'braced', 'rare', 'jade', 'The stance you take before a set you respect.'],
   ['pose-sheathed', 'Iaido', 'sheathed', 'epic', 'ink', 'Hand on the hilt, nothing drawn yet.'],
   ['pose-ascend', 'Ascendant', 'ascend', 'mythical', 'bloom', 'Both feet still on the floor. Only just.'],
+  ['pose-titan', 'Titanfall', 'titan', 'legendary', 'magma', 'Wide, low, and taking up the whole platform on purpose.'],
+  ['pose-apotheosis', 'Apotheosis', 'apotheosis', 'secret', 'eclipse', 'Arms open, head back, and not standing on anything at all.'],
 ])
 
 export const ITEMS: CosmeticItem[] = [

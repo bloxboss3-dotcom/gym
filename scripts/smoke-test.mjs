@@ -793,6 +793,90 @@ record(
 const blinkers = await page.locator('.anim-blink').count()
 record('the warrior has eyes that blink', blinkers >= 2, `${blinkers} eye groups`)
 
+/*
+  The rarity ladder, checked in a browser that has the real stylesheet.
+
+  The unit suite proves the renderer puts `rar-legendary` / `rar-mythical` /
+  `rar-secret` on the right items. It cannot prove those class names mean
+  anything, because jsdom has no CSS — a tier wired to a class that no rule
+  matches passes every assertion in the file and stands perfectly still on a
+  phone. Same failure the breathing check above was written for.
+
+  So this samples the computed filter over time on each tier and requires it to
+  KEEP CHANGING, and requires the three tiers to resolve to three different
+  keyframes. A ladder where everything glows identically is not a ladder.
+*/
+const tiers = await page.evaluate(async () => {
+  const out = {}
+  for (const cls of ['rar-legendary', 'rar-mythical', 'rar-secret']) {
+    const el = document.createElement('div')
+    el.className = cls
+    el.style.setProperty('--tier-glow', '#fb923c')
+    el.style.width = '10px'
+    el.style.height = '10px'
+    document.body.appendChild(el)
+    const seen = new Set()
+    for (let i = 0; i < 14; i++) {
+      const cs = getComputedStyle(el)
+      seen.add(`${cs.filter}|${cs.transform}`)
+      await new Promise((r) => setTimeout(r, 70))
+    }
+    out[cls] = { name: getComputedStyle(el).animationName, frames: seen.size }
+    el.remove()
+  }
+  return out
+})
+const tierRows = Object.entries(tiers)
+record(
+  'every rarity tier is actually animated by the stylesheet',
+  tierRows.every(([, v]) => v.name && v.name !== 'none' && v.frames > 2),
+  tierRows.map(([k, v]) => `${k}=${v.name}/${v.frames} frames`).join(' '),
+)
+record(
+  'the three tiers are three different animations',
+  new Set(tierRows.map(([, v]) => v.name)).size === 3,
+  tierRows.map(([, v]) => v.name).join(', '),
+)
+
+// Every per-item motion class the top-tier art uses has to exist too. A
+// typo'd class name is silent: the element renders, nothing moves.
+const artMotion = await page.evaluate(async () => {
+  const names = ['anim-smoke', 'anim-orbit', 'anim-spin', 'anim-ring', 'anim-shimmer',
+    'anim-seam', 'anim-beat', 'anim-wave', 'anim-drift', 'anim-scan']
+  const dead = []
+  for (const cls of names) {
+    const el = document.createElement('div')
+    el.className = cls
+    document.body.appendChild(el)
+    const cs = getComputedStyle(el)
+    if (cs.animationName === 'none' || cs.animationDuration === '0s') dead.push(cls)
+    el.remove()
+  }
+  return dead
+})
+record(
+  'every animation the legendary art asks for exists in the stylesheet',
+  artMotion.length === 0,
+  artMotion.length ? `no keyframes for: ${artMotion.join(', ')}` : 'all present',
+)
+
+// And all of it stops for somebody who asked it to.
+const stopped = await page.evaluate(async () => {
+  document.documentElement.classList.add('reduce-motion')
+  const el = document.createElement('div')
+  el.className = 'rar-secret'
+  document.body.appendChild(el)
+  const dur = getComputedStyle(el).animationDuration
+  el.remove()
+  document.documentElement.classList.remove('reduce-motion')
+  return dur
+})
+record(
+  'reduced motion switches the rarity animation off',
+  parseFloat(stopped) < 0.01,
+  `animation-duration ${stopped}`,
+)
+
 // The figure choice.
 //
 // Measured on the geometry the renderer emits rather than on a pixel diff or

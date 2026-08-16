@@ -50,6 +50,21 @@ async function renderer() {
      import { Warrior } from '${join(process.cwd(), 'src/character/Warrior.tsx')}'
      import { ITEMS } from '${join(process.cwd(), 'src/data/items.ts')}'
      export const poses = ITEMS.filter((i) => i.slot === 'pose').map((i) => ({ id: i.id, art: i.art, name: i.name }))
+     const TOP = ['legendary', 'mythical', 'secret']
+     export const topTier = ITEMS
+       .filter((i) => TOP.includes(i.rarity) && i.slot !== 'title')
+       .map((i) => ({ id: i.id, slot: i.slot, art: i.art, name: i.name, rarity: i.rarity }))
+     const BARE = { face: 'face-recruit', head: 'head-none', body: 'body-tunic', hands: 'hands-wraps',
+       feet: 'feet-wraps', weapon: 'weapon-none', back: 'back-none', aura: 'aura-none',
+       companion: 'companion-none', pose: 'pose-ready' }
+     export function wearing(slot, id) {
+       return renderToStaticMarkup(
+         createElement(Warrior, {
+           equipped: { ...BARE, [slot]: id },
+           frame: 'masculine', build: 0.6, still: true,
+         }),
+       )
+     }
      export function draw(pose, weapon) {
        // createElement, not a direct call: the renderer uses hooks, and calling
        // a component as a plain function skips the dispatcher they need.
@@ -147,7 +162,7 @@ function onTheFace(x, y) {
 async function main() {
   rmSync(OUT, { recursive: true, force: true })
   mkdirSync(OUT, { recursive: true })
-  const { poses, draw } = await renderer()
+  const { poses, draw, topTier, wearing } = await renderer()
 
   const browser = await chromium.launch({
     ...(process.env.SMOKE_CHROMIUM ? { executablePath: process.env.SMOKE_CHROMIUM } : {}),
@@ -186,6 +201,41 @@ async function main() {
       `${(faceDiff * 100).toFixed(1)}% of the face is covered by the weapon`,
     )
 
+  }
+
+  /*
+    Every item from legendary up has to put something on screen.
+
+    A name in the catalogue pointing at an art key nothing handles renders an
+    empty group: the markup changes, every string assertion passes, and the
+    sword is missing. The unit suite counts shapes, which catches that; this
+    counts PIXELS, which also catches art drawn off-canvas, drawn in the
+    background colour, or drawn underneath the figure where nobody sees it.
+
+    The baseline is the same warrior with the empty version of that slot, so
+    what is being measured is the item's own contribution and nothing else.
+  */
+  const BARE = {
+    face: 'face-recruit', head: 'head-none', body: 'body-tunic', hands: 'hands-wraps',
+    feet: 'feet-wraps', weapon: 'weapon-none', back: 'back-none', aura: 'aura-none',
+    companion: 'companion-none', pose: 'pose-ready',
+  }
+  const baseline = {}
+  for (const slot of Object.keys(BARE)) {
+    baseline[slot] = await raster(page, wearing(slot, BARE[slot]))
+  }
+  // 0.15% of a 240x240 canvas is about 86 pixels — smaller than any real piece
+  // of gear and larger than antialiasing noise.
+  const FLOOR = 0.0015
+  for (const item of topTier) {
+    if (item.id === BARE[item.slot]) continue
+    const pixels = await raster(page, wearing(item.slot, item.id))
+    const diff = differs(pixels, baseline[item.slot])
+    record(
+      `${item.rarity} ${item.name} draws something`,
+      diff > FLOOR,
+      `${(diff * 100).toFixed(2)}% of the canvas differs from an empty ${item.slot}`,
+    )
   }
 
   await browser.close()

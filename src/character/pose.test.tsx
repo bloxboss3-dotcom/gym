@@ -292,6 +292,15 @@ describe('poses move the body, not just the picture', () => {
     }
   })
 
+  /*
+    One pose is allowed to leave the ground, and only because leaving the
+    ground IS the item: Apotheosis is described as "not standing on anything at
+    all". Naming it here rather than widening the bound for everybody keeps the
+    guard doing its job — an accidental float in any other stance still fails,
+    and this one is asserted to float rather than merely permitted to.
+  */
+  const AIRBORNE = new Set(['pose-apotheosis'])
+
   it('keeps every pose standing on the floor', () => {
     /*
       Whatever else moves, the feet stay on the ground. Measured against the
@@ -299,7 +308,11 @@ describe('poses move the body, not just the picture', () => {
       stance legitimately settles the figure lower, and comparing the two
       called that floating.
     */
-    for (const pose of POSES) {
+    const grounded = POSES.filter((p) => !AIRBORNE.has(p.id))
+    expect(grounded.length, 'every pose was excused from the floor check').toBeGreaterThan(
+      POSES.length - 3,
+    )
+    for (const pose of grounded) {
       const doc = render(pose.id)
       const shin = [...doc.querySelectorAll('path')].find(
         (p) => p.getAttribute('d') === 'M113 196 L115 238',
@@ -308,6 +321,24 @@ describe('poses move the body, not just the picture', () => {
       const foot = at(chainOf(shin as Element), 115, 238)
       expect(foot.y, `${pose.id} hovers: y ${foot.y.toFixed(1)}`).toBeGreaterThan(230)
       expect(foot.y, `${pose.id} sinks: y ${foot.y.toFixed(1)}`).toBeLessThan(258)
+    }
+  })
+
+  it('actually lifts the one pose that is meant to hover', () => {
+    // The exception above is only honest if the pose earns it. A levitating
+    // stance that quietly stopped levitating would otherwise be excused from
+    // both halves of the check.
+    for (const id of AIRBORNE) {
+      const pose = POSES.find((p) => p.id === id)
+      expect(pose, `${id} is excused from the floor check but is not in the catalogue`).toBeTruthy()
+      const doc = render(id)
+      const shin = [...doc.querySelectorAll('path')].find(
+        (p) => p.getAttribute('d') === 'M113 196 L115 238',
+      )
+      const foot = at(chainOf(shin as Element), 115, 238)
+      expect(foot.y, `${id} is standing on the floor after all: y ${foot.y.toFixed(1)}`).toBeLessThan(
+        228,
+      )
     }
   })
 })
