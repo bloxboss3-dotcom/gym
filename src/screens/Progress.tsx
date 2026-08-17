@@ -185,9 +185,9 @@ export default function Progress() {
             </ul>
           )}
 
-          {verdict.missingData.map((gap) => (
-            <p key={gap} className="text-[11px] text-smoke mt-2 leading-relaxed">
-              {t(gap)}
+          {verdict.missingDataParts.map((gap) => (
+            <p key={gap.template} className="text-[11px] text-smoke mt-2 leading-relaxed">
+              {t(gap.template, gap.vars)}
             </p>
           ))}
           <div className="mt-2">
@@ -353,8 +353,9 @@ export default function Progress() {
           />
           {strength.overall === null ? (
             <p className="text-sm text-ash mt-1">
-              {strength.missingData[0] ??
-                'Log one of the benchmark barbell lifts and a body weight, and this fills in.'}
+              {strength.missingDataParts[0]
+                ? t(strength.missingDataParts[0].template, strength.missingDataParts[0].vars)
+                : t('Log one of the benchmark barbell lifts and a body weight, and this fills in.')}
             </p>
           ) : (
             <>
@@ -400,9 +401,9 @@ export default function Progress() {
           )}
           <Disclosure summary={t('What this number is, and what it is not')} tone="quiet">
             <p className="mb-2">{t(strength.caveat)}</p>
-            {strength.missingData.map((gap) => (
-              <p key={gap} className="mb-2 text-smoke">
-                {gap}
+            {strength.missingDataParts.map((gap) => (
+              <p key={gap.template} className="mb-2 text-smoke">
+                {t(gap.template, gap.vars)}
               </p>
             ))}
             <p className="mb-2">

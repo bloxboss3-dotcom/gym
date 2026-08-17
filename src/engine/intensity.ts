@@ -2,6 +2,7 @@ import { RULES } from '@/config/rules'
 import type { Exercise, Goal, IsoDate, MuscleKey, Session, SessionEntry, Units } from '@/types'
 import type { Confidence } from '@/engine/progression'
 import { toDisplay, roundToIncrement } from '@/engine/units'
+import { gaps, type MissingDataPart } from '@/engine/gaps'
 
 /**
  * Intensity techniques — the "advanced" methods, held to the same standard as
@@ -42,6 +43,7 @@ export interface IntensityTechnique {
   citationIds: string[]
   confidence: Confidence
   missingData: string[]
+  missingDataParts: MissingDataPart[]
   warning: string | null
   /** Hard-set credit toward the weekly volume tally. */
   countsAsSets: number
@@ -147,19 +149,20 @@ export function suggestFinisher(ctx: FinisherContext): FinisherResult {
   if (shortBy < cfg.setsShortOfRange) return no('volume_not_short')
 
   const lastSet = working[working.length - 1]
-  const missingData: string[] = []
+  const gap = gaps()
   if (working.some((s) => s.rir === null)) {
-    missingData.push('Reps in reserve were not logged on every set, so how close to failure you finished is a guess.')
+    gap.push('Reps in reserve were not logged on every set, so how close to failure you finished is a guess.')
   }
 
   // Confidence tracks how much the caller actually knew. A suggestion built on
   // a full week of logged volume and reported effort is a different claim from
   // one built on a single session.
-  const confidence: Confidence = missingData.length === 0 ? 'medium' : 'low'
+  const confidence: Confidence = gap.list.length === 0 ? 'medium' : 'low'
 
   const shared = {
     confidence,
-    missingData,
+    missingData: gap.list,
+    missingDataParts: gap.parts,
     warning: null as string | null,
   }
 

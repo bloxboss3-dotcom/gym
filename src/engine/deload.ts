@@ -3,6 +3,7 @@ import type { Checkin, DeloadRecord, IsoDate, Session } from '@/types'
 import { addDays, daysBetween, toIsoDate, weekKey } from '@/lib/date'
 import { analyseSession, historyFor } from '@/engine/progression'
 import type { Confidence } from '@/engine/progression'
+import { gaps, type MissingDataPart } from '@/engine/gaps'
 
 /**
  * Deload detection.
@@ -39,6 +40,7 @@ export interface DeloadAssessment {
   rule: string
   confidence: Confidence
   missingData: string[]
+  missingDataParts: MissingDataPart[]
   plan: {
     loadReductionPct: number
     volumeReductionPct: number
@@ -231,12 +233,12 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
   const cooledDown =
     !lastSuggestion || daysBetween(lastSuggestion.startDate, today) >= RULES.deload.cooldownDays
 
-  const missingData: string[] = []
+  const gap = gaps()
   if (!recentCheckins.length) {
-    missingData.push('No readiness check-ins in the last 10 days — soreness, readiness and joint pain are unknown.')
+    gap.push('No readiness check-ins in the last 10 days — soreness, readiness and joint pain are unknown.')
   }
   if (decline.tracked < 3) {
-    missingData.push('Fewer than 3 repeated exercises to compare, so the performance signal is weak.')
+    gap.push('Fewer than 3 repeated exercises to compare, so the performance signal is weak.')
   }
 
   const confidence: Confidence =
@@ -277,7 +279,8 @@ export function assessDeload(input: DeloadInput): DeloadAssessment {
         : { days: RULES.deload.cooldownDays },
     rule: `${RULES.deload.triggerCount}+ of 6 fatigue signals inside a ${window}-day window → suggest a deload (rules.deload).`,
     confidence,
-    missingData,
+    missingData: gap.list,
+    missingDataParts: gap.parts,
     plan: {
       loadReductionPct: RULES.deload.loadReductionPct,
       volumeReductionPct: RULES.deload.volumeReductionPct,

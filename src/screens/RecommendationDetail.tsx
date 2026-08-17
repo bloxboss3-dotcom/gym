@@ -170,8 +170,8 @@ export default function RecommendationDetail() {
             <>
               <p className="text-xs uppercase tracking-wider text-smoke mt-3 mb-1.5">{t('Missing or uncertain')}</p>
               <ul className="list-disc pl-4 space-y-1 text-sm text-ash">
-                {recommendation.missingData.map((item) => (
-                  <li key={item}>{item}</li>
+                {recommendation.missingDataParts.map((item) => (
+                  <li key={item.template}>{t(item.template, item.vars)}</li>
                 ))}
               </ul>
             </>

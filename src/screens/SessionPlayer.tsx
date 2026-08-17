@@ -752,9 +752,9 @@ function ExerciseBlock({
                 </li>
               ))}
             </ol>
-            {finisher.technique.missingData.map((gap) => (
-              <p key={gap} className="text-[11px] text-smoke mt-1.5 leading-relaxed">
-                {t('Missing: {gap}', { gap: t(gap) })}
+            {finisher.technique.missingDataParts.map((gap) => (
+              <p key={gap.template} className="text-[11px] text-smoke mt-1.5 leading-relaxed">
+                {t('Missing: {gap}', { gap: t(gap.template, gap.vars) })}
               </p>
             ))}
             <p className="text-[11px] text-smoke mt-2">

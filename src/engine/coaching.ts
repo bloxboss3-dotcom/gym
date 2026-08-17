@@ -4,6 +4,7 @@ import { historyFor } from '@/engine/progression'
 import { estimateOneRepMax } from '@/engine/stats'
 import { daysBetween } from '@/lib/date'
 import type { Exercise, IsoDate, Session } from '@/types'
+import { gaps, type MissingDataPart } from '@/engine/gaps'
 
 /**
  * The coaching verdict: are you actually getting anywhere, and are you
@@ -78,8 +79,10 @@ export interface TrainingVerdict {
   stalled: number
   leavingReps: number
   grinding: number
-  /** What could not be judged, and why. */
+  /** What could not be judged, and why. Finished English. */
   missingData: string[]
+  /** The same gaps as template + values, for screens that translate. */
+  missingDataParts: MissingDataPart[]
   citationIds: string[]
   windowDays: number
 }
@@ -255,17 +258,35 @@ export function assessTraining(input: {
   const leavingReps = movements.filter((m) => m.effort === 'leaving_reps').length
   const grinding = movements.filter((m) => m.effort === 'grinding').length
 
-  const missingData: string[] = []
+  /*
+    Data gaps, as template plus values rather than a finished sentence.
+
+    These are the only two gap lines in any engine that carry a number, and
+    building them with a template literal made them untranslatable: the screen
+    renders `t(gap)`, and no catalogue can hold a key that changes with the
+    count. Both shipped in English on an otherwise Spanish screen, and only
+    surfaced on a day whose seeded history happened to produce one.
+
+    Singular and plural are separate templates because the agreement differs
+    between languages and there is no arithmetic that fixes that.
+  */
+  const gap = gaps()
   const unknownTrend = movements.length - judged.length
   if (unknownTrend > 0) {
-    missingData.push(
-      `${unknownTrend} movement${unknownTrend === 1 ? '' : 's'} ${unknownTrend === 1 ? 'has' : 'have'} fewer than ${MIN_SESSIONS} sessions in the window, so no trend was called for ${unknownTrend === 1 ? 'it' : 'them'}.`,
+    gap.push(
+      unknownTrend === 1
+        ? '1 movement has fewer than {min} sessions in the window, so no trend was called for it.'
+        : '{count} movements have fewer than {min} sessions in the window, so no trend was called for them.',
+      { count: unknownTrend, min: MIN_SESSIONS },
     )
   }
   const noRir = movements.filter((m) => m.medianRir === null).length
   if (noRir > 0) {
-    missingData.push(
-      `Reps in reserve were not logged on ${noRir} movement${noRir === 1 ? '' : 's'}, so effort could not be judged there.`,
+    gap.push(
+      noRir === 1
+        ? 'Reps in reserve were not logged on 1 movement, so effort could not be judged there.'
+        : 'Reps in reserve were not logged on {count} movements, so effort could not be judged there.',
+      { count: noRir },
     )
   }
 
@@ -286,7 +307,8 @@ export function assessTraining(input: {
       stalled,
       leavingReps,
       grinding,
-      missingData,
+      missingData: gap.list,
+      missingDataParts: gap.parts,
       citationIds,
       windowDays,
     }
@@ -340,7 +362,8 @@ export function assessTraining(input: {
     stalled,
     leavingReps,
     grinding,
-    missingData,
+    missingData: gap.list,
+    missingDataParts: gap.parts,
     citationIds,
     windowDays,
   }

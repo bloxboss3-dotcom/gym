@@ -150,10 +150,17 @@ export default function RunLogger() {
               </p>
             </Disclosure>
             {recommendation.missingData.length > 0 && (
-              <Disclosure summary={`${recommendation.missingData.length} data gaps`} tone="quiet">
+              <Disclosure
+                summary={
+                  recommendation.missingData.length === 1
+                    ? t('1 data gap')
+                    : t('{n} data gaps', { n: recommendation.missingData.length })
+                }
+                tone="quiet"
+              >
                 <ul className="list-disc pl-4 space-y-1">
-                  {recommendation.missingData.map((item) => (
-                    <li key={item}>{item}</li>
+                  {recommendation.missingDataParts.map((item) => (
+                    <li key={item.template}>{t(item.template, item.vars)}</li>
                   ))}
                 </ul>
               </Disclosure>
