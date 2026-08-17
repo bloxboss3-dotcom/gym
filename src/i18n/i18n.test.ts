@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { ES } from '@/i18n/es'
 import { DEFAULT_LANG, LANGUAGES, interpolate, isLang, translate, translateWith } from '@/i18n'
-import { assessMovement } from '@/engine/coaching'
+import { assessMovement, assessTraining } from '@/engine/coaching'
 import { BLOCK_EXPLANATION } from '@/engine/intensity'
+import { strengthProfile, type StrengthProfileInput } from '@/engine/percentile'
 import { EXERCISE_BY_ID } from '@/data/exercises'
 import { CITATIONS } from '@/data/citations'
 import { ITEMS, RARITY_META, SECRET_PLACEHOLDER, SLOT_LABEL } from '@/data/items'
@@ -292,6 +293,125 @@ describe('the wardrobe is translated too', () => {
     expect(translate('a string nobody translated|somecontext', 'es')).toBe(
       'a string nobody translated',
     )
+  })
+})
+
+describe('every data gap an engine can report is translated', () => {
+  /*
+    The gaps are the lines that say what FORGED could not judge, and they were
+    the last English left on a Spanish screen. Not because nobody translated
+    them — because six of them were built with template literals:
+
+      `${n} movement${n === 1 ? '' : 's'} have fewer than ${MIN} sessions…`
+
+    which produces a finished sentence with a count in it, and no catalogue can
+    hold a key that changes with the data. They appeared only when the numbers
+    lined up, which is how one survived long enough to be found by a smoke run
+    on a day whose seeded history happened to trigger it.
+
+    Driving this from the engines' own output is the only version that cannot
+    drift: a seventh gap added tomorrow is caught the moment its condition is
+    reachable from one of the cases below.
+  */
+  const gapsFrom = (parts: { template: string }[]) =>
+    parts.map((p) => p.template).filter((tpl) => translate(tpl, 'es') === tpl)
+
+  const DAY = '2026-08-13'
+  const LIFT_IDS = ['barbell-bench-press', 'back-squat']
+  const lifts = LIFT_IDS.map((id) => EXERCISE_BY_ID[id])
+
+  /** Thin history: under the trend threshold, and no RIR logged. */
+  const thin = (exerciseIds: string[]): Session[] =>
+    [0, 1].map((i) => ({
+      id: `gap-${i}`,
+      date: addDays(DAY, -7 * (1 - i)),
+      programId: null,
+      programDayId: null,
+      title: 'Session',
+      status: 'completed',
+      startedAt: 0,
+      endedAt: 1,
+      entries: exerciseIds.map((exerciseId) => ({
+        id: `gap-e-${i}-${exerciseId}`,
+        exerciseId,
+        plannedSets: 3,
+        repMin: 6,
+        repMax: 10,
+        targetRIR: 2,
+        restSec: 150,
+        incrementKg: 2.5,
+        pain: 0,
+        technique: 'clean' as const,
+        sets: [0, 1, 2].map((k) => ({
+          id: `gap-s-${i}-${exerciseId}-${k}`,
+          weightKg: 60 + i * 2.5,
+          reps: 8,
+          rir: null,
+          warmup: false,
+          completedAt: 1,
+        })),
+      })),
+    }))
+
+  /*
+    Both branches, deliberately.
+
+    The first version of this used one exercise, hit only the singular
+    template, and passed cleanly when the PLURAL translation was deleted —
+    the same shape of hole this whole describe block exists to close.
+  */
+  it.each([
+    ['one movement, singular wording', [LIFT_IDS[0]]],
+    ['two movements, plural wording', LIFT_IDS],
+  ] as const)('translates the coaching gaps for %s', (_name, ids) => {
+    const overall = assessTraining({
+      sessions: thin([...ids]),
+      exercises: lifts,
+      today: DAY,
+    })
+    expect(overall.missingDataParts.length, 'expected some gaps to inspect').toBeGreaterThan(0)
+    const missing = gapsFrom(overall.missingDataParts)
+    expect(missing, `no Spanish for: ${missing.join(' | ')}`).toEqual([])
+  })
+
+  it('exercises both the singular and the plural wording', () => {
+    // Without this the case above could quietly collapse to one branch again.
+    const templates = new Set(
+      [[LIFT_IDS[0]], LIFT_IDS].flatMap((ids) =>
+        assessTraining({ sessions: thin([...ids]), exercises: lifts, today: DAY })
+          .missingDataParts.map((p) => p.template),
+      ),
+    )
+    expect(
+      [...templates].filter((t) => t.includes('no trend was called')).length,
+      'expected a singular and a plural trend gap',
+    ).toBe(2)
+  })
+
+  it('translates the gaps in a strength profile', () => {
+    const cases: StrengthProfileInput[] = [
+      { bestE1rmByExercise: {}, bodyWeightKg: null, sex: 'unspecified' },
+      { bestE1rmByExercise: {}, bodyWeightKg: 80, sex: 'unspecified' },
+      { bestE1rmByExercise: { 'barbell-bench-press': 100 }, bodyWeightKg: 80, sex: 'male' },
+    ]
+    for (const input of cases) {
+      const missing = gapsFrom(strengthProfile(input).missingDataParts)
+      expect(missing, `no Spanish for: ${missing.join(' | ')}`).toEqual([])
+    }
+  })
+
+  it('leaves no gap template carrying a placeholder that Spanish dropped', () => {
+    // A gap that loses `{count}` in translation silently stops reporting the
+    // number, which is the only reason the sentence exists.
+    const broken = Object.entries(ES)
+      .filter(([en]) => /\{(count|min|pct|logged|planned|wanted|lifts|cap)\}/.test(en))
+      .filter(([en, es]) => {
+        const want = [...en.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(',')
+        const got = [...es.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(',')
+        return want !== got
+      })
+      .map(([en]) => en)
+    expect(broken).toEqual([])
   })
 })
 

@@ -17,4 +17,9 @@ export const COMMON: Dict = {
   Finish: 'Terminar',
   Skip: 'Saltar',
   Language: 'Idioma',
+
+  '1 data gap': '1 hueco de datos',
+  '{n} data gaps': '{n} huecos de datos',
+  'Log one of the benchmark barbell lifts and a body weight, and this fills in.':
+    'Registra uno de los ejercicios de referencia con barra y un peso corporal, y esto se completa solo.',
 }

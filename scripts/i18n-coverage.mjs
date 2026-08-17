@@ -5,10 +5,19 @@ import { globSync } from 'node:fs'
  * Which strings the code asks to translate, and which of those have Spanish.
  *
  * Run as part of `verify`. It reads the source rather than the built bundle so
- * it needs no build, and it reports the gap rather than failing on it — a
- * missing translation renders English, which is a working app, so blocking a
- * release over it would be the wrong trade. What it must never do is let the
- * gap grow silently, so the number is printed every run.
+ * it needs no build.
+ *
+ * It used to report the gap rather than fail on it, reasoning that a missing
+ * translation renders English and English is a working app. That was the wrong
+ * trade for two reasons. The number is printed into a CI log nobody reads, so
+ * "never let the gap grow silently" was exactly what happened — and the number
+ * itself was wrong, because the scan could not see `t(item.name)` and reported
+ * 100% over three hundred English strings.
+ *
+ * Now that it enumerates the catalogues too, a drop below 100% means somebody
+ * added a string and did not translate it. That is a defect, and this exits
+ * non-zero for it. The app still renders English in the meantime; failing here
+ * is about not shipping it, not about it being unusable.
  */
 const walk = (dir) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
@@ -51,6 +60,20 @@ for (const m of items.matchAll(
   keys.add(m[1].replace(/\\'/g, "'"))
   keys.add(m[2].replace(/\\'/g, "'"))
 }
+// Data-gap sentences. The engines emit these as `gap.push('…', vars)` and the
+// screens render them with `t(part.template, part.vars)`, so the English is a
+// literal in engine source that the `t(…)` scan above never looks at.
+for (const f of source.filter((p) => p.startsWith('src/engine/'))) {
+  const s = readFileSync(f, 'utf8')
+  for (const m of s.matchAll(/gap\.push\(\s*(?:\n\s*)?'((?:[^'\\]|\\.)*)'/g))
+    keys.add(m[1].replace(/\\'/g, "'"))
+  // The ternary form: gap.push(cond ? 'a' : 'b', vars)
+  for (const m of s.matchAll(/gap\.push\(\s*[^)]*?\?\s*'((?:[^'\\]|\\.)*)'\s*:\s*'((?:[^'\\]|\\.)*)'/gs)) {
+    keys.add(m[1].replace(/\\'/g, "'"))
+    keys.add(m[2].replace(/\\'/g, "'"))
+  }
+}
+
 // Slot names, rarity names and pack names, all rendered through a variable.
 for (const m of items.matchAll(/^\s+\w+: '([^']*\|slot)',$/gm)) keys.add(m[1])
 for (const m of items.matchAll(/label: '([^']*)'/g)) if (m[1] !== '???') keys.add(m[1])
@@ -69,5 +92,8 @@ const pct = keys.size ? Math.round(((keys.size - missing.length) / keys.size) * 
 console.log(`i18n · es: ${keys.size - missing.length}/${keys.size} requested strings translated (${pct}%)`)
 if (missing.length) {
   console.log(`  untranslated (renders English): ${missing.length}`)
-  for (const m of missing.slice(0, 8)) console.log(`    · ${m.slice(0, 80)}`)
+  for (const m of missing.slice(0, 12)) console.log(`    · ${m.slice(0, 100)}`)
+  if (missing.length > 12) console.log(`    · …and ${missing.length - 12} more`)
+  console.log('\n  Add these to a namespace in src/i18n/es/ and run again.')
+  process.exit(1)
 }

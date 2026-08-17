@@ -386,9 +386,9 @@ export default function Nutrition() {
           )}
           {energy.missingData.length > 0 && (
             <ul className="mt-3 space-y-1">
-              {energy.missingData.map((gap) => (
-                <li key={gap} className="text-xs text-smoke leading-relaxed">
-                  • {gap}
+              {energy.missingDataParts.map((gap) => (
+                <li key={gap.template} className="text-xs text-smoke leading-relaxed">
+                  • {t(gap.template, gap.vars)}
                 </li>
               ))}
             </ul>

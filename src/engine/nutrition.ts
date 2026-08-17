@@ -3,6 +3,7 @@ import { interpolate } from '@/lib/interpolate'
 import { calculateProteinTarget } from '@/engine/protein'
 import type { Confidence } from '@/engine/progression'
 import type { IsoDate, MealSlot, Profile, ProteinEntry, Sex } from '@/types'
+import { gaps, type MissingDataPart } from '@/engine/gaps'
 
 /**
  * The energy and macro engine.
@@ -54,6 +55,7 @@ export interface EnergyTarget {
   rule: string
   confidence: Confidence
   missingData: string[]
+  missingDataParts: MissingDataPart[]
   warning: string | null
   citationIds: string[]
 }
@@ -181,14 +183,14 @@ export function calculateEnergyTarget(
     RULES.energy.absoluteFloorKcal[sex] ?? RULES.energy.absoluteFloorKcal.unspecified,
   )
 
-  const missingData: string[] = []
+  const gap = gaps()
   if (!profile.sex || profile.sex === 'unspecified') {
-    missingData.push(
+    gap.push(
       'Biological sex not given, so the estimate uses the midpoint of the two constants — expect a wider margin.',
     )
   }
   if (!profile.dailyActivity) {
-    missingData.push('Daily activity not set, so a desk-based day was assumed.')
+    gap.push('Daily activity not set, so a desk-based day was assumed.')
   }
 
   const override = profile.calorieOverrideKcal
@@ -209,7 +211,8 @@ export function calculateEnergyTarget(
       reasonVars: { target: targetKcal, maintenance: maintenanceKcal },
       rule: 'energy.manual_override',
       confidence: 'low',
-      missingData,
+      missingData: gap.list,
+      missingDataParts: gap.parts,
       warning:
         targetKcal < floorKcal
           ? `${targetKcal} kcal is below the ${floorKcal} kcal floor FORGED would ever suggest. Very low intakes make it hard to get enough protein and micronutrients and are worth discussing with a registered dietitian or your doctor.`
@@ -284,8 +287,9 @@ export function calculateEnergyTarget(
     rule,
     // Never "high": a predicted target you have not yet checked against a real
     // weight trend does not deserve that word.
-    confidence: missingData.length ? 'low' : 'medium',
-    missingData,
+    confidence: gap.list.length ? 'low' : 'medium',
+    missingData: gap.list,
+    missingDataParts: gap.parts,
     warning,
     citationIds:
       offsetPct < 0

@@ -1,5 +1,6 @@
 import type { BodyWeightEntry, RewardLedgerEntry, Session, Sex } from '@/types'
 import { entryBestE1RM } from '@/engine/stats'
+import { gaps, type MissingDataPart } from '@/engine/gaps'
 
 /**
  * Strength percentiles.
@@ -220,6 +221,7 @@ export interface StrengthProfile {
   overall: number | null
   confidence: PercentileConfidence
   missingData: string[]
+  missingDataParts: MissingDataPart[]
   /** What the number does and does not mean — shown, not buried. */
   caveat: string
   /**
@@ -254,7 +256,7 @@ export const PERCENTILE_CAVEAT =
   'Compared with other people who log barbell lifts, not with the general population — so an ordinary-looking number here still puts you ahead of most adults. Estimated one-rep maxes carry real error, and the standards behind this are ranges printed as tidy numbers. Height is not in the maths: limb length does change the bar path, but there is no agreed correction for it and inventing one would dress a guess up as data.'
 
 export function strengthProfile(input: StrengthProfileInput): StrengthProfile {
-  const missingData: string[] = []
+  const gap = gaps()
 
   if (input.bodyWeightKg === null || input.bodyWeightKg <= 0) {
     return {
@@ -262,6 +264,9 @@ export function strengthProfile(input: StrengthProfileInput): StrengthProfile {
       overall: null,
       confidence: 'low',
       missingData: ['Log a body weight — every strength standard is relative to it.'],
+      missingDataParts: [
+        { template: 'Log a body weight — every strength standard is relative to it.', vars: {} },
+      ],
       caveat: PERCENTILE_CAVEAT,
       comparisonGroup: comparisonGroupFor(input.sex),
       citationIds: ['acsm-2009-progression'],
@@ -269,7 +274,7 @@ export function strengthProfile(input: StrengthProfileInput): StrengthProfile {
   }
 
   if (input.sex === 'unspecified') {
-    missingData.push(
+    gap.push(
       'Sex is not set, so this averages the male and female standards. Setting it in your profile sharpens the number considerably.',
     )
   }
@@ -282,11 +287,12 @@ export function strengthProfile(input: StrengthProfileInput): StrengthProfile {
   }
 
   if (lifts.length === 0) {
-    missingData.push(
-      `No logged sets on any of the benchmark lifts yet (${LIFT_STANDARDS.map((s) => s.label).join(', ')}).`,
+    gap.push(
+      'No logged sets on any of the benchmark lifts yet ({lifts}).',
+      { lifts: LIFT_STANDARDS.map((s) => s.label).join(', ') },
     )
   } else if (lifts.length < 3) {
-    missingData.push(
+    gap.push(
       'Only some of the benchmark lifts have data, so the overall figure leans on a narrow sample.',
     )
   }
@@ -310,7 +316,8 @@ export function strengthProfile(input: StrengthProfileInput): StrengthProfile {
     lifts,
     overall,
     confidence,
-    missingData,
+    missingData: gap.list,
+    missingDataParts: gap.parts,
     caveat: PERCENTILE_CAVEAT,
     comparisonGroup: comparisonGroupFor(input.sex),
     citationIds: ['acsm-2009-progression', 'schoenfeld-2017-load'],

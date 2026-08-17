@@ -10,6 +10,7 @@ import type {
 } from '@/types'
 import { addDays, daysBetween, startOfWeek, toIsoDate, weekdayName, weekdayOf } from '@/lib/date'
 import type { Confidence } from '@/engine/progression'
+import { gaps, type MissingDataPart } from '@/engine/gaps'
 
 /**
  * The running engine — deliberately separate from strength progression.
@@ -51,6 +52,7 @@ export interface RunRecommendation {
   rule: string
   confidence: Confidence
   missingData: string[]
+  missingDataParts: MissingDataPart[]
   warning: string | null
   citationIds: string[]
   /** Scheduling note for concurrent-training interference. */
@@ -231,15 +233,15 @@ export function recommendRunning(input: RunningInput): RunRecommendation {
   const currentWeek = summariseWeek(input.runs, thisWeekStart)
 
   const legDays = hardLegDays(input.sessions, today)
-  const missingData: string[] = []
+  const gap = gaps()
   const hasHistory = lastWeek.runs > 0 || priorWeek.runs > 0
 
   const previousWeeklyKm = hasHistory ? lastWeek.distanceKm : input.baselineWeeklyKm
   if (!hasHistory) {
-    missingData.push('No runs logged in the last two weeks — using the weekly distance from your profile.')
+    gap.push('No runs logged in the last two weeks — using the weekly distance from your profile.')
   }
   if (lastWeek.runs > 0 && lastWeek.meanRpe === null) {
-    missingData.push('No session RPE recorded, so how hard the running felt had to be assumed.')
+    gap.push('No session RPE recorded, so how hard the running felt had to be assumed.')
   }
 
   const cap = RULES.running.weeklyIncreaseCap[input.experience]
@@ -342,8 +344,12 @@ export function recommendRunning(input: RunningInput): RunRecommendation {
 
   const longRunCapped = sessions.find((s) => s.type === 'long')
   if (longRunCapped && lastWeek.longestKm > lastWeek.distanceKm * RULES.running.longRunMaxFraction && lastWeek.distanceKm > 0) {
-    missingData.push(
-      `Your long run was ${Math.round((lastWeek.longestKm / lastWeek.distanceKm) * 100)}% of last week's volume — FORGED caps it at ${Math.round(RULES.running.longRunMaxFraction * 100)}%.`,
+    gap.push(
+      "Your long run was {pct}% of last week's volume — FORGED caps it at {cap}%.",
+      {
+        pct: Math.round((lastWeek.longestKm / lastWeek.distanceKm) * 100),
+        cap: Math.round(RULES.running.longRunMaxFraction * 100),
+      },
     )
   }
 
@@ -404,7 +410,8 @@ export function recommendRunning(input: RunningInput): RunRecommendation {
     reason,
     rule,
     confidence,
-    missingData,
+    missingData: gap.list,
+    missingDataParts: gap.parts,
     warning,
     citationIds: ['nielsen-2014-running-load', 'damsted-2018-load-review', 'schumann-2022-concurrent'],
     schedulingNote,

@@ -359,4 +359,50 @@ export const ENGINE: Dict = {
     '1 semana seguida de entrenamiento sin una bajada planificada (se avisa a partir de {threshold}).',
   '{weeks} consecutive weeks of training without a planned back-off (flag at {threshold}).':
     '{weeks} semanas seguidas de entrenamiento sin una bajada planificada (se avisa a partir de {threshold}).',
+
+  // --- Data gaps -------------------------------------------------------------
+  // What each engine could not judge, and why. The ones carrying a count exist
+  // in singular and plural because agreement differs between languages.
+  '1 movement has fewer than {min} sessions in the window, so no trend was called for it.':
+    '1 movimiento tiene menos de {min} sesiones en la ventana, así que no se le ha asignado tendencia.',
+  '{count} movements have fewer than {min} sessions in the window, so no trend was called for them.':
+    '{count} movimientos tienen menos de {min} sesiones en la ventana, así que no se les ha asignado tendencia.',
+  'Reps in reserve were not logged on 1 movement, so effort could not be judged there.':
+    'No se registraron las repeticiones en reserva en 1 movimiento, así que ahí no se pudo valorar el esfuerzo.',
+  'Reps in reserve were not logged on {count} movements, so effort could not be judged there.':
+    'No se registraron las repeticiones en reserva en {count} movimientos, así que ahí no se pudo valorar el esfuerzo.',
+  'No readiness check-ins in the last 10 days — soreness, readiness and joint pain are unknown.':
+    'Ningún registro de disposición en los últimos 10 días: no se sabe nada de agujetas, disposición ni dolor articular.',
+  'Fewer than 3 repeated exercises to compare, so the performance signal is weak.':
+    'Menos de 3 ejercicios repetidos que comparar, así que la señal de rendimiento es débil.',
+  'Reps in reserve were not logged on every set, so how close to failure you finished is a guess.':
+    'No se registraron las repeticiones en reserva en todas las series, así que lo cerca del fallo que acabaste es una suposición.',
+  'Biological sex not given, so the estimate uses the midpoint of the two constants — expect a wider margin.':
+    'No se ha indicado el sexo biológico, así que la estimación usa el punto medio de las dos constantes: cuenta con un margen mayor.',
+  'Daily activity not set, so a desk-based day was assumed.':
+    'No se ha indicado la actividad diaria, así que se ha asumido un día de oficina.',
+  'Sex is not set, so this averages the male and female standards. Setting it in your profile sharpens the number considerably.':
+    'No se ha indicado el sexo, así que esto promedia los estándares masculinos y femeninos. Indicarlo en tu perfil afina bastante el número.',
+  'No logged sets on any of the benchmark lifts yet ({lifts}).':
+    'Todavía no hay series registradas en ninguno de los ejercicios de referencia ({lifts}).',
+  'Only some of the benchmark lifts have data, so the overall figure leans on a narrow sample.':
+    'Solo algunos ejercicios de referencia tienen datos, así que la cifra global se apoya en una muestra estrecha.',
+  'Reps in reserve missing on {pct}% of working sets, so effort had to be assumed.':
+    'Faltan las repeticiones en reserva en el {pct} % de las series de trabajo, así que hubo que asumir el esfuerzo.',
+  'Only {logged} of {planned} planned sets were logged last time.':
+    'La última vez solo se registraron {logged} de las {planned} series previstas.',
+  'Only 1 comparable session logged for this exercise — {wanted} gives a clearer picture.':
+    'Solo hay 1 sesión comparable registrada para este ejercicio; con {wanted} se ve mucho más claro.',
+  'Only {count} comparable sessions logged for this exercise — {wanted} gives a clearer picture.':
+    'Solo hay {count} sesiones comparables registradas para este ejercicio; con {wanted} se ve mucho más claro.',
+  'No runs logged in the last two weeks — using the weekly distance from your profile.':
+    'Ninguna carrera registrada en las últimas dos semanas: se usa la distancia semanal de tu perfil.',
+  'No session RPE recorded, so how hard the running felt had to be assumed.':
+    'No se registró el RPE de la sesión, así que hubo que asumir lo dura que se sintió la carrera.',
+  "Your long run was {pct}% of last week's volume — FORGED caps it at {cap}%.":
+    'Tu tirada larga fue el {pct} % del volumen de la semana pasada; FORGED lo limita al {cap} %.',
+  'Log a body weight — every strength standard is relative to it.':
+    'Registra un peso corporal: todos los estándares de fuerza son relativos a él.',
+  'No previous performance for this exercise.':
+    'No hay rendimiento previo para este ejercicio.',
 }

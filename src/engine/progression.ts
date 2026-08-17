@@ -2,6 +2,7 @@ import { RULES } from '@/config/rules'
 import type { IsoDate, Session, SessionEntry, TechniqueRating, Units } from '@/types'
 import { estimateOneRepMax } from '@/engine/stats'
 import { increaseWithinPct, roundToIncrement, stepUp } from '@/engine/units'
+import { gaps, type MissingDataPart } from '@/engine/gaps'
 
 /**
  * The progression engine.
@@ -62,6 +63,7 @@ export interface Recommendation {
   confidence: Confidence
   /** Anything the engine wanted but did not have. */
   missingData: string[]
+  missingDataParts: MissingDataPart[]
   /** Non-null when the user should be careful or stop. */
   warning: string | null
 }
@@ -281,8 +283,9 @@ export function detectPlateau(history: PerformedSession[]): PlateauResult {
 function assessConfidence(history: PerformedSession[], analysis: SessionAnalysis): {
   confidence: Confidence
   missingData: string[]
+  missingDataParts: MissingDataPart[]
 } {
-  const missingData: string[] = []
+  const gap = gaps()
   let level: Confidence =
     history.length >= RULES.confidence.highSessions
       ? 'high'
@@ -291,22 +294,27 @@ function assessConfidence(history: PerformedSession[], analysis: SessionAnalysis
         : 'low'
 
   if (history.length < RULES.confidence.highSessions) {
-    missingData.push(
-      `Only ${history.length} comparable session${history.length === 1 ? '' : 's'} logged for this exercise — ${RULES.confidence.highSessions} gives a clearer picture.`,
+    gap.push(
+      history.length === 1
+        ? 'Only 1 comparable session logged for this exercise — {wanted} gives a clearer picture.'
+        : 'Only {count} comparable sessions logged for this exercise — {wanted} gives a clearer picture.',
+      { count: history.length, wanted: RULES.confidence.highSessions },
     )
   }
   if (analysis.missingRirFraction > RULES.confidence.missingRirFraction) {
-    missingData.push(
-      `Reps in reserve missing on ${Math.round(analysis.missingRirFraction * 100)}% of working sets, so effort had to be assumed.`,
+    gap.push(
+      'Reps in reserve missing on {pct}% of working sets, so effort had to be assumed.',
+      { pct: Math.round(analysis.missingRirFraction * 100) },
     )
     level = level === 'high' ? 'medium' : 'low'
   }
   if (analysis.workingSets < history[0].plannedSets) {
-    missingData.push(
-      `Only ${analysis.workingSets} of ${history[0].plannedSets} planned sets were logged last time.`,
+    gap.push(
+      'Only {logged} of {planned} planned sets were logged last time.',
+      { logged: analysis.workingSets, planned: history[0].plannedSets },
     )
   }
-  return { confidence: level, missingData }
+  return { confidence: level, missingData: gap.list, missingDataParts: gap.parts }
 }
 
 function describeTarget(target: NextTarget, units: Units): string {
@@ -364,13 +372,14 @@ export function recommendNextSession(
       citationIds: ['acsm-2009-progression', 'zourdos-2016-rir'],
       confidence: 'low',
       missingData: ['No previous performance for this exercise.'],
+      missingDataParts: [{ template: 'No previous performance for this exercise.', vars: {} }],
       warning: null,
     }
   }
 
   const last = history[0]
   const analysis = analyseSession(last)
-  const { confidence, missingData } = assessConfidence(history, analysis)
+  const { confidence, missingData, missingDataParts } = assessConfidence(history, analysis)
   const judgedOn = analysis.mixedLoads
     ? `Last time ran from ${formatKg(analysis.lightestLoadKg, units)} to ${formatKg(analysis.topLoadKg, units)}. Reps only mean something next to the load they were done at, so this reads the ${formatKg(analysis.topLoadKg, units)} ${analysis.setsAtTopLoad === 1 ? 'set' : `sets (${analysis.setsAtTopLoad} of them)`} and leaves the lighter ones out of it.`
     : undefined
@@ -409,6 +418,7 @@ export function recommendNextSession(
       citationIds: ['acsm-preparticipation'],
       confidence: 'high',
       missingData,
+      missingDataParts,
       warning:
         'FORGED is educational software, not a clinician. Pain that is sharp, worsening, or accompanied by numbness, dizziness or chest discomfort needs assessment by a physiotherapist or physician — stop training and seek help.',
     }
@@ -443,6 +453,7 @@ export function recommendNextSession(
       citationIds: ['acsm-2009-progression', 'acsm-preparticipation'],
       confidence,
       missingData,
+      missingDataParts,
       warning:
         'If this pain keeps coming back, is sharp, or lingers after training, see a physiotherapist or physician before pushing on.',
     }
@@ -473,6 +484,7 @@ export function recommendNextSession(
         citationIds: ['refalo-2023-failure', 'zourdos-2016-rir'],
         confidence,
         missingData,
+        missingDataParts,
         warning: null,
       }
     }
@@ -535,6 +547,7 @@ export function recommendNextSession(
       citationIds: ['acsm-2009-progression', 'refalo-2023-failure'],
       confidence,
       missingData,
+      missingDataParts,
       warning: null,
     }
   }
@@ -561,6 +574,7 @@ export function recommendNextSession(
       citationIds: ['acsm-2009-progression'],
       confidence,
       missingData,
+      missingDataParts,
       warning: null,
     }
   }
@@ -600,6 +614,7 @@ export function recommendNextSession(
         citationIds: ['acsm-2009-progression', 'bell-2020-overreaching'],
         confidence,
         missingData,
+        missingDataParts,
         warning: null,
       }
     }
@@ -622,6 +637,7 @@ export function recommendNextSession(
       citationIds: ['bell-2020-overreaching', 'acsm-2011-quantity'],
       confidence,
       missingData,
+      missingDataParts,
       warning: null,
     }
   }
@@ -647,6 +663,7 @@ export function recommendNextSession(
     citationIds: ['acsm-2009-progression', 'refalo-2023-failure'],
     confidence,
     missingData,
+    missingDataParts,
     warning: null,
   }
 }
